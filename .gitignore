@@ -1,0 +1,83 @@
+# =========================
+# C / C++ build outputs
+# =========================
+*.o
+*.obj
+*.lo
+*.la
+*.al
+*.Plo
+*.Plo
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.a
+*.lib
+
+# =========================
+# Build directories
+# =========================
+**/build/
+**/Build/
+**/Debug/
+**/debug/
+**/Release/
+**/release/
+bin/
+lib/
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+.history/
+*.code-workspace
+
+# =========================
+# JetBrains IDEs (CLion, etc.)
+# =========================
+.idea/
+*.iml
+
+# =========================
+# Mac OS
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# =========================
+# Linux / Unix
+# =========================
+*~
+.nfs*
+
+# =========================
+# Windows
+# =========================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# =========================
+# Temporary files
+# =========================
+*.swp
+*.swo
+*.tmp
+*.temp
+
+# =========================
+# Other build systems
+# =========================
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
