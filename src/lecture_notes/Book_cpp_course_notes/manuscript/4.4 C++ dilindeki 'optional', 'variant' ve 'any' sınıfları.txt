@@ -1,0 +1,1129 @@
+> C++ dilindeki 'vocabulary' types: 'std::optional', 'std::variant' ve 'std::any' sınıflarının bulunduğu gruba verilen
+isimdir.
+	>> 'std::optional' : Bu sınıf türünden değişkenler bir değer tutabilir veya tutmayabilirler. C dilindeki 'NULL' döndürme
+	mekanizmasına iyi bir ALTERNATİFTİR. Cpp17 ile dile eklenmiştir.
+		* Örnek 1,
+			//..
+			template<size_t n>
+			class A{
+				unsigned char buffer[n];
+			};
+
+			template<size_t n>
+			using optype = std::optional<A<n>>;
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					std::cout << sizeof(optype<128>) << '\n';
+					std::cout << sizeof(optype<256>) << '\n';
+					std::cout << sizeof(optype<512>) << '\n';
+					std::cout << sizeof(optype<1024>) << '\n';
+					std::cout << sizeof(optype<2048>) << '\n';
+				*/ 
+				
+				std::cout << sizeof(optype<128>) << '\n';
+				std::cout << sizeof(optype<256>) << '\n';
+				std::cout << sizeof(optype<512>) << '\n';
+				std::cout << sizeof(optype<1024>) << '\n';
+				std::cout << sizeof(optype<2048>) << '\n';
+				
+				// Aradaki bu fark, 'std::optional' sınıfı bünyesindeki 'bool' türden değişkenden kaynaklıdır. Bir değer
+				// tutup tutmamasına bağlı olarak, bu değer değişmektedir.
+				
+				return 0;
+			} 
+			
+		* Örnek 2,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					ben su an bos degilim => 31
+				*/ 
+				
+				std::optional<int> x{ 31 };
+				
+				// if(x.has_value())
+				// if(x)
+				if(x.operator bool())
+					std::cout << "ben su an bos degilim => ";
+				
+				std::cout << *x << std::endl;
+				
+				return 0;
+			} 
+			
+		* Örnek 3,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					ben su an bosum...
+					0
+				*/ 
+				
+				std::optional<int> x{};
+				
+				if(x.operator bool())
+					std::cout << "ben su an bos degilim => ";
+				else
+					std::cout << "ben su an bosum...\n";
+					
+				try{
+					std::cout << *x << std::endl; // İş bu fonksiyon referans döndürmektedir.
+				}
+				catch(const std::exception& ex)
+				{
+					std::cout << "hata bulundu... " << ex.what() << std::endl;
+				}
+				
+				// Herhangi bir hata fırlatmadığına dikkat edin.
+				// Dolayısıyla boş olanları 'dereference' edersek 'run-time' hatası alırız, yani 'Tanımsız Davranış' oluşur.
+				
+				return 0;
+			}
+			
+		* Örnek 4,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					en su an bosum...
+					hata bulundu... bad optional access
+				*/ 
+				
+				std::optional<std::string> x{ };
+				
+				if(x.operator bool())
+					std::cout << "ben su an bos degilim => ";
+				else
+					std::cout << "ben su an bosum...\n";
+					
+				try{
+					std::cout << x.value() << std::endl; // İş bu fonksiyon referans döndürmektedir.
+				}
+				catch(const std::exception& ex)
+				{
+					std::cout << "hata bulundu... " << ex.what() << std::endl;
+				}
+				
+				return 0;
+			} 
+			
+		* Örnek 5,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Oguz Karan
+					AAAAA
+					Hata yakalandi...
+				*/ 
+				
+				std::optional<std::string> op{"Oguz Karan"};
+				std::cout << op.value() << std::endl;
+				
+				op.value().assign(5, 'A'); // İlgili sınıf nesnemiz içerisindeki yazı değiştirilmiştir.
+				std::cout << op.value() << std::endl;
+				
+				op = std::nullopt; // İlgili sınıf nesnemiz boşaltılmıştır.
+				try{
+					std::cout << op.value() << std::endl;
+				}
+				catch(...)
+				{
+					std::cout << "Hata yakalandi..." << std::endl;
+				}
+				
+				return 0;
+			} 
+			
+		* Örnek 6,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Oguz Karan
+					Bilinmeyen kisi...
+				*/ 
+				
+				std::optional<std::string> op{"Oguz Karan"};
+				
+				// İŞ bu fonksiyonumuz referans DÖNDÜRMEMEKTEDİR.
+				std::cout << op.value_or("Bilinmeyen kisi...") << std::endl;
+				
+				op = std::nullopt;
+				std::cout << op.value_or("Bilinmeyen kisi...") << std::endl;
+				
+				return 0;
+			} 
+			
+		* Örnek 7,
+			//..
+			template<typename T>
+			void print_op(const std::optional<T>& op)
+			{
+				std::cout << "type is : " << typeid(T).name() << std::endl;
+				if(op)
+					std::cout << "value is : " << *op << std::endl;
+				else
+					std::cout << "HAS NO VALUE!" << std::endl;
+
+				std::cout << "----------------------------\n" << std::endl;
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					type is : i
+					HAS NO VALUE!
+					----------------------------
+					
+					type is : d
+					HAS NO VALUE!
+					----------------------------
+					
+					type is : c
+					HAS NO VALUE!
+					----------------------------
+					
+					type is : f
+					value is : 12.5
+					----------------------------
+					
+					type is : PKc
+					value is : necati
+					----------------------------
+					
+					type is : NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+					value is : ergin
+					----------------------------
+					
+					type is : NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+					value is : Cpp anlatiyor.
+					----------------------------
+				*/ 
+				
+				using namespace std::string_literals;
+				
+				std::optional<int> op1; print_op(op1);
+				
+				std::optional<double> op2{}; print_op(op2);
+				
+				// std::optional<long> op3(); print_op(op3); // Most Vexing Parse
+				
+				std::optional<char> op4 = std::nullopt; print_op(op4);
+				
+				std::optional op5{ 12.5f }; print_op(op5); // CTAT
+				
+				std::optional op6{ "necati" }; print_op(op6);
+				
+				std::optional op7{ "ergin"s }; print_op(op7); // UDL : User-defined literal
+				
+				std::optional<std::string> op8{ "Cpp anlatiyor." }; print_op(op8);
+				
+				return 0;
+			} 
+		
+		* Örnek 8,
+			//..
+			class UserName{
+				public:
+					explicit UserName(const std::string& str) : m_name(str) { std::cout << "Ctor. : " << m_name << "\n";  }
+					~UserName(){ std::cout << "Dtor. : " << m_name << "\n";  }
+					
+				private:
+					std::string m_name;
+			};
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Ctor. : Necati Ergin
+					Dtor. : Necati Ergin
+					Ctor. : Ali Serce
+					Dtor. : Ali Serce
+					Ctor. : Kaan Arslan
+					Dtor. : Kaan Arslan
+					Ctor. : Oguz Karan
+					Ctor. : Nuri Yilmaz
+					Dtor. : Nuri Yilmaz
+					Dtor. : Nuri Yilmaz
+				*/ 
+				
+				std::optional<UserName> op_name; 
+				op_name.emplace("Necati Ergin");
+				
+				op_name.emplace("Ali Serce"); // 'Dtor.' çağrılmasına vesile olacak.
+				
+				op_name.reset(); // 'Dtor.' çağrılmasına vesile olacak.
+				
+				op_name.emplace("Kaan Arslan"); // 'Dtor.' çağrılmasına vesile olacak.
+				
+				op_name = std::nullopt;
+				
+				op_name.emplace("Oguz Karan");
+				
+				op_name = UserName("Nuri Yilmaz");
+				
+				return 0;
+			} 
+			
+		* Örnek 9,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					op1 : (1.2,5.6)
+					op2 : necati
+					op3 : ergin
+					op4 : (3,4)
+					<2>
+					<3>
+					<5>
+					<7>
+					<9>
+				*/ 
+				
+				using namespace std::string_literals;
+				
+				// 'std::in_place' geçilmesi zorunludur. Tür çıkarımında işe yaramaktalar.
+				std::optional<std::complex<double>> op1{ std::in_place, 1.2, 5.6 };
+				
+				std::cout << "op1 : " << *op1 << std::endl;
+				
+				auto op2{ std::make_optional("necati") };
+				std::cout << "op2 : " << *op2 << std::endl;
+				
+				auto op3{ std::make_optional("ergin"s) };
+				std::cout << "op3 : " << *op3 << std::endl;
+				
+				auto op4{ std::make_optional<std::complex<double>>(3.0, 4.0) };
+				std::cout << "op4 : " << *op4 << std::endl;
+				
+				auto fcomp = [](int x, int y){ return std::abs(x) < std::abs(y); };
+				
+				// 'std::in_place' geçilmesi zorunludur. Tür çıkarımında işe yaramaktalar.
+				std::optional<std::set<int, decltype(fcomp)>> op5{ std::in_place, { 2, 3, 5, 7, 9 }, fcomp };
+				
+				for (auto index : op5.value()) {
+					std::cout << "<" << index << ">" << std::endl;
+				}
+				
+				return 0;
+			} 
+			
+		* Örnek 10,
+			//..
+			int main() 
+			{
+				std::optional<int> oe;
+				std::optional<int> ox{10};
+				std::optional<int> oy{20};
+				
+				std::cout.setf(std::ios::boolalpha);
+				
+				std::cout << (oe == ox) << std::endl; // false
+				std::cout << (oe == std::nullopt) << std::endl; // true
+				std::cout << (10 == ox) << std::endl; // true
+				
+				std::cout << (oe < ox) << std::endl; // true
+				std::cout << (oe > ox) << std::endl; // false
+				
+				std::optional<unsigned> oz;
+				std::optional<unsigned> omin{10};
+				
+				// true : Boş olan, dolu olandan her zaman daha küçük kabul edilmiştir.
+				std::cout << (oz < omin) << std::endl;
+				
+				return 0;
+			} 
+			
+		* Örnek 11,
+			//..
+			int main() 
+			{
+				std::optional<bool> oe{std::nullopt}; // Boş
+				std::optional<bool> ox{false}; // Dolu
+				std::optional<bool> oy{true}; // Dolu
+				
+				std::cout.setf(std::ios::boolalpha);
+				
+				std::cout << (oe == ox) << std::endl; // false
+				std::cout << (oe == oy) << std::endl; // false
+				std::cout << (oe < ox) << std::endl; // true
+				std::cout << (oe < oy) << std::endl; // true
+				std::cout << (oe == true) << std::endl; // false
+				std::cout << (oe == false) << std::endl; // false
+				std::cout << (ox == oy) << std::endl; // false
+				std::cout << (ox < oy) << std::endl; // true
+				return 0;
+			} 
+			
+		* Örnek 12,
+			//..
+			int main() 
+			{
+				std::optional<int> oe{46};
+				
+				oe = std::nullopt;
+				oe = {};
+				oe.reset();
+				
+				return 0;
+			} 
+			
+		* Örnek 13,
+			//..
+			std::optional<int> to_int(const std::string& s)
+			{
+				try{
+					return std::stoi(s);
+				}catch(...)
+				{
+					// return {};
+					return std::nullopt;
+				}
+			}
+
+			std::optional<int> to_int2(const std::string& s)
+			{
+				std::optional<int> ret; // Boş
+				try{
+					ret = std::stoi(s);
+				}catch(...)
+				{
+					
+				}
+				
+				return ret;
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					42 yazisi, 42 degerindeki int tipine donusturuldu...
+					077 yazisi, 77 degerindeki int tipine donusturuldu...
+					necati yazisi, int tipine donusturulemiyor...
+					0x33 yazisi, 0 degerindeki int tipine donusturuldu...
+				*/ 
+				
+				for(auto s : { "42", "077", "necati", "0x33" })
+				{
+					std::optional<int> op = to_int(s);
+					if(op)
+						std::cout << s << " yazisi, " << *op << " degerindeki int tipine donusturuldu..." << std::endl;
+					else
+						std::cout << s << " yazisi, int tipine donusturulemiyor..." << std::endl;
+				}
+				
+				return 0;
+			} 
+			
+		* Örnek 14,
+			//..
+			class UserRecord{
+				public:
+					UserRecord(const std::string& name, std::optional<std::string> nick, std::optional<int> age)
+					: m_name(name), m_nick(nick), m_age(age){}
+					
+					friend std::ostream& operator<<(std::ostream& os, const UserRecord& ur)
+					{
+						os << ur.m_name;
+						
+						if(ur.m_nick)
+							os << " \"" << *ur.m_nick << "\" ";
+							
+						if(ur.m_age)
+							os << *ur.m_age << " yasinda.";
+							
+						return os;
+					}
+					
+				private:
+					std::string m_name;
+					std::optional<std::string> m_nick;
+					std::optional<int> m_age;
+			};
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Necati Ergin "Neco" 70 yasinda.
+					Kagan Arslan
+				*/ 
+				
+				UserRecord ur1 = {"Necati Ergin", "Neco", 70};
+				UserRecord ur2{ "Kagan Arslan", std::nullopt, std::nullopt };
+				
+				std::cout << ur1 << std::endl;
+				std::cout << ur2 << std::endl;
+				return 0;
+			} 
+			
+		* Örnek 15,
+			//..
+			std::optional<std::string> get_middle_name(const std::string& s)
+			{
+				std::string s1, s2, s3;
+				
+				std::istringstream iss(s);
+				
+				iss >> s1 >> s2 >> s3; // 's3' eğer 'set' edilememiş ise isim-soyisim kombini var demektir.
+				
+				if(iss.fail())
+					return {};
+					
+				return s2;
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Middle name : Kandemir
+					No middle name!!!
+				*/ 
+				
+				std::string name{ "Ahmet Kandemir Pehlivanli" };
+				auto ox = get_middle_name(name); 
+				ox ? (std::cout << "Middle name : " << *ox << std::endl) : (std::cout << "No middle name!!!" << std::endl);
+				
+				name = "Necati Ergin";
+				ox = get_middle_name(name);
+				ox ? (std::cout << "Middle name : " << *ox << std::endl) : (std::cout << "No middle name!!!" << std::endl);
+					
+				return 0;
+			} 
+			
+	>> 'std::variant' sınıfı: C dilindeki ve Cpp dilindeki 'union' türlerinin nesne yönelimli programlamaya uygun hale
+	getirilmiş versiyonlarıdır. Bu sınıf türünden bir nesne, önceden belirlenmiş değerlerden birini tutmak zorundadır.
+		* Örnek 1,
+			//..
+			int main() 
+			{				
+				// 'std::variant' türden nesnemiz ya 'int' türden, ya 'double' türden ya da 'std::string' türden değişken
+				// tutacaktır.
+				std::variant<int, double, std::string> vx;
+				
+				vx = 12; // Artık 'int' türden bir değişken tutmaktadır.
+				
+				vx = 1.2; // Artık 'double' türden bir değişken tutmaktadır.
+				
+				vx = std::string{"Ahmo"}; // Artık "std::string" türden bir değişken tutmaktadır.
+				
+				// Pek tabii ilgili 'std::variant' sınıfın 'Ctor.' fonksiyonuna iş bu türleri argüman olarak geçerek de
+				// yukarıdaki aynı şeyleri yapmasını sağlayabiliriz.
+				return 0;
+			} 
+			
+		* Örnek 2,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					true
+					false
+					false
+					
+					
+					
+					false
+					true
+					false
+					
+					
+					
+					false
+					false
+					true
+				*/ 
+				
+				// 'std::variant' türden nesnemiz ya 'int' türden, ya 'double' türden ya da 'std::string' türden
+				// değişken tutacaktır.
+				std::variant<int, double, std::string> vx;
+				
+				vx = 12; // Artık 'int' türden bir değişken tutmaktadır.
+				std::cout << std::boolalpha << std::holds_alternative<int>(vx) << std::endl;
+				std::cout << std::boolalpha << std::holds_alternative<double>(vx) << std::endl;
+				std::cout << std::boolalpha << std::holds_alternative<std::string>(vx) << std::endl;
+				
+				std::cout << "\n\n" << std::endl;
+				
+				vx = 1.2; // Artık 'double' türden bir değişken tutmaktadır.
+				std::cout << std::boolalpha << std::holds_alternative<int>(vx) << std::endl;
+				std::cout << std::boolalpha << std::holds_alternative<double>(vx) << std::endl;
+				std::cout << std::boolalpha << std::holds_alternative<std::string>(vx) << std::endl;
+				
+				std::cout << "\n\n" << std::endl;
+				
+				vx = std::string{"Ahmo"}; // Artık "std::string" türden bir değişken tutmaktadır.
+				std::cout << std::boolalpha << std::holds_alternative<int>(vx) << std::endl;
+				std::cout << std::boolalpha << std::holds_alternative<double>(vx) << std::endl;
+				std::cout << std::boolalpha << std::holds_alternative<std::string>(vx) << std::endl;
+				
+				// Pek tabii ilgili 'std::variant' sınıfın 'Ctor.' fonksiyonuna iş bu türleri argüman olarak geçerek de
+				// yukarıdaki aynı şeyleri yapmasını sağlayabiliriz.
+				return 0;
+			} 
+			
+		* Örnek 3,
+			//..
+			class A{
+				public:
+					A() {std::cout << "A()" << std::endl;}
+					A(int val) : mx{val} {std::cout << "A(" << val << ")" << std::endl;}
+					~A() {std::cout << "~A()" << std::endl;}
+					friend std::ostream& operator<<(std::ostream& os, const A& other)
+					{
+						return os << "(A : " << other.mx << ")";
+					}
+					
+				private:
+					int mx = 0;
+			};
+
+			class B{
+				public:
+					B() {std::cout << "B()" << std::endl;}
+					B(int val) : mx{val} {std::cout << "B(" << val << ")" << std::endl;}
+					~B() {std::cout << "~B()" << std::endl;}
+					friend std::ostream& operator<<(std::ostream& os, const B& other)
+					{
+						return os << "(B : " << other.mx << ")";
+					}
+					
+				private:
+					int mx = 0;
+			};
+
+			A ax(10);
+			B bx(10);
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					A(10) // global 'ax' nesnesi
+					B(10) // global 'bx' nesnesi
+					main basliyor...
+					
+					A turunden nesne tutuluyor: true
+					B turunden nesne tutuluyor: false
+					Tutulan degerin indeksi : 0, degeri : (A : 10)
+					~A() // global 'ax' nesnesi
+					A turunden nesne tutuluyor: false
+					B turunden nesne tutuluyor: true
+					Tutulan degerin indeksi : 1, degeri : (B : 10)
+					main bitiyor...
+					~B() // Oluşturulan geçici nesne, 'var_ab' başka türden değer tuttuğunda.
+					~B() // Oluşturulan geçici nesne, 'var_ab' ilk hayata geldiğinde.
+					~A() // global 'bx' nesnesi
+				*/ 
+				
+				std::cout << "main basliyor..." << std::endl;
+				
+				std::cout << std::boolalpha << std::endl;
+				
+				std::variant<A,B> var_ab(ax);
+				
+				std::cout << "A turunden nesne tutuluyor: " << std::holds_alternative<A>(var_ab) << std::endl;
+				std::cout << "B turunden nesne tutuluyor: " << std::holds_alternative<B>(var_ab) << std::endl;
+				std::cout << "Tutulan degerin indeksi : " 
+					<< var_ab.index() << ", degeri : " << std::get<0>(var_ab) << std::endl;
+				
+				var_ab = bx;
+				std::cout << "A turunden nesne tutuluyor: " << std::holds_alternative<A>(var_ab) << std::endl;
+				std::cout << "B turunden nesne tutuluyor: " << std::holds_alternative<B>(var_ab) << std::endl;
+				std::cout << "Tutulan degerin indeksi : " 
+					<< var_ab.index() << ", degeri : " << std::get<1>(var_ab) << std::endl;
+				
+				std::cout << "main bitiyor..." << std::endl;
+				return 0;
+			} 
+			
+		* Örnek 4,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					main basliyor...
+					Value : Hata yakalandi, Unexpected index
+					Value : Hata yakalandi, Unexpected index
+					Value : 23.75 degeri mevcuttur.
+					main bitiyor...
+				*/ 
+				
+				std::cout << "main basliyor..." << std::endl;
+				
+				std::variant<char, int, double> vx{ 23.75 }; // Şu anda 'double' tutmaktadır.
+				
+				try{
+					// std::cout << "Value : " << std::get<char>(vx) << "degeri mevcuttur." << std::endl;
+					std::cout << "Value : " << std::get<0>(vx) << "degeri mevcuttur." << std::endl;
+				}
+				catch(const std::exception& ex)
+				{
+					std::cout << "Hata yakalandi, " << ex.what() << std::endl;
+				}
+				
+				try{
+					// std::cout << "Value : " << std::get<int>(vx) << "degeri mevcuttur." << std::endl;
+					std::cout << "Value : " << std::get<1>(vx) << "degeri mevcuttur." << std::endl;
+				}
+				catch(const std::exception& ex)
+				{
+					std::cout << "Hata yakalandi, " << ex.what() << std::endl;
+				}
+				
+				try{
+					// std::cout << "Value : " << std::get<double>(vx) << "degeri mevcuttur." << std::endl;
+					std::cout << "Value : " << std::get<2>(vx) << " degeri mevcuttur." << std::endl;
+				}
+				catch(const std::exception& ex)
+				{
+					std::cout << "Hata yakalandi, " << ex.what() << std::endl;
+				}
+				
+				std::cout << "main bitiyor..." << std::endl;
+				
+				// Gördüğünüz gibi değer tutmayan diğer indekslere erişim hata fırlatılmasına neden oldu.
+				return 0;
+			} 
+			
+		* Örnek 5,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					error: invalid use of incomplete type ‘struct std::variant_alternative<1, std::variant<> >’
+				*/ 
+				
+				std::cout << "main basliyor..." << std::endl;
+				
+				std::variant<char, int, double> vx{ 23.75 }; // Şu anda 'double' tutmaktadır.
+				
+				// Geçersiz bir indeks geçilmesi durumunda sentaks hatası alıyoruz.
+				std::cout << "Value : " << std::get<4>(vx) << std::endl;
+				
+				std::cout << "main bitiyor..." << std::endl;
+				
+				return 0;
+			}
+		
+		* Örnek 6,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					main basliyor...
+					Age : 19
+					Age : 19
+					Age : 19
+					-----------------
+					Weight : 3.14
+					Weight : 3.14
+					Weight : 3.14
+					-----------------
+					Name : Ahmet Kahraman
+					Name : Ahmet Kahraman
+					Name : Ahmet Kahraman
+					main bitiyor...
+				*/ 
+				
+				std::cout << "main basliyor..." << std::endl;
+				
+				try{
+					using age_t = int;
+					using weight_t = double;
+					using name_t = std::string;
+					
+					std::variant<age_t, weight_t, name_t> va;
+					
+					enum : size_t { idx_age, idx_weight, idx_name }; // Arka planda tutulan veri tipi 'size_t'
+					
+					va = 19;
+					std::cout << "Age : " << std::get<0>(va) << std::endl;
+					std::cout << "Age : " << std::get<int>(va) << std::endl;
+					std::cout << "Age : " << std::get<idx_age>(va) << std::endl;
+					
+					std::cout << "-----------------" << std::endl;
+					
+					// va = 7u;
+					// ambiguity tip sentaks hatası çünkü 'unsigned' türden 'int' ve 'double' türlerine
+					// dönüşüm 'standar conversion'.
+					va = 3.14;
+					std::cout << "Weight : " << std::get<1>(va) << std::endl;
+					std::cout << "Weight : " << std::get<double>(va) << std::endl;
+					std::cout << "Weight : " << std::get<idx_weight>(va) << std::endl;
+					
+					std::cout << "-----------------" << std::endl;
+					
+					va = "Ahmet Kahraman";
+					std::cout << "Name : " << std::get<2>(va) << std::endl;
+					std::cout << "Name : " << std::get<std::string>(va) << std::endl;
+					std::cout << "Name : " << std::get<idx_name>(va) << std::endl;
+				}catch(const std::bad_variant_access& ex)
+				{
+					std::cout << "Hata yakalandi: " << ex.what() << std::endl;
+				}
+				
+				std::cout << "main bitiyor..." << std::endl;
+				
+				return 0;
+			} 
+			
+		* Örnek 7,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					main basliyor...
+					double tür, degeri : 23.98
+					Hayir, int türden değil...
+					Hayir, char türden değil...
+					main bitiyor...
+				*/ 
+				
+				std::cout << "main basliyor..." << std::endl;
+				
+				std::variant<int, double, char> va(23.98);
+				
+				if( auto ptr = std::get_if<double>(&va) /* auto ptr = std::get_if<2>(&va) */ )
+				{
+					std::cout << "double tür, degeri : " << *ptr << std::endl;
+				}
+				else 
+				{
+					std::cout << "Hayir, double türden degil..." << std::endl;
+				}
+				
+				if( auto ptr = std::get_if<int>(&va) /* auto ptr = std::get_if<1>(&va) */ )
+				{
+					std::cout << "int tür, degeri : " << *ptr << std::endl;
+				}
+				else    
+				{
+					std::cout << "Hayir, int türden değil..." << std::endl;
+				}
+				
+				if( auto ptr = std::get_if<char>(&va) /* auto ptr = std::get_if<3>(&va) */ )
+				{
+					std::cout << "int char, degeri : " << *ptr << std::endl;
+				}
+				else    
+				{
+					std::cout << "Hayir, char türden değil..." << std::endl;
+				}
+					
+				std::cout << "main bitiyor..." << std::endl;
+				
+				return 0;
+			} 
+
+		* Örnek 8,
+			//..
+			class Data{
+				public:
+					Data(int x) : mx{x}{}
+					
+				private:
+					int mx;
+			};
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					index : 0
+					variant is in monostate
+					variant is in monostate
+					index : 1
+					index : 2
+					index : 3
+					index : 0
+				*/ 
+				
+				// std::variant<Data, int, double> v1;
+				// 'v1' nesnemiz için 'Default Ctor.' fonksiyonu çağrılacak ve birinci türden bir nesne tutmaya başlayacaktır.
+				// Birinci türümüz 'Data' türünden olduğu için o sınıfın 'Default Ctor.' fonksiyonu çağrılacaktır.
+				// Fakat ona dair bir 'Default Ctor.' OLMADIĞI İÇİN SENTAKS HATASI ALACAĞIZ.
+				// error: use of deleted function ‘std::variant<_Types>::variant() [with _Types = {Data, int, double}]’
+													
+				// Yukarıdaki problemi çözmek için ilk tür olarak 'std::monostate' sınıf nesnesini kullanıyoruz.
+				std::variant<std::monostate, Data, int, double> v2;
+				
+				std::cout << "index : " << v2.index() << std::endl;
+				
+				if(std::holds_alternative<std::monostate>(v2))
+					std::cout << "variant is in monostate" << std::endl;
+				else
+					std::cout << "variant is NOT in monostate" << std::endl;
+					
+				if(std::get_if<std::monostate>(&v2))
+					std::cout << "variant is in monostate" << std::endl;
+				else
+					std::cout << "variant is NOT in monostate" << std::endl;
+				
+				v2 = Data{13};
+				std::cout << "index : " << v2.index() << std::endl;
+				
+				v2 = 23;
+				std::cout << "index : " << v2.index() << std::endl;
+				
+				v2 = 4.5;
+				std::cout << "index : " << v2.index() << std::endl;
+				
+				v2 = std::monostate{};
+				std::cout << "index : " << v2.index() << std::endl;
+				
+				return 0;
+			} 
+			
+		* Örnek 9,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					[0] => 23
+					[1] => 2.3
+					[2] => AAAAA
+					[3] => 12 Mayis 1987 Sali
+				*/ 
+				
+				std::variant<int, double, std::string, Date> va; 
+				
+				// va = 23;
+				va.emplace<0>(23);
+				std::cout << "[" << va.index() << "] => " << std::get<int>(va) << std::endl;
+				
+				// va = 2.3;
+				va.emplace<1>(2.3);
+				std::cout << "[" << va.index() << "] => " << std::get<1>(va) << std::endl;
+				
+				// va = std::string(5, 'A');
+				// '()' çiftinin kullanılması gerekiyor. Aksi durumda 'std::initializer_list' argümanı çağrılıyor.
+				va.emplace<std::string>(5, 'A');
+				std::cout << "[" << va.index() << "] => " << std::get<std::string>(va) << std::endl;
+				
+				// va = Date{12, 5, 1987};
+				va.emplace<Date>(12, 5, 1987);
+				std::cout << "[" << va.index() << "] => " << std::get<3>(va) << std::endl;
+				
+				return 0;
+			} 
+			
+		* Örnek 10,
+			//..
+			// Approach - I
+			struct S{
+				void operator()(int x)const { std::cout << x << std::endl; }
+				void operator()(char x)const { std::cout << x << std::endl; }
+				void operator()(double x)const { std::cout << x << std::endl; }
+			};
+
+			// Approach - II
+			struct TS{
+				template<typename T>
+				void operator()(T x)const { std::cout << x << std::endl; }
+			};
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					12
+					12
+					12
+					12
+				*/ 
+				
+				std::variant<char, int, double> var = 12; // An itibari ile 'int' türden bir değişken tutmakta. 
+				
+				// 'generalized lambda-expression'. Derleyicinin yazacağı sınıfın '.operator()()' fonksiyonu artık
+				// bir fonksiyon şablonu.
+				const auto f = [](auto x){ std::cout << x << std::endl; };
+				
+				std::visit(S{}, var);
+				// İş bu 'std::visit' fonksiyonunun ilk parametresi bir 'callable' OLMAK ZORUNDA. 
+				// İkinci parametresi ise o 'callable' a gönderilecek 'std::variant' türden bir nesne.
+				// Dolayısıyla bu çağrıda 'S' türünden geçici nesne kullanarak, 'var' içinde hangi tür varsa,
+				// 'S' sınıfının o tür parametreli '.operator()()' fonksiyonuna çağrı yapılmıştır. 
+				// Dolayısıyla 'std::variant' şablon parametreleri kadarlık 'overload', '.operator()()'
+				// fonksiyonu için YAZILMAK ZORUNDA OLABİLİR.
+									  
+				std::visit(TS{}, var);
+				// Artık 'TS' sınıfından oluşturulan geçici nesne kullanarak, o sınıfın '.operator()()'
+				// fonksiyonuna çağrı yapılmıştır. Artık hangi tür 'std::variant' içerisindeyse, o türe
+				// dair '.operator()()' açılacaktır.
+									   
+				// İlk parametre olarak bir 'lambda-expression' kullanıldı.
+				std::visit([](auto x){ std::cout << x << std::endl; }, var);
+				
+				std::visit(f, var); // İlk parametre olarak bir 'lambda-expression' kullanıldı.
+				
+				return 0;
+			} 
+			
+		* Örnek 11, Kapalı Hiyerarşi kalıtıma bir alternatiftir. Kapalı Hiyerarşi, kalıtımdaki sınıfların önceden belli
+		olması ve sonrasında ise değişmeyeceğinin kesin olması durumudur. 
+			//..
+			class Cat{
+				public:
+					Cat(std::string name) : m_name{ std::move(name) } {}
+					// Bu şekilde veri elemanlarımıza ilk değer verirken geçici nesne kullanmamız durumunda
+					// 'copy-ellision' gerçekleşmektedir. Eğer 'R-value expression' kullanırsak da
+					// taşıma semantiği devreye girecektir. Artık Modern Cpp ile 'std::string' sınıfı
+					// için bu şekil populer hale gelmeye başlamıştır.
+																		 
+					// Cat(const std::string& name) : m_name{name} {}
+					// 'old-school' ilk değer verme yöntemi olup hala geçerliliğini korumaktadır.
+					
+					void meow(){ std::cout << m_name << " is meowing..." << std::endl; }
+					
+					friend std::ostream& operator<<(std::ostream& os, Cat other) { other.meow(); return os; }
+				private:
+					std::string m_name;
+			};
+
+			class Dog{
+				public:
+					Dog(std::string name) : m_name{ std::move(name) } {}
+					
+					void woof(){ std::cout << m_name << " is barking..." << std::endl; }
+					
+					friend std::ostream& operator<<(std::ostream& os, Dog other) { other.woof(); return os;  }
+				private:
+					std::string m_name;
+			};
+
+			class Lamb{
+				public:
+					Lamb(std::string name) : m_name{ std::move(name) } {}
+					
+					void bleat(){ std::cout << m_name << " is bleating..." << std::endl; }
+					
+					friend std::ostream& operator<<(std::ostream& os, Lamb other) { other.bleat(); return os; }
+				private:
+					std::string m_name;
+			};
+
+			using Animal = std::variant<Cat, Dog, Lamb>;
+
+			struct AnimalSpeaker{
+				void operator()(Cat& _animal) { _animal.meow(); }
+				void operator()(Dog& _animal) { _animal.woof(); }
+				void operator()(Lamb& _animal) { _animal.bleat(); }
+			};
+
+			template<typename T>
+			bool is_type(const Animal& animal)
+			{
+				return std::holds_alternative<T>(animal);
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					2 adet kedi, 3 adet kopek, 1 adet kuzu bulunmaktadir.
+					-------------------------------
+					Minnos is meowing...
+					Karabas is barking...
+					Kont is barking...
+					Luna is meowing...
+					Whisky is bleating...
+					Pumy is barking...
+					-------------------------------
+					Minnos is meowing...
+					Karabas is barking...
+					Kont is barking...
+					Luna is meowing...
+					Whisky is bleating...
+					Pumy is barking...
+					-------------------------------
+					Minnos is meowing...
+					Karabas is barking...
+					Kont is barking...
+					Luna is meowing...
+					Whisky is bleating...
+					Pumy is barking...
+					-------------------------------
+					Minnos is meowing...
+					Karabas is barking...
+					Kont is barking...
+					Luna is meowing...
+					Whisky is bleating...
+					Pumy is barking...
+				*/ 
+				
+				std::vector<Animal> animalFarm{ 
+					Cat{"Minnos"}, 
+					Dog{"Karabas"}, 
+					Dog{"Kont"}, 
+					Cat{"Luna"}, 
+					Lamb{"Whisky"}, 
+					Dog{"Pumy"} 
+				};
+				
+				std::cout << std::count_if(animalFarm.begin(), animalFarm.end(), is_type<Cat>) << " adet kedi, "
+						  << std::count_if(animalFarm.begin(), animalFarm.end(), is_type<Dog>) << " adet kopek, "
+						  << std::count_if(animalFarm.begin(), animalFarm.end(), is_type<Lamb>) 
+						  << " adet kuzu bulunmaktadir.\n";
+						  
+				std::cout << "-------------------------------\n";
+				
+				// Approach - I
+				for(auto& animal : animalFarm) // Her bir 'animal' aslında 'std::variant<>' sınıfıdır.
+				{
+					if( animal.index() == 0 )
+						std::get<0>(animal).meow();
+					else if( animal.index() == 1 )
+						std::get<1>(animal).woof();
+					else if( animal.index() == 2 )
+						std::get<2>(animal).bleat();
+				}
+				
+				std::cout << "-------------------------------\n";
+				
+				// Approach - II
+				for(auto& animal : animalFarm)
+				{
+					if( auto p = std::get_if<0>(&animal) )
+						p->meow();
+					if( auto p = std::get_if<1>(&animal) )
+						p->woof();
+					if( auto p = std::get_if<2>(&animal) )
+						p->bleat();
+				}
+				
+				std::cout << "-------------------------------\n";
+				
+				// Approach - III
+				for(auto& animal : animalFarm)
+					 std::visit(AnimalSpeaker{}, animal);
+					 
+				std::cout << "-------------------------------\n";
+				
+				// Approach - IV
+				for(auto& animal : animalFarm)
+					std::visit([](auto& _animal){ std::cout << _animal; }, animal);
+
+				return 0;
+			} 

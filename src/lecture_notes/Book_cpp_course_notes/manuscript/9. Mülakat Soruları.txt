@@ -1,0 +1,700 @@
+MÜLAKAT SORUSU - 1
+    //..
+
+    /*
+        Sınıfın 'static data members' a ilk değer veren ifade, yani eşitliğin sağ tarafındaki ifade, isim arama kurallarına
+        göre önce 'class scope' İÇERİSİNDE ARANIR. Eğer orada bulunamazsa, 'global namespace' isim	alanında aranıyor.
+    */
+
+    class A{
+        public:
+            static int foo()
+            {
+                return 1;
+            }
+
+            static int mx;
+    };
+
+    int foo()
+    {
+        return 2;
+    }
+
+    // A.cpp
+        int A::mx = foo();
+
+        int main()
+        {
+            std::cout << A::mx << "\n"; // EKRANA '1' YAZACAKTIR.
+        }
+
+MÜLAKAT SORUSU - 2
+    //..
+
+    /*
+        Hayattaki sınıf nesnelerinin sayısını istediğimiz zaman öğrenebileceğimiz bir sınıf yazınız => 'static' bir
+		'data member' bildirilir. 'Ctor' çağrıları bu sayıyı bir arttırırken, 'Dtor' çağrıları da bu sayıyı bir azaltır.
+		Duruma göre 'Copy Assignment Function' çağrılarına da bu özellik yüklenebilir veya yüklenmeyebilir.
+    */
+
+    class Myclass
+    {
+        public:
+        Myclass()
+        {
+            ++ms_live_count;
+        }
+        Myclass(int)
+        {
+            //..
+            ++ms_live_count;
+        }
+        ~Myclass()
+        {
+            --ms_live_count;
+        }
+
+        //..
+        
+        static int get_live_count()
+        {
+            return ms_live_count;
+        }
+
+        private:
+            inline static int ms_live_count{}; // since c++17
+    };
+
+MÜLAKAT SORUSU -3 
+    //..
+
+    /*
+        Öyle bir sınıf oluşturun ki o sınıf türünden nesneler birbirleri ile iletişim halinde olsun => 'this' göstericileri
+        tutan bir 'static-container'.
+    */
+    
+    //Fighter.hpp
+        #include <string>
+        #include <vector>
+        #include <algorithm>
+        #include <cassert>
+        #include <iostream>
+
+        using namespace std;
+
+        class Fighter
+        {
+            public:
+                Fighter(std::string name) : m_name{std::move(name)} 
+                {
+                    m_fVec.push_back(this);
+                }
+
+                ~Fighter()
+                {
+                    auto iter = std::find(m_fVec.begin(), m_fVec.end(), this);
+                    assert(iter != m_fVec.end());
+                    m_fVec.erase(iter);
+                }
+                
+                void call_fighters()
+                {
+                    std::cout << "I need help!\n";
+                    for(auto index: m_fVec)
+                    {
+                        // Kendi adını çağırmasın diye,
+                        if(index != this)
+                            std::cout << "[" << index->m_name << "] ";
+                    }
+
+                    std::cout << "is being called by-name!..\n";
+                }
+
+            private:
+                std::string m_name;
+
+                static std::vector<Fighter*> m_fVec; 
+        };
+
+    //Fighter.cpp
+        std::vector<Fighter*> Fighter::m_fVec; // Vector sınıfının 'Default Ctor' u kullanıldı.
+
+        int main()
+        {
+            /* 
+                # OUTPUT # 
+                I need help!
+                [Merve] [Ali] [Veli] is being called by-name!..
+                I need help!
+                [Ali] [Veli] is being called by-name!..
+            */
+            
+            Fighter a{"Ahmet"},b{"Merve"},c{"Ali"},d{"Veli"};
+            
+            a.call_fighters();
+            
+            a.~Fighter(); // Avoid.
+            
+            b.call_fighters();
+        }
+
+MÜLAKAT SORUSU -4
+    //..
+
+    /*
+        Sadece üye operatör fonksiyonu olsaydı, yani global operatör fonksiyonu hiç olmasaydı, hangi operatörülerin
+        fonksiyonlarını yazamazdık?
+    */
+
+    // '+' operatörü için
+        // Assume that 'x' is a 'user-defined' type.
+        // 'x + 4' deyimi aslında 'x.operator(4)' şeklindeki bir fonksiyon çağrısına dönüştürülüyor. Peki '4 + x'
+        // deyimi yazıldığında ne oluyor? => '4' e ait bir fonksiyon olmayacağından SENTAKS HATASI ALIYORUZ. İşte bu
+        // durumu örtbas etmek için BİZİM GLOBAL OPERATÖR FONKSİYONUNA İHTİYACIMIZ VAR Kİ 'x + 4' ve '4 + x'
+        // ŞEKİLLERİNDE ÇAĞRIDA BULUNABİLELİM. Üye Fonksiyon olarak 'x+4' sadece ve sadece 'x.operator+(4)' şeklinde
+        // yazabiliriz. Global Fonksiyon olarak 'x+4' deyimini 'operator+(x,4)' şeklinde, '4+x' deyimini de
+        // 'operator+(4,x)' şeklinde yazabiliriz.
+
+    // '<<' operatörü için
+        // Konsola yazarken '<<' operatörü için 'iostream' sınıfına 'user-defined' tür alan bir 'Overload'
+        // yazılmamış. Bizlerin de o sınıf için fonksiyon yazmamız mümkün değil. Bundan dolayı, bu operatörü
+        // 'std::cout' ile kullanmak için GLOBAL OPERATÖR FONKSİYONUNA ihtiyacımız vardır.
+
+MÜLAKAT SORUSU -5
+    //..
+
+    /*
+		                        # Açıklama # 
+		Bir değişkeni tanımlarken, ismini '()' içerisinde yazmak LEGALDIR. 
+		int (x); // Legal bir tanımlamadır.
+		Peki aşağıdaki gibi bir senaryoda durum nasıl olurdu?
+		X (object); // Burada karşımıza iki farklı anlam çıkmaktadır.
+		i. 'object' isimli, 'X' sınıf türünden bir değişken tanımlamak, ki bu durumda 'global namepsace' alanındaki
+		'object' isimli değişken maskelenecek.
+		ii. 'X' sınıf türünden Geçici Nesne oluşturmak ve bunu yaparken 'global namepsace' alanındaki 'object' değişkenini
+		kullanmak, ki bu durumda da Geçici Nesne için 'Copy Ctor' çağrılacak. Dilin kurallarına göre yukarıdaki senaryoda
+		'i.' anlam kullanılır. YUKARIDAKİ İKİ ANLAMA GELEN SENARYOYU ORTADAN KALDIRMAK İÇİN, '()' YERİNE '{}'
+		KULLANMALIYIZ. BÖYLELİKLE BİZ GEÇİCİ NESNE OLUŞTURMUŞ OLACAĞIZ, YANİ SADECE 'ii' ANLAM OLACAK.
+    */
+
+	#include <iostream>
+
+	struct X{
+		X() { std::cout << "1"; }
+		~X() { std::cout << "2"; }
+		X(const X&) { std::cout << "3"; }
+		
+		void f() { std::cout << "4"; }
+	}object;
+
+	int main()
+	{
+		// 
+		/*
+			# Expected Output: 13242 #
+			1 'OBJECT' HAYATA GELDİ.
+			3 'GN' HAYATA GELDİ.
+			2 'GN' HAYATI BİTTİ.
+			4 'OBJECT' İLE MEMBER FONK. ÇAĞRILDI.
+			2 'OBJECT' HAYATI BİTTİ.
+		*/
+		
+		// OUTPUT : 11422
+		X(object);
+		object.f();
+	}	
+
+MÜLAKAT SORUSU -6
+    //..
+
+    /*
+        'func' nesnesi içerisindeki 'other' isimli değişkenin bilgileri nedir?
+    */
+
+    #include <iostream>
+    class Myclass{
+        
+    };
+
+    void foo(Myclass&&)
+    {
+        std::cout << "void foo(Myclass &&) was called.\n";
+    }
+
+    void foo(const Myclass&)
+    {
+        std::cout << "void foo(const Myclass &) was called.\n";
+    }
+
+    void func(Myclass&& other)
+    {
+        // 'other' isimli değişkenin;
+        // Value Category : L-Value
+        // Data  Type     : Myclass&&
+        // İspatı,
+        foo(other);
+        
+        // Çıktıda da görüldüğü üzere, İSİMLENDİRİLMİŞ HER BİR NESNE 'L-Value' kategorisindedir. Eğer TAŞIMAK
+        // İSTİYORSAK AŞAĞIDAKİ GİBİ BİR ÇAĞRI YAPMALIYIZ:
+        // foo(std::move(other));
+        
+        // Bu fonksiyon içerisinde 'other' nesnesi ile bir sınıf türünden nesne hayata getirirsek, o sınıfın
+        // 'Copy Ctor' fonksiyonu çağrılacaktır.
+
+        // Myclass otherNew(other); // 'Copy Ctor' fonksiyonu çağrılacaktır.
+        // Fakat bu fonksiyon sadece HAYATI BİTEN BİR NESNE İÇİN ÇAĞRILMALI. BU DURUMDA AMACIMIZIN DIŞINA
+        // ÇIKMIŞ OLUYORUZ. İşte bu yüzden aşağıdaki gibi bir çağrı yapmalıyız:
+        // Myclass otherNew(std::move(other));
+        
+        // Bu fonksiyon içerisinde 'other' nesnesini bir vektöre taşımak için de;
+        //...
+        // vec.push_back(std::move(other));
+    }
+
+    int main()
+    {	
+        /*
+            # OUTPUT #
+            void foo(const Myclass &) was called.
+        */
+        
+        func(Myclass{});
+    }
+
+MÜLAKAT SORUSU -7
+    //..
+
+    /*
+        SSO / SBO : (Small String Optimization) / SBO (Small Buffer Optimization) : 'static' bir bellek alanı kullanmak
+        ile 'dynamic' bir bellek alanı kullanmak arasında 40-50 kat kadar bir fark vardır. Bu maliyeti minimize etmek için
+        'string' sınıfımız bünyesinde ekstra bir 'dizi' daha tutmaktadır. Yazıların boyutunun küçük olduğu durumlarda,
+        yazıları tutmak için, Dinamik Bellek Alanı ile uğraşmadan direkt olarak Statik Bellek Alanındaki bu diziyi kullanıyor.
+        İşte yukarıdaki byte farkı da bu böyle bir dizinin varlığına işaret etmektedir. Eğer yazımız bu dizide tutulamayacak
+        kadar büyükse ya da sonradan bu dizide tutulamayacak kadar büyük hale gelirse, artık Dinamik Bellek Alanını
+        kullanmaya başlıyor.
+    */
+
+    #include <string>
+    #include <iostream>
+    int main()
+    {
+        /*
+            # OUTPUT # 
+
+            // Bir göstericinin boyutu.
+            sizeof int*   : 8 
+            
+            // Görünüşe göre sadece üç adet gösterici içermemektedir, ilgili std::string sınıfı.
+            // Bunun nedeni SSO / SBO implementasyonundan kaynaklanmaktadır.
+            sizeof string : 32
+        */
+        std::cout << "sizeof int*   : " << sizeof(int*) << "\n";
+        std::cout << "sizeof string : " << sizeof(std::string) << "\n";
+    }
+
+MÜLAKAT SORUSU -7
+    //..
+
+    /*
+        Yukarıda açıklanan SSO implementasyonunun ispatı: 'operator new' ve 'operator delete' fonksiyonlarının 'overload'
+        edilemeleri.
+    */
+
+    #include <string>
+    #include <iostream>
+
+    void* operator new(size_t n)
+    {
+        std::cout << "operator new was called. size : " << n << " byte.\n";
+        void* vp = std::malloc(n);
+        if(!vp)
+            throw std::bad_alloc{};
+            
+        std::cout << "address of allocated block : " << vp << "\n";
+
+        return vp;
+    }
+
+    void operator delete(void* vp)
+    {
+        std::cout << "operator delete was called.\naddress of allocated block : " << vp << "\n";
+        if(vp)
+            std::free(vp);
+    }
+
+    int main()
+    {
+        std::string str{"necati"}; // Dizimizin boyutu küçük olduğundan Dinamik Bellek Alanı ayrılmadı.
+
+        // Dizimizin boyutu artık ilgili diziye sığmadığından, Dinamik Bellek Alanı kullanılmaya başlandı.
+        std::string str{"necati ergin Cpp anlatiyor."};
+
+        /*
+            # OUTPUT # 
+            operator new was called. size : 28 byte.
+            address of allocated block : 0x559527a2f2c0
+            operator delete was called.
+            address of allocated block : 0x559527a2f2c0
+        */
+    }
+
+MÜLAKAT SORUSU -8
+    //..
+
+    /*
+        Neco isimli bir sınıfa öyle bir şekilde friend lik verilsin ki ilgili Neco sınıfı Myclass sınıfının sadece
+        'f2' isimli 'private' fonksiyonuna ve 'my' isimli 'private' veri elemanına erişebilsin. Myclass sınıfındaki diğer öğelere
+        erişim sentaks hatası olsun.
+    */
+    
+    #include <iostream>
+    class Neco;
+    class Myclass{
+    public:
+        friend class Neco;
+        
+    private:
+        class SubMyclass{
+            void f1(){ std::cout << "mx : " << mx << "\n"; }
+            void f3(){ std::cout << "mz : " << mz << "\n"; }
+            int mx{1};
+            int mz{3};
+        };
+        
+        void f2(){ std::cout << "my : " << my << "\n"; } 
+        int my{2}; 
+    };
+
+    class Neco{
+        public:
+            void print()
+            {
+                myClass.f2();
+            }
+            
+        private:
+            Myclass myClass;
+    };
+
+    int main()
+    {	
+        /*
+            # OUTPUT #
+            my : 2
+        */
+        
+        Neco myNec;
+        myNec.print();
+    }
+
+MÜLAKAT SORUSU -9
+    //..
+
+    /*
+        Büyük bir 'Car' hiyerarşisine sahip olduğumuzu düşünelim.
+            " dynamic_cast<Mercedes*>(carPtr) " veya " typeid(*carPtr) == typeid(Mercedes) "
+        şeklinde yöntemler ile de sorgulama yapacağız. Hangi sorgulama yöntemi daha az MALİYETLİDİR? 
+    */
+
+    Bir önceki kursun sonundaki soruya el cevap: typeid() operatörünün kullanımı DAHA AZ MALİYETLİ. Çünkü bu operatör
+    sadece " Bu Mercedes mi? " diye bakıyor. Fakat 'dynamic_cast' operatörü ekstradan 'Mercedes' sınıfından türetilmiş
+    diğer sınıflara da bakıyor. Bir nevi hiyerarşiyi baştan aşağı inceliyor, diyebiliriz. Dolayısla daha çok maliyeti
+    de beraberinde getirmektedir. 
+
+MÜLAKAT SORUSU -10
+    //..
+
+    /*
+        Bir yazıdaki boşluk karakterlerinin sayısını teke indir
+    */
+
+    //..
+    int main()
+    {
+        /* 
+            # OUTPUT # 
+            Girilen yazi => [Ahmet Kandemir  Pehlivanli   Sultangazi    Istanbul      Turkey]
+            Yazi => [Ahmet Kandemir Pehlivanli Sultangazi Istanbul Turkey]  
+        */
+        
+        std::string letter;
+        std::cout << "Yaziyi giriniz => "; 
+        std::getline(std::cin, letter); 
+        std::cout << "Girilen yazi => [" << letter << "]\n";
+        
+        letter.erase
+        (
+            std::unique(
+                letter.begin(), 
+                letter.end(), 
+                [](char c1, char c2){ return isspace(c1) && isspace(c2); }
+            ),
+                letter.end()
+        );
+        
+        std::cout << "Yazi => [" << letter << "]\n";
+    }
+
+MÜLAKAT SORUSU -11
+    //..
+
+    /*
+        'find' algoritması (Mülakat sorusu) : Bir 'linear-search' algoritmasıdır. Arama için kullanılır. Bir kap
+        içerisindeki belirli bir değere sahip son öğeyi sil.
+    */
+    
+    //..
+    int main()
+    {
+        /* 
+            # OUTPUT # 
+        I:    1 2 5 9 6 5 7 8 2 3 4 82 2 3 
+            -----------------------------------------------------------------------------
+        II:   2 5 9 6 5 7 8 2 3 4 82 2 3 
+            -----------------------------------------------------------------------------
+        III:  2 5 9 6 5 7 8 2 3 4 82 2 
+            -----------------------------------------------------------------------------
+        IIII: 2 5 9 6 5 7 8 2 3 4 82 
+            -----------------------------------------------------------------------------
+        */
+        
+        std::vector<int> iVec{ 1, 2, 5, 9, 6, 5, 7, 8, 2, 3, 4, 82, 2, 3 }; pc(iVec); // I
+
+        // '.erase()' fonksiyonu bir konum bilgisi almakta ve o konumdaki öğeyi silmektedir. Dolayısıyla
+        // kaptaki ilk öğe silinmiş olacaktır.
+        iVec.erase(iVec.begin());
+        
+        pc(iVec); // II
+        
+        iVec.erase(iVec.end() - 1); // Kaptaki son öğe silinecektir.
+        
+        pc(iVec); // III
+        
+        // Sorunun çözümü;
+        // Aranacak öğe.
+        int ival = 2;
+        
+        // Kaptaki ilgili değere eşit son öğenin konum bilgisi döndürülmüş oldu.
+        auto iter = find(iVec.rbegin(), iVec.rend(), ival);
+        
+        // Bir değerini çıkartıyoruz. Çünkü 'iter' konum olarak aslında '3' rakamının konum bilgisini
+        // tutmakta çünkü 'reverse_iterator' kullandık. Bir çıkartarak ondan da bir önceki konum bilgisine
+        // erişmiş oluyoruz.
+        iVec.erase(iter.base() - 1);
+        
+        pc(iVec); // IIII
+    }
+
+MÜLAKAT SORUSU -12
+    //..
+
+    /*
+        Bir iteratör döngüsü ile şu işlemi yapmaya çalışalım:
+        Eğer 'range' içerisindeki ismin uzunluğu 4 ise bir tane daha 'insert' edilecek.
+        Eğer 'range' içerisindeki ismin uzunluğu 5 ise silinecek.
+        Diğer uzunluktaki isimlere dokunulmayacak.
+        
+        INPUT => mert ayhan nur kaya sinem abidin can tunc melek selim kayhan
+        OUTPUT => mert mert nur kaya kaya abidin can tunc tunc kayhan 
+    */
+
+    int main()
+    {
+        std::vector<std::string> sVec; fc(sVec, 50, rname); pc(sVec);
+
+        // 'Iterator Invalidation' a sebebiyet veren senaryo.
+        for(auto iter = sVec.begin(); iter != sVec.end(); ++iter)
+        {
+            // Eğer bu noktada ekleme yapılırsa, 'reallocation' gerçekleşebilir. Dolayısıyla bizim 'iter' isimli
+            // değişkenimizi güncellememiz gerekiyor.
+            if(iter->length() == 4)
+                sVec.insert(iter, *iter);
+            
+            else if(iter->length() == 5)
+                sVec.erase(iter) // Benzer sebepten dolayı:
+        }
+
+        pc(sVec); // Artık 'Tanımsız Davranış' meydana gelmiştir.
+
+        // 'Iterator Invalidation' a sebebiyet VERMEYEN senaryo.
+        auto iter = sVec.begin();
+        while(iter != sVec.end())
+        {
+            if(iter->size() == 4)
+            {
+                iter = sVec.insert(iter, *iter);
+                iter += 2;
+            }
+            else if(iter->size() == 5)
+            {
+                iter = sVec.erase(iter);
+            }
+            else
+            {
+                ++iter;
+            }
+        }
+
+        pc(sVec);
+        // Artık doğru çalışmaktadır.
+        // Yukarıdaki 'while' döngüsünü açıklamak gerekirse: ilgili vektörümüzde aşağıdaki isimler vardır,
+        // 								mert tunc abidin ayhan murat necati
+        // 'while' öncesi iter     => 	^
+
+        // 'if' bloğu 'true' ise   =>   mert mert tunc abidin ayhan murat necati
+        // 'insert' geri dönüşü    =>   ^         | 		  
+        // 'iter +=2' sonrasında   =>             ^           
+        // ...												  
+        // 'else-if' 'true' ise    =>   mert mert tunc abidin murat necati                      
+        // 'erase' geri dönüşü     =>                         ^
+        // ...
+        // 'else' 'true' ise       =>                               ^            
+    }
+
+
+MÜLAKAT SORUSU -13
+    //...
+
+    /*
+        Belirli değere sahip son öğeyi silelim => 'find' algoritmasını 'reverse_iterator' ile çalıştırmalıyız.
+    */
+
+	#include <iostream>
+	#include <vector>
+
+	int main()
+	{
+		/*
+			# OUTPUT #
+			2_5_6_7_2_8_9_2_1_
+			riter        : 2
+			riter.base() : 1
+			2_5_6_7_2_8_9_1_
+		*/
+		std::vector<int> iVec{ 2, 5, 6, 7, 2, 8, 9, 2, 1 };
+		for(auto index : iVec)
+			std::cout << index << "_";
+
+		if(auto riter = std::find(iVec.rbegin(), iVec.rend(), 2); riter != iVec.rend())
+		{
+			std::cout << "\nriter        : " << *riter << "\n";
+			std::cout << "riter.base() : " << *(riter.base()) << "\n";
+
+			iVec.erase(std::prev(riter.base()));
+			// Reverse Iterator kullandığımız için, '.erase()' fonksiyonu da bu parametreli 'overload' olmadığından.
+		}
+
+		for(auto index : iVec)
+			std::cout << index << "_";
+	}
+
+MÜLAKAT SORUSU -14
+    //...
+
+    /*
+        Bir işi hem üye fonksiyon yapsın hem de 'algoritm' başlık dosyasındaki bir fonksiyon. Bu durumda bizlerin
+        ÜYE FONKSİYONU SEÇMELİYİZ. Çünkü üye fonksiyon 'private' kısma erişebilmekte, oradan bir fayda sağlayabilir.
+    */
+
+    //..
+    class BigData{};
+
+    int main()
+    {
+        std::list<BigData> myList; 
+        // Öğeleri 'reverse' etmek isteyelim.
+
+        // Approach - I
+        myList.reverse();
+
+        // Approach - II
+        reverse(myList.begin(), myList.end());
+
+        // Bu durumda bizlerin ilk yolu tercih etmemiz gerekiyor. 	
+    }
+
+MÜLAKAT SORUSU -15
+    //...
+
+    /*
+        'find()' fonksiyonunun temsili implementasyonu: Linear Karmaşıklıkta. Bütün kabı tek tek dolaşıyoruz.
+    */
+
+    template<typename InIter, typename Key>
+    InIter Find(InIter beg, InIter end, const Key& key)
+    {
+        while (beg != end)
+            if(*beg == key)
+                return beg;
+
+            ++beg;
+            
+        return beg;
+    }
+
+    int main()
+    {
+        // 'std::set' sınıfının üye fonksiyonu olan '.find()' ise log(n) karmaşıklığında. İkiye böle böle tarama yapmakta. 
+
+        // Dolayısıyla ben bir 'set' içerisinde veri ararken bütün kabı dolaşmaktan ise üye fonksiyonu kullanarak çok
+        // daha hızlı sonuca varabilirim.
+    }
+
+MÜLAKAT SORUSU -16
+    //..
+
+    /*
+        Mülakat sorusu: Aşağıdaki 'p' değişkeninin türü nedir? 
+    */
+
+    struct Data{ int x; int a[10]; };
+    Data foo() { return Data{}; }
+    int main()
+    {
+        /*
+            # OUTPUT # 
+            i is i
+            p is A10_i
+        */
+        
+        auto [ i, p ] = foo();
+        // Arka planda olanların temsili gösterimi: 
+        // i. 'auto' anahtarına karşılık gelen tür 'foo()' fonksiyonun geri dönüş değeri, yani 'Data' türü.
+        // ii. 'i' ve 'p' ise bu durumda 'Data' türünün elemanlarına hitap ediyor. Dolayısıyla 'p' nin türü 10
+        // elemanlı bir dizi.
+        
+        std::cout << "i is " << typeid(i).name() << "\n";
+        std::cout << "p is " << typeid(p).name() << "\n";
+        
+        return 0;
+    }
+
+MÜLAKAT SORUSU -17
+    //..
+
+    /*
+        Bir vektördeki sonuncu olmayan bir öğenin 'constant time' zaman karmaşıklığında silinmesi:
+    */
+
+	//..
+	int main()
+	{
+		/*
+			# OUTPUT #
+			emine galip busra korhan bulent bilgin gul tayfun izzet izzet 
+			-----------------------------------------------------------------------------
+			Silinecek indis : 2
+			emine galip izzet korhan bulent bilgin gul tayfun izzet busra 
+			-----------------------------------------------------------------------------
+		*/
+		
+		std::vector<std::string> sVec; fcs(sVec, 10, rname); print(sVec);
+		
+		int n; std::cout << "Silinecek indis : "; std::cin >> n; 
+		
+		std::swap(sVec[n], sVec.back()); // İlgili indis ile son öğenin yerini değiştirdik. 
+		
+		print(sVec);
+		
+	}

@@ -1,0 +1,988 @@
+> C++ dilinde 'namespace' konusuna kısa bir giriş; Üç farklı yöntem kullanılır. İsimleri ilgili alanlarda aratmak için.
+	>> 'using declaration' yöntemi için, aşağıdaki örneği inceleyin,
+		* Örnek 1,
+			// Some code here...
+			
+			int main()
+			{
+				using std::cout;
+				// 'using declaration' dan kastedilen kısım burasıdır. Blok-scope'da yapıldığından, bu fonksiyon bloğunun
+				// sonuna kadar kapsar.
+				
+				cout << "..." << "\n";
+				// Artık 'cout' ismi için tekrardan 'std::' nitelemesinde bulunmaya gerek yoktur. Fakat bu durum sadece
+				// 'cout' için geçerlidir.
+			}
+	
+	>> 'using directive declaration' yöntemi için de aşağıdaki örneği inceleyin,
+		* Örnek 1,
+			// Some code here...
+			
+			using namespace std;
+			// 'using directive declaration' dan kastedilen kısım burasıdır. Global-namespace alanında bildirildiğinden,
+			// kaynak dosyanın sonuna kadar kapsar.
+			
+			int main()
+			{
+				cout << "..." << "\n";
+				// Artık 'std' isim alanındaki bütün isimleri, 'std::' nitelemesi yapmadan kullanabiliriz.
+			}
+
+	>> 'ADL : Arguman Dependent Look-Up' yöntemini ileride inceleyeceğiz.
+
+Diğer yandan daha çok kütüphanenin kodlarını çağıracağımız için ilgili 'namespace' isimlerini çağırmamız yeterli gelmektedir.
+Fakat kütüphane yazarken de 'namespace' nasıl oluşturulur sorusunun da cevabını bilmeliyiz ki şöyle;
+	>> 'namespace' anahtar sözcüğünden sonra bir isim yazıyoruz. O isimden sonra da bir adet '{}' çifti ekliyoruz. İşte bu
+	süslü parantez çiftinin arasına yazacağımız şeyler, ismini verdiğimiz isim alanına dahil olmaktalar.
+		* Örnek 1,
+			//..
+			// Global namespace area
+			namespace Neco{ // 'Neco' namespace area
+				//..
+			}
+
+	>> 'namespace' anahtar sözcüğünden sonra isim yazmadan '{}' çiftini yazmamız SENTAKS HATASI değildir. Bu tip isim
+	alanlarına 'İsimlendirilmemiş İsim Alanları' denmektedir ve farklı kural setlerini bünyesinde barındırır. 
+		* Örnek 1,
+			//..
+
+			namespace{ // Unnamed namespace
+				//..
+			}
+
+	>> 'namespace' alanı içerisinde bildirilen değişkenlerin ömür kategorilerinde bir değişiklik olmamaktadır. AMACIMIZ
+	İSİM ÇAKIŞMASINI ENGELLEMEK. Buradan da hareketle diyebiliriz ki 'global namespace' içerisinde yapabildiklerimizi kendi
+	'custom namespace' içerisinde de yapabiliriz. 
+		* Örnek 1,
+			// Neco.hpp included
+				namespace Neco{ 
+					int x = 100;
+					// 'x' hala 'static' ömürlü bir değişken. Fakat 'global' isim alanı içerisindeki 'Neco' isim alanı
+					// içerisinde tanımlanmıştır.
+				}
+
+			// Emre.hpp included
+				namespace Emre{ 
+					int x = 100; // Farklı isim alanları içerisinde tanımlandıklarından bir çakışma söz konusu değildir.
+				}
+
+	>> 'namespace' içerisinde bir başka 'namespace' isim alanları da bildirebiliriz.
+		* Örnek 1,
+			//..
+			// Global namespace area
+			namespace Human{
+				//..
+				namespace Girl{
+					//..
+					namespace Baby{
+
+					}
+				}
+			}
+
+	>> 'scope' kurallarının tekrar edelim;
+		>>> C dilindeki : 'file scope', 'block scope', 'function prototype scope' ve 'function scope'
+		>>> C++ dilindeki : 'namespace scope', 'class scope', 'block scope', 'function prototype scope' ve 'function scope'
+
+	>> 'namespace' ler kümülatif özellikteler.
+		* Örnek 1,
+			//..
+			namespace Ali{
+				int a,b,c;
+			}
+
+			namespace Ali{
+				int x,y,z;
+			}
+
+			// Yukarıdaki iki bildirimi gören derleyici aslında aşağıdaki halde ele alıyor: Burada dikkat edilmesi gereken
+			// nokta değişkenlere verilen isimlerin BİRBİRİNDEN FARKLI OLMASI. Eğer aynı olsalar idi bu durum SENTAKS
+			// HATASINA yol açacaktı.
+			namespace Ali{
+				int a,b,c;
+				int x,y,z;
+			}
+
+	>> 'namespace' kullanmak isim çakışmasını %100 ENGELLEMEZ, %99 ENGELLER. Çünkü,
+		* Örnek 1,
+			//..
+
+			int ali = 100; // Değişken ismi 'ali' aslında 'global namespace' içerisinde.
+
+			namespace ali{ // İsim alanı olarak kullanılan isim 'ali' de aslında 'global namespace' içerisinde.
+
+			}
+
+			// Görüldüğü üzere aynı isim alanında, ki bu isim alanı 'global namespace', aynı isimde farklı nesneler
+			// olamayağıcandan, İSİMLERİN ÇAKIŞMA RİSKİ HER ZAMAN VARDIR.
+
+	>> '::' operatörünün kullanımı: 
+		>>> 'Unary Operator' olarak kullanıldığında sadece ve sadece 'global namespace' alanında isim arar.
+		>>> 'Binary Operator' olarak kullanıldığında ise iki ihtimal vardır:
+			>>>> Sol operand bir sınıf ismi ise ilgili sağ operand 'class scope' içerisinde aranır. Bulamaz ise sentaks
+			hatası alırız.
+			>>>> Sol operand bir 'namespace' ismi ise ilgili sağ operand sadece ve sadece o 'namespace' içerisinde aranır.
+
+		* Örnek 1,
+			#include <iostream>
+			int x = 300;
+			class Myclass{
+				public:
+					static int y;
+			};
+			int Myclass::y = 100;
+
+			namespace myNameSpace{
+				int z = 200;
+			}
+
+			int main()
+			{
+				// error: ‘x’ is not a member of ‘Myclass’
+				std::cout << "Myclass::x     : " << Myclass::x << "\n";
+				
+				// error: ‘x’ is not a member of ‘myNameSpace’; did you mean ‘x’?				
+				std::cout << "myNameSpace::x : " << myNameSpace::x << "\n";
+				
+				std::cout << "x              : " << ::x << "\n"; 
+			}
+
+	>> İlgili 'namespace' içerisinde bildirilen öğeleri ilgili isim alanı dışında tanımlarken, bahsi geçen 'namespace' ile
+	onları nitelemeliyiz:
+		* Örnek 1,
+			//..
+			namespace Neco{
+				int x = 10;
+				void func()
+				{
+					//..
+				}
+
+				class Myclass{
+					void func();
+				};
+			}
+
+			void Neco::Myclass::func()
+			{
+				//..
+			}
+
+	>> Bir isim alanı içerisindeki ismi, isim alanının ismi ile nitelemeden kullanabilmemizi sağlayan üç ayrı araç vardır.
+	Bunlar,
+		>>> 'using declaration' : "using ...;" biçimindedir. Bu bildirimin de bir kapsamı vardır. Bundan dolayıdır ki bir
+        'global isim' alanında bildirimini yapabiliriz, bir blok içerisinde yapabiliriz veya bir isim alanı içerisinde
+        bildirimini yapabiliriz.
+            * Örnek 1, 'global namespace' içerisinde bildirilme senaryosu,
+                //..
+                namespace Neco{
+                    int x, y, z;
+                }
+
+                int b = x; // GEÇERSİZ.
+
+                using Neco::x; // Bu bildirimin görülür olduğu her yerde geçerlidir.
+
+                x = 100; // Neco::x
+
+                int a = x; // Neco::x
+
+                void f1()
+                {
+                    x = 200; // Neco::x
+                }
+
+            * Örnek 2, Bir blok içerisinde bildirilme senaryosu
+                //..
+                namespace Neco{
+                    int x, y, z;
+                }
+
+                x = 100; // GEÇERSİZ.
+
+                int a = x; // GEÇERSİZ.
+
+                void f1()
+                {
+                    using Neco::x; // Bu bildirimin görülür olduğu her yerde geçerlidir.
+                    x = 200; // Neco::x
+                }
+
+                void f2()
+                {
+                    x = 300; // GEÇERSİZ.
+                }
+        
+        Diğer yandan 'using declaration' ile sunulan isim, 'using declaration' kapsamına enjekte edilir. Orada aynı isimde
+        başka bir değişken OLAMAZ.
+			* Örnek 1,
+				//..
+				namespace Neco
+				{
+					int a, b, c;
+				}
+
+				int main()
+				{
+					using Neco::a;
+
+					int a = 100;
+					// SENTAKS HATASI. Çünkü 'using declaration' KAPSAMI, sanki bu isim burada tanımlanmış gibi bir etki
+					// yapıyor. Aynı isim birden fazla varlığa VERİLEMEZ.
+					// error: ‘int a’ conflicts with a previous declaration
+				}
+        
+        Öte yandan birden fazla varlıklar için 'using declaration' için tek tek yazmamız gerekiyor fakat C++17 ile tek
+        satırda virgüller ile ayrılan bildirimler yazabiliriz. Son olarak 'nested namespace' için de bu bildirimi
+        kullanabiliriz. Kural değişikliği yoktur.
+
+		>>> 'using namespace declaration' : Bu bildirimin olduğu yerde, ilgili isim alanı içerisindeki isimler, sanki o isim
+        alanı içerisinde değilmiş gibi davranmaktadır.
+			* Örnek 1,
+				//..
+				// Bizim gördüğümüz
+				namespace Neco{
+					int a, b, c;
+				}
+
+				using namespace Neco;
+				// Bu bildirimin etkin olduğu her yerde, ilgili isim alanı içinde bildirilenler, sanki isim alanı yokmuş
+				// gibi davranmaktadır. Bu bildirimden sonra derleyicinin gördüğü:
+				// int a, b, c;
+
+				int x = a; // Neco::a
+
+				void f1()
+				{
+					b = 100; // Neco::b
+				}
+
+        Diğer yandan bu bildirimin de bir kapsamı vardır. Bundan dolayıdır ki bir 'global isim' alanında bildirimini
+        yapabiliriz, bir blok içerisinde yapabiliriz veya bir isim alanı içerisinde bildirimini yapabiliriz.
+			* Örnek 1,
+				//..'global namespace' içerisinde bildirilme senaryosu,
+				namespace Neco{
+					int x, y, z;
+				}
+
+				int b = x; // GEÇERSİZ.
+
+				using namespace Neco; // Bu bildirimin görülür olduğu her yerde geçerlidir.
+
+				x = 100; // Neco::x
+
+				int a = x; // Neco::x
+
+				void f1()
+				{
+					x = 200; // Neco::x
+				}
+
+			* Örnek 2, Bir blok içerisinde bildirilme senaryosu
+				//..
+				namespace Neco{
+					int x, y, z;
+				}
+
+				x = 100; // GEÇERSİZ.
+
+				int a = x; // GEÇERSİZ.
+
+				void f1()
+				{
+					using namespace Neco; // Bu bildirimin görülür olduğu her yerde geçerlidir.
+					x = 200; // Neco::x
+				}
+
+				void f2()
+				{
+					x = 300; // GEÇERSİZ.
+				}
+
+        Öte yandan 'using namespace declaration' ile sunulan isim, 'using namespace declaration' kapsamına enjekte EDİLMEZ.
+        Orada aynı isimde başka bir değişken olabilir falat 'ambiguity' tip SENTAKS HATASINA neden olur.
+			* Örnek 1, 'ambiguity' durumu
+				//..
+				namespace Neco{
+					int a = 90, b, c;
+				}
+				
+				using namespace Neco; // Kodun bundan sonraki kısmları için artık 'Neco' isim alanı yokmuş gibi davranılır.
+
+				int a = 45; // LEGAL.
+
+				int main()
+				{
+					std::cout << "a : " << a << "\n";
+					// 'ambiguity' tip SENTAKS HATASI. Çünkü birden fazla yerde 'a' ismi bulundu.
+					
+					std::cout << "Neco::a : " << Neco::a << "\n"; // LEGAL
+					std::cout << "::a : " << ::a << "\n"; // LEGAL
+
+					// Yukarıdaki senaryo da 'a' ismini nitelemeden kullandığımız zaman derleyici 'a' ismini iki yerde de
+					// görüyor. Çünkü 'using namespace declaration' yaptığımız zaman ilgili isim alanı içerisindekiler
+					// sanki o isim alanı yokmuş gibi davranmaktalar. 
+				}
+
+			* Örnek 2, 'name masking' durumu
+				//..
+				namespace Neco{
+					int a = 90, b, c;
+				}
+				
+				using namespace Neco;
+
+				int a = 45; // LEGAL.
+
+				int main()
+				{
+					int a = 13;
+
+					// LEGAL. Çünkü isim arama ilk olarak 'blok scope' içerisinde yapıldığından, 'a' ismi bulunuyor ve
+					// İSİM ARAMA SONA ERİYOR.
+					std::cout << "a : " << a << "\n";
+				}
+
+			* Örnek 3, 'name masking' durumu v2 
+				//.. 
+				namespace Neco{
+					int a = 90, b, c;
+				}
+				
+				int a = 45; // LEGAL.
+
+				int main()
+				{
+					// Kodun bundan sonraki kısmları için artık 'Neco' isim alanı yokmuş gibi davranılır.
+					using namespace Neco;
+					
+					int a = 13;
+
+					// LEGAL. Çünkü isim arama ilk olarak 'blok scope' içerisinde yapıldığından, 'a' ismi bulunuyor ve
+					// İSİM ARAMA SONA ERİYOR.
+					std::cout << "a : " << a << "\n";
+				}
+
+			* Örnek 4, 'name masking' durumu v3
+				//.. 
+				namespace Neco{
+					int a = 90, b, c;
+				}
+				
+				int a = 45; // LEGAL.
+
+				int main()
+				{
+					// Kodun bu kısmında 'Neco' isim alanının ismini kullanmamız gerekiyor eğer o isim alanındaki isimlere
+					// erişmek istiyorsak.
+					int a = 13;
+
+					// Kodun bundan sonraki kısmları için artık 'Neco' isim alanı yokmuş gibi davranılır. Dolayısıyla o isim
+					// alanındaki isimleri nitelemeden kullanabiliriz.
+					using namespace Neco;
+
+					// LEGAL. Çünkü isim arama ilk olarak 'blok scope' içerisinde yapıldığından, 'a' ismi bulunuyor ve
+					// İSİM ARAMA SONA ERİYOR.
+					std::cout << "a : " << a << "\n";
+				}
+        
+        Son olarak farklı başlık dosyalarından gelen 'namespace' ler için 'using namespace' bildirimini kullanmamız durumunda
+        da 'ambiguity' tip SENTAKS HATASI alırız.
+			* Örnek 1,
+				//..
+				// from Neco.hpp
+					namespace Neco{
+						int a = 90, b, c;
+					}
+
+				// from Nec.hpp
+					namespace Nec{
+						int a = 90, b, c;
+					}
+
+				using namespace Neco;
+				using namespace Nec;
+
+				int main()
+				{
+					a = 31;
+					// 'ambiguity' tip SENTAKS HATASIDIR. Çünkü yukarıdaki 'using namespace' bildirimlerinden sonra ilgili
+					// isim alanı içerisindeki öğeler sanki isim alanı yokmuş gibi davranmakta. Bu da derleyicinin iki adet
+					// 'a' ismini bulmasına sebebiyet vermektedir.
+				}
+		
+        >>> 'Argument Dependant Lookup' : 'ADL', ilgili fonksiyonlara geçilen argümanlara bakarak fonksiyonların isimlerinin
+        nerede aranacağına karar verilmesi durumudur, Argümana Bağlı İsim Arama
+        ("Koenig Lookup" / "Argument Dependant Lookup"). Bir diğer deyiş ile
+            "Eğer bir fonksiyon çağrısında fonksiyona gönderilen argümanlardan biri bir isim alanı içinde tanımlanan bir türe
+            ilişkin ise söz konusu fonksiyonun ismi bu isim alanında da aranır."
+        şeklinde açıklama getirebiliriz. Örneğin,
+            * Örnek 1,
+                //..
+                namespace Nec{
+                    class Data{};
+                    enum class Color{White, Black};
+                    void func(Data);
+                    void foo(int);
+                    void myFunc(Color);
+                    void myFoo(std::vector<Data> vec); 
+                }
+
+                int main()
+                {
+                    Nec::Data myData;
+                    
+                    // Legal. Çünkü argüman olan ifade 'Nec' isim alanı içerisinde tanımlanan 'Data' sınıf türüne ait.
+                    // Dolayısıyla 'func' ismi 'Nec' isim alanı içerisinde de ARANACAK.
+                    func(myData);
+                    
+                    foo(12);
+                    // SENTAKS HATASI. Çünkü argüman olan ifade 'Nec' isim alanı içerisinde tanımlanan bir türe ilişkin değil.
+                    // Dolayısıyla klasik isim arama kurallarına tabii.
+                    
+                    myFunc(Nec::Color::Black);
+                    // 'ADL' burada da geçerli.
+
+                    std::vector<Nec::Data> myVec;
+                    
+                    myFoo(myVec);
+                    // 'ADL' burada da geçerli. Çünkü ilgili fonksiyonun parametresi 'Data' türünden olmamasına rağmen,
+                    // argüman olan vektör 'Nec' isim alanı içerisinde tanımlanan 'Data' türü ile ilişkin olmasından dolayı,
+                    // 'myFoo' ismi 'Nec' isim alanı içerisinde de aranacaktır.
+                }
+
+            * Örnek 2,
+                //..
+                int main()
+                {
+                    std::cout << "Hello World\n";
+                    // Burada çağrılan operatör fonksiyonu 'global operator function'. Bu fonksiyona geçilen parametre de
+                    // 'std' isim alanı içerisinde tanımlanmıştır. Dolayısıyla bu fonksiyonun ismi 'std' isim alanı
+                    // içerisinde de aranmaktadır.
+
+                    std::operator<<(std::cout, "Hello World\n");
+                    // 'ADL' olmasaydı eğer bu şekilde çağırmak durumunda kalabilirdik.
+                    
+                    operator<<(std::cout, "Hello World\n")
+                    // 'ADL' in kullanıldığının açık bir örneği.
+                }
+            
+            * Örnek 3, Mülakat Sorusu
+                //..
+                int main()
+                {
+                    std::vector<int> ivec;
+
+                    count(ivec.begin(), ivec.end(), 7);
+                    // Bu 'count' fonksiyonuna gönderilen argümanlardan 'ivec' in türü 'iterator'. Bu 'iterator' sınıfı ise
+                    // 'vector' sınıfı içerisinde tanımlanmıştır. 'vector' sınıfı ise 'std' isim alanı içerisinde
+                    // tanımlanmıştır. Bundan dolayı 'count' ismi de 'std' isim alanı içerisinde arandı ve bulundu.
+
+                    auto n = count(begin(ivec), end(ivec), 7);
+                    // 'begin' ve 'end' fonksiyonlarına gönderilen argümen olan 'ivec', yukarıda da açıklandığı gibi, 'std'
+                    // isim alanı içerisinde tanımlı. Dolayısıyla 'begin' ve 'end' isimleri 'std' içerisinde arandı ve
+                    // bulundu çünkü bu ikisi 'global namespace function'. Bu iki fonksiyonun geri döndürdüğü değer de 'std'
+                    // isim alanı içerisinde tanımlı bir türe ait. Haliyle 'count' fonksiyonuna geçilen argümanlar da 'std'
+                    // isim alanında tanımlı. Buradan hareketle 'count' ismi de 'std' isim alanı içerisinde arandı ve
+                    // bulundu.
+                }
+
+        Bu arada 'ADL' hususunda 'public interface' kavramına da değinelim. Buradaki 'public interface', 'client' lara
+        açılmış ara yüz demektir. 'ADL' burada fayda sağlamaktadır.
+            * Örnek 1,
+                // date.hpp
+                    namespace Neco{
+                        class Date{
+                            public:
+                                void set(int, int, int); // I
+                        };
+
+                        int compare(const Date&, const Date&); // II
+                    }			
+                    void showStatus(void); // III
+                    // Yukarıdaki 'I', 'II' ve 'III' numaralı fonksiyonların hepsi ilgili 'Date' sınıfının 'public interface' sine
+                    // DAHİLDİR. Çünkü bu üç fonksiyon da müşteri kodlar tarafından çağrılabilir.
+
+                // main.cpp
+                    #include "date.hpp"
+
+                    int main()
+                    {
+                        showStatus(); // Müşteri olarak bu fonksiyonu çağırabiliriz.
+
+                        Neco::Date dx, dy;
+                        //..
+                        dx.set(1,2,3); // Müşteri olarak bu fonksiyonu çağırabiliriz.
+
+                        auto result = compare(dx, dy);
+                        // Müşteri olarak bu fonksiyonu çağırabiliriz. Ek olarak 'ADL' burada da iş görmektedir. Çünkü 'compare'
+                        // fonksiyonuna geçilen argümanlar 'Neco' isim alanı içerisinde tanımlanan 'Date' türüne ilişkin öğeler.
+                        // Bundan dolayı 'compare' ismi 'Neco' isim alanında da arancaktır.
+
+                        // Buradan hareketler 'ADL' in felsefi olarak varlık nedeni 'public-interface' bünyesinde olan global
+                        // fonksiyonları, ilgili isim alanı ile nitelemeden, çağırabilmektir. Global fonksiyon olduğu için, onu isim
+                        // alanı ile niteleme zorunluluğunu ortadan kaldırıyor.
+                    }
+
+        Diğer yandan 'ADL' mekanizması ile 'FO' mekanizması birlikte nasıl çalışmaktadır? El cevap: Aşağıdaki örnekleri
+        inceleyelim.
+			* Örnek 1,
+				#include <iostream>	
+
+				using namespace std;
+
+				namespace Neco{
+					class Data{};
+
+					void func(Data) // I
+					{
+						cout << "void Neco::func(Data) was called.\n";
+					}
+				}
+
+				void func(int) // II 
+				{
+					cout << "void func(int) was called.\n";
+				}
+
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						void func(int) was called.
+						void Neco::func(Data) was called.
+					*/
+					Neco::Data mydata;
+					func(12);
+					// 'func' ismi 'block-scope' da bulunamadığından 'global namespace scope' da aranacak ve bulunacak.
+					// 'Neco' isim alanında aranmayacaktır.
+					
+					func(mydata);
+					// 'func' ismi 'ADL' mekanizmasından dolayı 'Nec' isim alanı içerisinde de aranmaktadır. Parametreler
+					// 'exact-match' olduğundan, isim alanındaki çağrılacaktır.    
+				}
+			
+			* Örnek 2,
+				#include <iostream>
+
+				using namespace std;
+				
+				namespace Neco{
+					class Data{};
+
+					void func(Data) // I
+					{
+						cout << "void Neco::func(Data) was called.\n";
+					}
+				}
+				
+				void func(Neco::Data) // II
+				{
+					cout << "void func(Neco::Data) was called.\n";
+				}
+				
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						error: call of overloaded ‘func(Neco::Data&)’ is ambiguous
+						note: candidate: ‘void func(Neco::Data)’
+						note: candidate: ‘void Neco::func(Neco::Data)’
+					*/
+					Neco::Data mydata;
+					func(mydata);
+					// 'ambiguity'. Çünkü 'II' numaralı fonksiyon klasik isim arama kuralları sonucunda, 'I' ise 'ADL' den
+					// kaynaklı isim arama sonucunda bulunuyor.
+				}
+
+			* Örnek 3,
+				#include <iostream>
+
+				using namespace std;
+				
+				namespace Neco{
+					class Data{};
+
+					void func(Data) // I
+					{
+						cout << "void Neco::func(Data) was called.\n";
+					}
+				}
+
+				void func(Neco::Data) // II - Tanım
+				{
+					cout << "void func(Neco::Data) was called.\n";
+				}
+
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						void func(Neco::Data) was called.
+					*/
+					void func(Neco::Data); // II - Bildirim
+					Neco::Data mydata;
+					func(mydata); // 'II' numaralı olan çağrılacaktır.
+				}
+
+	>> 'namespace' ler ya 'global namespace' içerisinde ya da bir 'namaspace' içerisinde tanımlanabilirler. Bunun harici
+	alanlarda tanımlamazlar.
+	>> 'namespace' ler için bir 'access-control' SÖZ KONUSU DEĞİLDİR.
+	>> 'unnamed-namespaces' : Bu isim alanına koyulan her şey 'internal linkage' durumundadır. Çünkü C dilindeki
+	'internal linkage' haline getirme yolları C++ dilinde 'deprecated' edilmiş, yani o yöntemler istenmemektedir. Fakat
+	sentaks kuralları açısından o yöntemler hala geçerlidir. İşte bu istenmeyen yöntemler yerine 'unnamed namespaces'
+	kullanmalıyız. 'namespace' lerin kümülatif özelliği burada da geçerlidir.
+		* Örnek 1,
+			//..
+			void foo(); // C ve C++ dillerinde 'external linkage' statüsündeki bir global fonksiyon.
+
+			// C dilinde 'internal linkage' statüsündeki bir global fonksiyon. C++ dilinde de geçerli fakat
+			// kullanılması İSTENMEMEKTEDİR.
+			static void func();
+
+			namespace{
+				void myCppFoo();
+				// C++ dilinde 'internal linkage' statüsündeki bir global fonksiyon bildirimi. Artık gerek çağırırken gerek
+				// tanımlarken 'myCppFoo' ismini nitelememe gerek yok. İlgili modül içerisinde direkt olarak görülür
+				// durumdadır.
+			}
+
+	>> 'nested-namespaces' : İçsel isim alanlarıdır. C++11 ile yeni bir kullanım yaklaşımı getirilmiştir.
+	'using namespace declaration' içerideki isim alanları için de kullanılabilir.
+		* Örnek 1,
+			//..
+			namespace A::B::C{
+				int x = 100; 
+			}
+			// Burada 'A' ve 'B' isim alanlarının BİLDİRİLMİŞ/TANIMLANMIŞ OLMASINA GEREK YOKTUR. C++11 ile dile eklenmiştir.
+			namespace A::B{
+				int y;
+			}
+			namespace A{
+				int z;
+			}
+			int main()
+			{
+				A::B::C::x = 31;
+
+				A::B::y = 34;
+
+				A::z = 56;
+			}
+
+		* Örnek 2,
+			//..
+			namespace A
+			{
+				namespace B
+				{
+					int x;
+				}
+				using namespace B;
+				// Bu alan A isim alanına aittir. B isim alanındaki öğeler kullanmak için 'B' ismi ile nitelememiz gerekiyor.
+				// Fakat bu bildirim vesilesi ile bu gereklilik ortadan kalktı.
+
+				int a = x; // Yukarıdaki 'using namespace B' bildirimden dolayı bu satır LEGALDİR. Eğer o bildirim olmasaydı,
+				// burada SENTAKS HATASI oluşacaktı.
+				
+				int a = B::x; // Eğer bahsi geçen bildirim olmasaydı.
+			}
+
+			using namespace A ;
+
+			int main()
+			{
+				x = 42;
+				// 'using namespace A' bildiriminden dolayı bu atama geçerli. Çünkü o isim alanı içerisinde biz B için de
+				// 'using namespace' bildiriminde bulunduk.
+			}
+
+		* Örnek 3, 'ADL' her zaman da çalışmıyor.
+			//..
+			namespace A
+			{
+				class Neco{};
+
+				namespace B
+				{
+					void func(A::Neco other);
+				}
+
+				using namespace B; // I
+			}
+
+			int main()
+			{
+				A::Neco nec;
+
+				func(nec);
+				// 'I' numaralı bildirim olmasına rağmen 'ADL' mekanizması burada ÇALIŞMAMAKTADIR. İlgili 'func' ismini 'B'
+				// isim alanında aramamaktadır. Sentaks hatası.
+
+				A::B::func(nec); // Legal
+			}
+
+	>> 'inline-namespaces' : Modern C++ ile dile gelen bir isim alanıdır. 'inline' anahtar sözcüğü ile nitelenir ilgili isim
+	alanı. Nitelediği isim alanı içerisindeki öğeler, dışarıdaki isim alanında da görülür hale gelir. Sanki o içerideki isim
+	alanı yokmuş gibi davranır.
+		* Örnek 1,
+			//..
+			#include <iostream>
+			namespace A{
+
+				/*inline*/ // Alternative II
+				namespace B{
+					int x = 10;
+				}
+
+				// using namespace B; // Alternative I
+			}
+
+			int main()
+			{
+				// Normal Şartlardaki Kullanım.
+				A::B::x = 100; std::cout << "A::B::x : " << A::B::x << "\n"; // OUTPUT => A::B::x : 100
+
+				// Alternative I : İlgili bildirimi yaptıktan sonraki kullanım.
+				// A::x = 200; std::cout << "A::x : " << A::x << "\n"; // OUTPUT =>  A::x : 200
+
+				// Alternative II : 'inline' anahtar sözcüğü ile nitelersek.
+				// A::x = 300; std::cout << "A::x : " << A::x << "\n"; // OUTPUT =>  A::x : 300
+			}
+
+		* Örnek 2,
+			//..
+			inline namespace A{
+				inline namespace B{
+					inline namespace C{
+						int x = 100;
+					}
+				}
+			}
+
+			int main()
+			{
+				x = 31; // Bütün isim alanları 'inline' olarak nitelendiğiden, bu şekilde kullanım da mümkündür.
+			}
+		
+		>>> Versiyonlamada kullanıılır.
+			* Örnek 1, Koşullu Derleme komutları kullanılmazsa:
+				//..
+				#include <iostream>
+				namespace Neco{
+					/*inline*/ namespace Ver1{
+						class Myclass{
+							
+						};
+					}
+					/*inline*/ namespace Ver2{
+						class Myclass{
+							
+						};
+					}
+				}
+				int main()
+				{
+					// Normal şartlarda kullanım:
+					Neco::Ver1::Myclass mx;
+					Neco::Ver2::Myclass my;
+					// Ver1 isim alanı 'inline' olarak nitelenirse:
+					Neco::Myclass mz; // Ver1 içerisinde tanımlanan sınıf türünden.
+					// Ver2 isim alanı 'inline' olarak nitelenirse:
+					Neco::Myclass ma; // Ver2 içerisinde tanımlanan sınıf türünden.
+				}
+
+			* Örnek 2, Koşullu Derleme komutları kullanılırsa:
+				// 
+				#include <iostream>
+				// #define OLD_VERSION
+				// Yukarıdaki satırı yorum satırı olmaktan çıkartırsak, Ver1 isim alanı 'inline' haline gelecektir.
+				
+				// #define NEW_VERSION
+				// Yukarıdaki satırı yorum satırı olmaktan çıkartırsak, Ver2 isim alanı 'inline' haline gelecektir.
+				namespace Neco{
+					#ifdef OLD_VERSION
+					inline
+					#endif
+					namespace Ver1{
+						class Myclass{
+							
+						};
+					}
+					#ifdef NEW_VERSION
+					inline
+					#endif
+					namespace Ver2{
+						class Myclass{
+							
+						};
+					}
+				}
+				int main()
+				{
+					Neco::Myclass mx;
+					// 'OLD_VERSION' kelimesi tanımlı hale gelirse bu nesnemiz Ver1::Myclass türünden olacak.
+					// 'NEW_VERSION' kelimesi tanımlı hale gelirse bu nesnemiz Ver2::Myclass türünden olacak.
+				}
+		
+		>>> 'nested namespace' senaryosunda devreye girmeyen 'ADL' mekanizması, 'inline namespace' durumunda DEVREYE GİRİYOR.
+			* Örnek 3, 'ADL' artık devrede.
+				//..
+				namespace A{
+					class Neco{};
+
+					inline namespace B{
+						void func(A::Neco other);
+					}
+				}
+
+				int main()
+				{
+					A::Neco nec;
+
+					func(nec);
+					// 'B' isim alanı 'inline' olarak nitelendiği için, 'ADL' devreye giriyor ve isim arama 'B' isim
+					// alanında da yapılıyor.
+
+					A::B::func(nec); // Legal
+				}
+		
+	>> 'friend' bildirimi alan fonksiyonları çağırabilmek için 'ADL' mekanizmasına da ihtiyacımız vardır.
+		* Örnek 1,
+			//..
+			#include <iostream>
+
+			class Myclass{
+				public:
+					friend void func(int);
+					friend void foo(Myclass);
+			};
+
+			void foo(Myclass other)
+			{
+				std::cout << "void func(Myclass other) was called.\n";
+			}
+
+			int main()
+			{
+				func(12); // SENTAKS HATASI. Çünkü 'func' ismi BULUNAMIYOR.
+				
+				Myclass mx;
+				foo(mx); // OUTPUT => void foo(Myclass other) was called.
+			}
+
+	>> 'namespace alias' : Bir isim alanına, o isim alanının yerine geçecek Eş İsim verilmesi durumudur. 
+		* Örnek 1,
+			//..
+			namespace Nec_Erg
+			{
+				int x = 100;
+			}
+			
+			// namespace Nec = Nec_Erg; // I
+
+			int main()
+			{
+				// Normal Kullanım
+				Nec_Erg::x = 10;
+
+				// 'I' numaralı bildirimi yaparsak bu şekilde kullanabiliriz.
+				// Nec::x = 20;
+			}
+
+		* Örnek 2, 'nested namespace' için de bunu kullanabiliriz.
+			//..
+				namespace Nec_Erg{
+					namespace op_string{
+						namespace details{
+							int x = 100;
+						}
+					}
+				}
+
+				// namespace myDetails = Nec_Erg::op_string::details; // I
+
+				int main()
+				{
+					// Normal Kullanım
+					Nec_Erg::op_string::details::x = 10;
+
+					// 'I' numaralı bildirimi yaparsak bu şekilde kullanabiliriz.
+					// myDetails::x = 10;
+				}
+
+    >> Şimdi de bu husustaki en temel C++ hatalarına değinelim: 
+        >>> Başlık dosyaları içerisinde 'using namespace declaration' ve 'using declaration' kullanılması. Bundan dolayı
+        bizim başlık dosyalarımızı kullanan kişiler de bu bildirimden etkileneceğinden, bunu yapmaktan kaçınmalıyız.
+
+        >>> Sık sık 'using namespace declaration' bildirimi kullanmaktan kaçınmalıyız. Çünkü bu bildiri yaptığımız zaman İSİM
+        ÇAKIŞMA RİSKİNİ attırmış oluyoruz. Alternatif olarak,
+            * Örnek 1, '.cpp' dosyalarında implementasyon yaparken kullanabiliriz.
+                // ali.hpp
+                    namespace Nec{
+                        class Data{
+                            public:
+                                Data func(Data other);
+                        };
+                    }
+
+                // ali.cpp
+                    Nec::Data Nec::Data::func(Data other)
+                    {
+
+                    }
+
+                // Yukarıda; 
+                // i. Fonksiyon parametresinin olduğu parantez 'namespace' içerisinde kabul edildiğinden 'Nec' nitelemesine
+                // gerek yok. 
+                // ii. Fakat fonksiyon ismi için 'Nec' nitelemesi yapmak ZORUNDAYIZ.
+                // iii. Aynı şekilde fonksiyon geri dönüş değerinin türünü yazarken de aynı NİTELEMEYİ YAPMAK ZORUNDAYIZ.
+
+                // Görüldüğü üzere kodu okumak zorlaştı. Bunun için '.cpp' dosyası içerisinde 'using namespace Nec'
+                // bildirimini yapabiliriz.
+                // Data  Data::func(Data other) { }
+
+            * Örnek 2, 'namespace' lerin kümülatif etkisinden faydalanmak:
+                // ali.hpp
+                    class Data{
+                        public:
+                            Data func(Data other);
+                    };
+                
+                    // Legacy kodlarda yukarıdaki gibi bir sınıf bildirimi olduğunu düşünelim. Zaman içerisinde kodlar revize
+                    // edilirken, sınıf tanımının bir isim alanı içerisine alındığını düşünelim. Dolayısıyla, durum aşağıdaki
+                    // gibi olacaktır; 
+                    namespace Proj{
+                        class Data{
+                            public:
+                                Data func(Data other);
+                        };
+                    }
+
+                // ali.cpp
+                    // Artık yukarıdaki sınıfa ait fonksiyonların tanımlarında ilgili 'Proj' isim alanını kullanmamız
+                    // gerekmektedir. Bunu da iki şekilde yapabiliriz:
+                    // i. İlgili '.cpp' dosyasının içerisinde 'using namespace Proj' bildirimini yapmak.
+                        using namespace Proj;
+                        void Data::func(Data other)
+                        {
+
+                        }
+
+                    // ii. İlgili '.cpp' dosyasındaki kodların hepsini 'namespace Proj' ile çevrelemek. 
+                        namespace Proj{
+                            void Data::func(Data other)
+                            {
+
+                            }
+                        }
+            
+            * Örnek 3, ilgili bildirimi lokal olarak kullanabiliriz:
+                //..
+                void func(std::vector<int>& myvec)
+                {
+                    using namespace std; // Bu bildirim makul görülebilir çünkü sadece bu fonksiyon bloğuna hitap etmektedir.
+                }
+
+
+	

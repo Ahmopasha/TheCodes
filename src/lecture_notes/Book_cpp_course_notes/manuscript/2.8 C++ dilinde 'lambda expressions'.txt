@@ -1,0 +1,684 @@
+> 'Lambda Expressions' : Bir 'lambda expression' derleyiciye sınıf kodu yazdırır ve o ifadeyi de yazmış olduğu sınıf türünden
+geçici nesneye dönüştürür. C++11 ile dile eklenmiştir. Bu durumda derleyicinin yazmış olduğu sınıfa 'closure type', bu
+sınıftan oluşturulan geçici nesneye de 'closure object' denmektedir.
+	* Örnek 1, aşağıdaki örnekleri inceyelelim:
+		//..
+		int main()
+		{
+			// 'Lambda-Expression'
+			[](){};
+
+			// Geçerli bir ifadedir. Derleyicinin yazdığı sınıf türünden geçici nesne oluşturup, '.operator()()' fonksiyonu
+			// çağrılmıştır.
+			[](){}();
+			
+			// Geçerli bir ifadedir.
+			[](){{{{}}}}();
+			
+			// Geçerli bir ifadedir.
+			((((([](){{{{}}}})))))();
+			
+			[](){}(); // En basit ve geçerli bir ifadedir, oluşturulan geçici nesne ile '.operator()()' çağrılmıştır.
+			// Peki yukarıdaki ifadeyi bileşenlerine ayırırsak;
+			// i.   '[]' : Bir 'lambda-expression' için olmazsa olmazdır. 'Lambda Introducer' denmektedir. Bu parantez
+			// içerisine, duruma göre, bir şeyler yazabiliyoruz.
+			// ii.  '()' : Derleyiciye yazdırdığımız sınıfın '.operator()()' fonksiyonunun PARAMETRE PARANTEZİ.
+			// iii. '{}' : Derleyicinin yazmış olduğu iş bu sınıfın '.operator()()' fonksiyonunun ANA BLOĞU.
+			// '()' ve '{}' parantez çiftlerinin arasına, duruma göre, 'Trailing Return Type' mekanizması ile 'mutable',
+			// 'noexcept' ve 'constexpr' anahtar sözcüklerini yazabiliyoruz. 
+			// iiii. '()' : Derleyicinin oluşturduğu geçici nesne ile '.operator()()' fonksiyonunu çağırma yöntemi. Parantez
+			// içerisine argüman olan ifadeleri yazabiliyoruz.
+			
+			[](){ std::cout << "Hello, it my first lambda-expression.\n"; }();
+			// Aşağıdaki şekilde bir sınıf, derleyici tarafından yazılacaktır.
+			class com_gen // Bir fonksiyon içerisinde sınıf tanımlayabiliyoruz. 
+			{
+				public:
+					void operator()()const{ std::cout << "Hello, it my first class written by the compiler.\n"; };
+					// İş bu fonksiyonun geri dönüş değeri, yukarıdaki 'lambda-expression' içerisindeki '{}' çiftinin içine
+					// yazılan koda göre çıkarım yapılmakta. O noktada kod olmadığından, 'void' seçildi.
+			};
+			com_gen{}(); // Daha sonra da bu ifadeye dönüştürüldü ve ilgili fonksiyon çağrıldı.
+			/* 
+				# OUTPUT # 
+				Hello, it my first lambda-expression.
+				Hello, it my first class written by the compiler.
+			*/
+			
+			std::cout << "***************************************************\n";
+			
+			std::cout << "Using Lambda-Expression => "  << [](int x){ return x*x; }(30) << "\n";
+			class com_gen_two{
+				public:
+					int operator()(int x)const { return x*x; }
+			};
+			std::cout << "Using com_gen_two => "  << com_gen_two{}(30) << "\n";
+			/* 
+				# OUTPUT # 
+				Using Lambda-Expression => 900
+				Using com_gen_two => 900
+			*/
+		}
+		
+	>> Eğer fonksiyonumuzun parametre değişkeni yok ise ve yukarıdaki örneklerde açıklanan anahtar kelimeleri kullanmıyorsak,
+	'lambda-expression' içerisindeki '()' çiftini kullanmayabiliyoruz.
+		* Örnek 1,
+			//..
+			int main()
+			{
+				[]{ std::cout << "Hello, again. I am from function block-scope area.\n"; }();
+				// '.operator()()' fonksiyonu için parametre almayacağından, ilk '()' çiftini yazmadık. 
+				/* 
+					# OUTPUT # 
+					Hello, again. I am from function block-scope area.
+				*/
+			}
+	>> 'auto' anahtar kelimesinin en sık kullanıldığı noktalardan birisi de bir fonksiyonun 'lambda-expression' döndürmesidir.
+		* Örnek 1,
+			//..
+			auto f_multiply(int x)
+			{
+				return [x](int a){ return a*x; };
+			}
+			int main()
+			{
+				/* 
+					# OUTPUT # 
+					12 x 20 = 240
+					12 x 30 = 360
+				*/
+				
+				auto f = f_multiply(12);
+				std::cout << "12 x 20 = " << f(20) << "\n";
+				std::cout << "12 x 30 = " << f(30) << "\n";
+			}
+			
+	>> Derleyiciye yazdıracağımız 'closure-type' sınıflar için 'Data Members' eklemesi yapmasını da sağlayabiliriz. Bunu da
+	'Lambda Introducer' diye adlandırdığımı '[]' içerisine yazacağımız bir takım ifadeler ile yapmak mümkündür. İş bu
+	ifadelere de 'Capture Close' denmektedir. Diğer yandan 'lambda-expression' içerisindeki '{}' içerisinde
+	'global namespace scope' içerisindeki değişkenleri veya 'static' ömürlü yerel değişkenleri direkt olarak
+	kullanabilmekteyim. Fakat 'automatic' ömürlü değişkenleri direkt olarak kullanmamız mümkün değildir.
+		* Örnek 1,
+			//..
+			
+			int g = 10;
+			
+			int main()
+			{
+				static int s_Ival = 20;
+				auto f = [](int x){ return x * g + s_Ival; }; // Legal.
+				
+				int ival = 30;
+				auto g = [](int x){ return x * ival; }; // Sentaks Hatası
+				
+				// Peki otomatik ömürlü değişkenlerimi nasıl kullanacağız? El-cevap : Aşağıdaki örneği inceleyelim.
+			}
+			
+		* Örnek 2, Derleyici bana öyle bir sınıf kodu yaz ki sınıfın veri elemanı 'int' türden olsun ve değerini
+		aşağıdaki 'x' değişkeninden alsın:
+			//..
+			
+			// Derleyicinin yazacağı temsili sınıf:
+			class com_gen{
+				public:
+					com_gen(int other) : x_(other){}
+					int operator()(int a) const { return a * x_; }
+				private:
+					int x_;
+			};
+			
+			int main()
+			{
+				int x = 20;
+				
+				auto f = [x](int a){ return a * x; }; // Yukarıdaki 'com_gen' şeklinde bir sınıf yazılacaktır.
+				std::cout << "f(20) : " << f(20) << "\n";
+				
+				// Görüldüğü gibi 'automatic' ömürlü değişkenimiz 'call-by-value' semantiği ile 'lambda-expression'
+				// içerisinde kullanılmıştır. Peki 'call-by-reference' semantiğini nasıl kullanabilirim?
+				// El-cevap: Aşağıdaki örneği inceleyelim.
+			}
+			
+		* Örnek 3,
+			//..
+			// Derleyicinin yazdığı temsili sınıf:
+			class abc_gen
+			{
+				public:
+					abc_gen(int& other) : m_r{other}{}
+					
+					// 'const' olmasına rağmen içeride işlem yaptık çünkü nesne değişmedi.
+					void operator()(int value)const{ m_r += value; }
+				private:
+					int& m_r;
+			};
+			
+			int main()
+			{
+				int x = 90;
+				// Yukarıdaki sınıf içerisindeki 'm_r' isimli referans, 'x' değişkenini refere etmektedir.
+				abc_gen myObj(x);
+				
+				// Artık 'x' değişkeninin değeri '100' oldu.
+				myObj(10);
+				
+				// Peki yukarıdaki temsili sınıfın 'lambda-expression' karşılığı nasıl olmalı? 'capture closure'
+				// kısmına '&' deklaratörü ekleyerek.
+				auto f = [x](int value){ x += value; } // 'capture by copy'
+				auto g = [&x](int value){ x += value; } // 'capture by reference'
+			}
+			
+		>>> 'Lambda Introducer' içerisine yazılabilecek ifadeler:
+			>>>> İlgili 'Lambda Introducer' in boş bırakılması, hiç bir 'Capture Closure' yazılmaması: Bu tip
+			'lambda-expression' lar için 'stateless lambda-expression' denmektedir.
+			>>>> İlgili 'Lamda Introducer' içine sadece değişken isimlerinin yazılması: İlgili değişken/değişkenleri
+			'capture by copy' etmek demektir. Örneğin, '[x](){}' şeklindeki bir ifade otomatik ömürlü 'x' değişkenini
+			kopyalama yoluyla yakalamaktadır. Benzer şekilde '[x, y, z](){}' şeklindeki ifade ise otomatik ömürlü 'x', 'y'
+			ve 'z' değişkenlerini kopyalama yoluyla yakalamaktadır.
+			>>>> İlgili 'Lambda Introducer' içine bir değişken ismi ve bir '&' deklaratörü yazılması: İlgili
+			değişken/değişkenleri 'capture by reference' etmek demektir. Örneğin, '[&x](){}' şeklindeki bir ifade otomatik
+			ömürlü 'x' değişkenini	referans yoluyla yakalamaktadır. Benzer şekilde '[&x, &y, &z](){}' şeklindeki ifade ise
+			otomatik ömürlü 'x', 'y' ve 'z' değişkenlerini referans yoluyla yakalamaktadır. Yakalam işinde bu iki yaklaşımı
+			kombine de edebiliriz. Örneğin, '[&a, b, &c](){}' şeklindeki bir ifade otomatik ömürlü 'a', 'b' ve 'c'
+			değişkenlerinden 'a' ve 'c' değişkenlerini 'capture by reference' ile 'b' değişkenini ise 'capture by copy' ile
+			yakalamaktadır.
+			>>>> İlgili 'Lambda Introducer' içine sadece '=' deklaratörü yazmamız 'capture all by copy' demektir. Yani
+			görülür durumdaki otomatik ömürlü bütün değişkenleri kopyalama yoluyla yakalıyoruz.
+			>>>> İlgili 'Lambda Introducer' içine sadece '&' deklaratörü yazmamız 'capture all by reference' demektir. Yani
+			görülür durumdaki otomatik ömürlü bütün değişkenleri referans yoluyla yakalıyoruz.
+			>>>> İlgili 'Lambda Introducer' içine '=', '&' ve isim yazılması : '&' deklaratörü hangi ismi niteliyor ise o
+			'capture by referance' ile fakat diğer hepsi 'capture by copy' ile.
+			>>>> İlgili 'Lambda Introducer' içine '&' deklaratörünün ve ismin ayrı ayrı yazılması: Sadece ilgili isim
+			'capture by copy', geri kalan bütün hepsi 'capture by referance'.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					int a = 1, b = 2, c = 3;
+					
+					auto f   = [](int x){ return x * (a + b + c); };      // Şu an bu satır sentaks hatasıdır.
+					auto ff  = [a,b,c](int x){ return x * (a + b + c); }; // Artık legal hale geldi. // 'capture by copy'
+					auto fff = [=](int x){ return x * (a + b + c); };     // Artık legal hale geldi. // 'capture all by copy'
+					
+					auto g   = [](){ ++a; ++b; ++c; }; 			 // Şu an bu satır sentaks hatasıdır.
+					auto gg  = [&a, &b, &c](){ ++a; ++b; ++c; }; // Artık legal hale geldi. // 'capture by reference'
+					auto ggg = [&](){ ++a; ++b; ++c; }; 		 // Artık legal hale geldi. // 'capture all by reference'
+					
+					// 'a' değişkeni 'capture by reference' ile fakat diğerleri 'capture all by copy' ile elde edilmiştir.
+					auto h   = [=, &a](){ return ++a * b * c; };
+					
+					// 'b' değişkeni 'capture by copy' ile fakat diğerleri 'capture all by reference' ile elde edilmiştir.
+					auto hh  = [&, b](){ return a * ++b * c; };
+					
+					// UNUTULMAMALIDIR Kİ YUKARIDAKİ 'f', 'ff', 'fff', 'g', 'gg', 'ggg', 'h' ve 'hh' sınıf türünden nesneler
+					// bir fonksiyon çağrı operatörünün operandı olmadıklarından, ilgili 'a', 'b' ve 'c' isimli değişkenler
+					// üzerinde bir etkiye sahip değillerdir.
+				}
+				
+			* Örnek 2,
+				//..
+				int main()
+				{
+					std::string str{ "gokhan" };
+					auto f = [str](const char* p){ str.append(p); };
+					// Sentaks hatası. İlgili 'lambda-expression' 'mutable' olmadığından, yazılacak sınıfın '.operator()()'
+					// fonksiyonu da 'const' olacaktır. 'const' fonksiyon içerisinden 'non-const' fonksiyonlara çağrı
+					// yapılamaz.
+				}
+				
+			* Örnek 3, 'Dangling Referance' konusunda hakkında bir mülakat sorusu:
+				//..
+				auto f_multiply(int x)
+				{
+					std::cout << "f_multiply started...\n";
+					std::cout << "12 x [" << x << "] = " << 12 * x << "\n";
+					std::cout << "f_multiply ended...\n";
+					return [&x](int a){ return a*x; };
+				}
+				
+				int main()
+				{
+					auto f = f_multiply(12);
+					std::cout << "12 x 20 = " << f(20) << "\n";
+					std::cout << "12 x 30 = " << f(30) << "\n";
+					/* 
+						# OUTPUT # 
+						f_multiply started...
+						12 x [12] = 144
+						f_multiply ended...
+						12 x 20 = 655340
+						12 x 30 = 983010
+					*/
+					
+					// 'f_multiply' fonksiyonumuz içerisinde 'capture by reference' ile yerel bir değişken olan 'x' değişkeni
+					// 'call-by-reference' ile yakalanmıştır. Fakat 'x' değişkeninin ömrü fonksiyonun bloğundan sonra 
+					// bittiğinden, referansımız 'Dangling Reference' haline gelmiştir.
+					
+					auto ff = f_multiply(31);
+					std::cout << "31 x 20 = " << f(20) << "\n";
+					std::cout << "31 x 30 = " << f(30) << "\n";
+					/* 
+						# OUTPUT # 
+						f_multiply started...
+						12 x [31] = 372
+						f_multiply ended...
+						31 x 20 = 655340
+						31 x 30 = 983010
+					*/
+				}
+				
+			>>>> 'Lambda Init. Capture' : Derleyicinin yazacağı sınıfın veri elemanını yakaladığımız değişkenin değeri ile
+			değil ama o değerin değiştirilmiş versiyonu ile hayata getirmemize olanak verir.
+				* Örnek 1,
+					//..
+					int main()
+					{
+						int x = 10;
+						auto f = [x](int a){ return a*x; };
+						// Derleyicinin yazacağı sınıfın veri elemanı, 'x' değişkeninin değeri ile hayata geldi. Peki bizler
+						// 'x+5' ifadesinin değeri ile hayata getirmek isteseydik?
+						// El-cevab: 'Lambda Init. Capture' kullanmalıydık.
+															
+						auto ff = [y = x + 5](int a){ return a*x; };
+						// Artık derleyicinin yazacağı sınıfın veri elemanı 'y' değişkeninin değeri ile hayata gelecektir.
+						// Yine 'y' yerine de 'x' ismini kullanabilirdik.
+						
+						auto fff = [x = x + 15](int a){ return a*x; }; // Legal.
+					}
+					
+				* Örnek 2, Kopyalamaya karşı kapalı sınıfları taşımak için de bu yaklaşım kullanılabilir.
+					//..
+					class MoveOnly{
+						public:
+							MoveOnly() = default;
+							MoveOnly(MoveOnly&&) {/*...*/}
+							MoveOnly& operator=(MoveOnly&&) {/*...*/}
+							MoveOnly(const MoveOnly&) = delete;
+							MoveOnly& operator=(const MoveOnly&) = delete;
+					};
+					
+					int main()
+					{
+						MoveOnly mx;
+						
+						auto f = [mx](){};
+						// Sentaks hatası. Çünkü bizler 'capture by copy' yaptığımız için ilgili sınıfın 'Copy Ctor.'
+						// fonksiyonu çağrılacak ki o da 'delete' edildiğinden sentaks hatası alacağız.
+						
+						auto ff = [&mx](){};
+						// Alternatif-I : 'capture by reference' yaparak ilgili sentaks hatasından kurtulabiliriz.
+						
+						auto fff = [mx = std::move(mx)](){};
+						// Alternatif-II : İlgili sınıf nesnesini taşıyarak ve 'Lambda Init. Capture' yaparak yukarıdaki
+						// sentaks hatasından kurtulabiliriz. Artık 'mx' isimli nesne, derleyicinin 'lambda-expression'
+						// karşılığında yazacağı sınıfın veri elemanına TAŞINMIŞTIR.
+															 
+						// Yukarıdaki alternatiflerin hangilerinin seçileceği tamamiyle o anki duruma göre değişkenlik
+						// göstermektedir.
+					}
+			
+	>> Derleyicinin yazdığı sınıftaki '.operator()()' fonksiyonu: 
+		>>> Bir 'const' üye fonksiyondur. 
+			* Örnek 1,
+				//..
+				class xyz_gen // I
+				{
+					public:
+						xyz_gen(int a) : x(a) {}
+						void operator()()const{ ++x; /*Sentaks hatası.*/ }
+					private:
+						int x;
+				};
+				
+				class abc_gen // II
+				{
+					public:
+						xyz_gen(int a) : x(a) {}
+						void operator()(){ ++x; /*LEGAL.*/ }
+					private:
+						int x;
+				};
+				
+				int main()
+				{
+					int x = 23;
+					auto f = [x](){ ++x; };
+					// Sentaks hatası. Çünkü ilgili fonksiyon bir 'const' üye fonksiyondur. Temsili yazılan 'I' nolu sınıf
+					// yukarıdadır. Peki ne yapmalıyız da buradaki 'x' değişkeninin değerini değiştirelim?
+					// El-cevap : 'mutable' anahtar sözcüğünü kullanmak.
+										
+					auto g = [x]()mutable{ ++x ;};
+					// Peki bu durumda derleyicinin yazacağı sınıf nasıl bir sınıf oluyor? El-cevap : Temsili yazılan 'II'
+					// nolu sınıf yukarıdadır. İlgili sınıftan da görüldüğü üzere derleyicinin yazacağı sınıftaki
+					// '.operator()()' fonksiyonu artık 'const' DEĞİL. 
+												  
+					// Buradan hareketle 'call-by-value' ile kullanacağımız ve değiştireceğimiz değişkenler için 'mutable'
+					// anahtar sözcüğünü KULLANMAK ZORUNDAYIZ.
+				}
+		
+		>>> İş bu fonksiyon birden fazla türden değer döndürmesi durumunda sentaks hatası meydana gelir.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					// Normal şartlarda böyle bir kullanım sentaks hatasıdır.
+					auto f = [](int x){ if(x > 0) return 2.3; return 2; };
+					
+					auto ff = [](int x)->float{ return 2.3; return 2; }();
+					// Artık derleyici yazacağı '.operator()()' fonksiyonunun geri dönüş değerini 'float' olarak seçecek;
+					// '{}' çifti içerisindeki ifadenin türüne göre çıkarım yapmayacaktır.
+				}
+				
+		>>> İş bu fonksiyonun parametre parantezinin içine 'auto' anahtar kelimesinin yazılması sonucunda
+		'generalized lambda-expression' denmektedir. Derleyici ilgili 'lambda-expression' için yazacağı sınıfın
+		'.operator()()' fonksiyonu bir fonksiyon şablonu haline gelmiştir. İş bu '.operator()()' fonksiyonuna geçilen
+		argümanın türünden çıkarım yapılarak, fonksiyon şablonunun şablon parametresinin türü belirlenmiş olmaktadır.
+			* Örnek 1,
+				//..
+				
+				// 'f' için derleyicinin yazdığı temsili sınıf:
+				class com_gen{
+					public:
+						template<typename T>
+						auto operator()(T x) { return x*x; }
+				};
+				
+				// 'ff' için derleyicinin yazdığı temsili sınıf:
+				class com_gen{
+					public:
+						template<typename T>
+						auto operator()(T& x) { return x*x; }
+				};
+				
+				// 'fff' için derleyicinin yazdığı temsili sınıf:
+				class com_gen{
+					public:
+						template<typename T>
+						auto operator()(const T& x) { return x*x; }
+				};
+				
+				// 'ffff' için derleyicinin yazdığı temsili sınıf:
+				class com_gen{
+					public:
+						template<typename T>
+						auto operator()(T&& x) { return x*x; }
+				};
+				
+				int main()
+				{
+					// Generalized lambda-expression
+					auto f = [](auto x){ return x*x; };
+					
+					f(12);
+					// '12' ifadesinin türü 'int' olduğundan, yazılacak sınıfın içerisindeki fonksiyon şablonunun şablon
+					// parametresi olan 'T' yerine de 'int' gelecektir.
+					
+					f(1.2);
+					// '1.2' ifadesinin türü 'double' olduğundan, ilgili 'T' yerine 'double' gelecektir.
+					
+					auto ff   = [](auto& x){ return x*x; };
+					// Artık tür çıkarımı 'L-value Reference' şeklinde yapılacaktır.
+					
+					auto fff  = [](const auto& x){ return x*x; };
+					// Artık tür çıkarımı 'const L-value Reference' şeklinde yapılacaktır.
+					
+					auto ffff = [](auto&& x){ return x*x; };
+					// Artık tür çıkarımı 'Forwarding Referance' şeklinde yapılacaktır.
+				}
+		
+		>>> İş bu fonksiyonlar varsayılan argümanlar da alabilmektedir.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						x : 100
+						x : 31
+					*/
+	
+					auto f = [](int x = 100){ std::cout << "x : " << x << "\n"; };
+					f();
+					f(31);
+				}
+		
+	>> Bir 'lambda-expression' ile neler yapabiliriz?
+		>>> Derleyicinin yazmış olduğu 'closure object', fonksiyon çağrı operatörünün operandı yapılabilir. Yukarıdaki
+		örneklerde kullanılmıştır.
+		>>> İsimlendirilmiş bir nesne oluşturabiliriz.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					auto fSquare = [](int a){ return a*a; }; // 'fSquare', derleyicinin yazdığı sınıf türünden bir nesne. 
+					std::cout << fSquare(12) << "\n";
+					std::cout << fSquare(25) << "\n";
+				}
+		
+		>>> Fonksiyon şablonları için 'template argument' olarak kullanılırlar.
+			* Örnek 1,
+				//..
+				template<typename T>
+				void func(T x)
+				{
+					std::cout << "Type of T : [" << typeid(T).name() << "]\n";
+				}
+								
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						Type of T : [int]
+						Type of T : [int * __ptr64]
+						Type of T : [class <lambda_5475f936013a51697e464960dd065804>]
+						Type of T : [int]
+						Type of T : [class <lambda_f0496286e680ad238a59b0085ca1b2d7>]
+					*/
+					
+					int ival{10};
+									
+					func(ival); // 'T' türü için 'int' gelecek.
+					func(&ival); // 'T' türü için 'int*' gelecek.
+					
+					func([](int a){ return a*a; });
+					// 'T' türü derleyicinin yazdığı sınıf türünden. İlgili 'lambda-expression' ine ait 'closure type'
+					// türünden.
+
+					func([](int a){ return a*a; }(ival));
+					// 'T' türü için 'int' gelecek. Çünkü burada artık bir fonksiyon çağrılmakta. 
+					
+					auto f = [](int a){ return a*a; };
+					func(f);
+					// 'T' türü derleyicinin yazdığı sınıf türünden. İlgili 'lambda-expression' ine ait
+					// 'closure type' türünden.
+				}
+				
+		>>> Algoritmalara argüman olarak geçilebilirler. Aşağıdaki örnekleri inceleyelim:
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						mukerrem ercument sadullah abdullah sadettin yurdagul muzaffer sadettin muzaffer yurdakul yurdagul
+						mukerrem sadettin sadettin abdullah muzaffer mukerrem sadettin muzaffer ercument ferhunde sadettin 
+						-----------------------------------------------------------------------------
+					*/
+					
+					std::vector<std::string> srcVec;
+					fc(srcVec, 500, rname);
+					size_t lengthToCopy = 8;
+					
+					std::vector<std::string> desVec;
+					
+					std::copy_if(srcVec.begin(), srcVec.end(), std::back_inserter(desVec),
+								[lengthToCopy](const std::string& name){ return name.length() == lengthToCopy; }
+								);
+								
+					pc(desVec);
+					
+					// Hedef kap boş olduğu için kopyalama sırasında 'back_inserter' kullanıldığını unutmayalım.
+				}
+				
+			* Örnek 2, Şubat 29 olan ilk öğeyi indisi ile birlikte yazdıralım.
+				//..
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						Aranılan [29 Subat 1988 Pazartesi] tarihli öğe [1058] nolu indiste bulundu.
+					*/
+					
+					std::vector<Date> dVec;
+					fc(dVec, 100'000, Date::random); 
+					
+					if( auto iter = std::find_if(
+						dVec.begin(), dVec.end(), 
+						[](const Date& date){ return date.month_day() == 29 && date.month() == 2; }
+					); iter != dVec.end())
+					{
+						std::cout << "Aranılan [" 
+							<< *iter << "] tarihli öğe [" << std::distance(dVec.begin(), iter)
+							<< "] nolu indiste bulundu.\n";
+						
+						std::ofstream ofs{ "out.txt" };
+						if(!ofs)
+						{
+							std::cerr << "out.txt dosyası oluşturulamadı.\n";
+							exit(EXIT_FAILURE);
+						}
+						
+						pc(dVec, "\n", ofs);
+					}
+					else
+					{
+						std::cout << "Aranılan [" << *iter << "] tarihli öğe bulunamadı.\n";
+					}
+				}
+				
+			* Örnek 3, Bir sınıf şablonunu 'lambda-expression' olan ifadeye göre de açabiliriz.
+				//..
+				
+				template<typename T>
+				class Myclass{};
+				
+				int main()
+				{
+					auto f = [](int x){ return x*x; };
+					Myclass<decltype(f)> mx;
+					// Derleyicinin yazacağı sınıf her ne tür ise sınıf şablonu da o türe göre açılacak. Bir nevi 'T'
+					// yerine o tür gelecektir.
+				}
+				
+			* Örnek 4, 'std::sort()' fonksiyonu ile birlikte kullanımı:
+				//..
+				int main()
+				{
+					/* 
+						  # OUTPUT # 
+					I:	  cihan yaygara | atalay yarma | melike kabasakal | emre elebasi | demir sivri | candan kesman |
+						   haluk cangoz | turgut jilet | agah bayraktar | berivan dunyalik | 
+						  -----------------------------------------------------------------------------
+					II:	  agah bayraktar < atalay yarma < berivan dunyalik < candan kesman < cihan yaygara < demir sivri <
+					        emre elebasi < haluk cangoz < melike kabasakal < turgut jilet < 
+						  -----------------------------------------------------------------------------
+					III:  turgut jilet > melike kabasakal > haluk cangoz > emre elebasi > demir sivri > cihan yaygara >
+						 candan kesman > berivan dunyalik > atalay yarma > agah bayraktar > 
+						  -----------------------------------------------------------------------------
+					IIII: demir sivri , atalay yarma , emre elebasi , haluk cangoz , turgut jilet , candan kesman ,
+					      cihan yaygara , agah bayraktar , berivan dunyalik , melike kabasakal , 
+						  -----------------------------------------------------------------------------
+					*/
+					std::vector<std::string> sVec;
+													
+					// Kendi oluşturduğumuz 'fc' fonksiyon şablonuna bir 'lambda-expression' da argüman olarak geçebiliriz.
+					fc
+					(
+						sVec, 
+						10,
+						[](){ return rname() + " " + rfname(); }
+					);
+					
+					pc(sVec, " | "); // I: İsimlerin arasına '|' karakteri koyacaktır.
+					
+					// Sıralama varsayılan argüman olan '.operator<()' fonksiyonu ile yapıldı. 
+					std::sort(sVec.begin(), sVec.end());
+					
+					pc(sVec, " < "); // II: 
+					
+					std::sort(
+						sVec.begin(), 
+						sVec.end(), 
+						[](const std::string& s1, const std::string& s2){ return s2 < s1; }
+					); // Sıralama, üçüncü argüman olan 'lambda-expression' a bakılarak büyükten küçüğe doğru yapılmıştır.
+					
+					pc(sVec, " > "); // III: 
+					
+					std::sort
+					(
+						sVec.begin(),
+						sVec.end(),
+						[](const std::string& s1, const std::string& s2)
+						{
+							return s1.length() < s2.length() || ( s1.length() == s2.length() && s1 < s2 );
+						}
+					); // Uzunluğu kısa olanlar başa, aynı uzunlukta olan isimleri, kendi içinde alfabetik olarak sıraladık.
+					
+					pc(sVec, " , "); // IIII: 
+				}
+	
+	>> C++20 öncesinde 'lambda-expressions' karşılığı yazılan sınıfın 'Default Ctor.' fonksiyonu ve 'Copy Assigningment'
+	fonksiyonları 'delete' edilmiştir. C++20 ile kullanılabilir durumdadırlar.
+		* Örnek 1,
+			//..
+			int main()
+			{
+				/* 
+					# OUTPUT # 
+					error: use of deleted function ‘main()::::()’
+					note: a lambda closure type has a deleted default constructor
+				*/
+				auto f = [](int x){ return x + 5; };
+				decltype(f) g; // C++20 öncesinde sentaks hatası çünkü 'Default Ctor.' fonksiyonu 'delete' edildi. 
+				
+				auto ff = f; // 'Copy Ctor.' fonksiyonu hala geçerlidir.
+				
+				ff = f; // C++20 öncesinde sentaks hatası çünkü 'Copy Assigningment' fonksiyonu 'delete' edildi. 
+			}
+			
+	>> Bünyesindeki kodlar birebir aynı olsa da iki defa kullanım sonucunda farklı sınıflar yazılır. Aşağıdaki örneği
+	inceleyelim.
+		* Örnek 1,
+			//..
+			int main()
+			{
+				/* 
+					# OUTPUT # 
+					Farklı sınıflardır. => Z4mainEUlvE_ / Z4mainEUlvE0_
+				*/
+				auto f = [](){ return 1; };
+				auto g = [](){ return 1; };
+				if( typeid(f) == typeid(g) )
+				{
+					std::cout << "Aynı sınıflardır.\n";
+				}
+				else
+				{
+					std::cout << "Farklı sınıflardır. => " << typeid(f).name() << " / " << typeid(g).name() << " \n";
+				}
+            }
+
+    >> Immediately Invoked Function Expression : 'const' nesnelere ilk değer vermek mecburidir. İlk değer verecek ifade bir
+    hesaplama yoluyla elde edilmiş olsun. Bu fonksiyonun geri dönüş değeri ile de nesnemize ilk değer vereceğiz. Artık bunun
+    yerine 'lambda-expression' kullanıyoruz.
+        * Örnek 1,
+            //..,
+            void func(int a, int b) { return a*b; }
+            int main()
+            {
+                // Geleneksel yöntem:
+                const int myValue = func(31, 31);
+                
+                // I.I.F.E deyimi: 
+                const int myValueTwo = [](int a, int b) { return a*b; }(31, 32);
+            }

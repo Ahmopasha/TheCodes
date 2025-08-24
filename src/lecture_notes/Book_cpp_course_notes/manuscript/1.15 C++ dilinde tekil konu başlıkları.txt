@@ -1,0 +1,286 @@
+> Unspecified Behaviour: Derleyicinin ürettiği makine koduna bağlı. Çalışma zamanında farklı sonuçlar elde edebiliriz. Fakat
+derleyici, nasıl bir kod ürettiğini, belgelemek zorunda DEĞİL.
+
+> Implementation Defined : Derleyicinin ürettiği makine koduna bağlı. Fakat derleyici, nasıl bir kod ürettiğini, belgelemek
+zorunda. 
+	* Örnek #1,
+		#include <iostream>
+
+		int f1() 
+		{
+			return 5;
+		}
+
+		int f2()
+		{
+			return 10;
+		}
+
+		int main()
+		{
+			x = f1() + 5 * f2();
+			// Yukarıdaki kod çağrısında f1() fonksiyonunun mu önce yoksa f2() fonksiyonunun mu önce çağrılacağına dair bir
+			// garanti yok.
+			// Derleyiciye göre değişmekte. Fakat fonksiyonlar çağrıldıktan sonra, '*' işleminin önceliği olduğundan dolayı,
+			// 'x' değişkeninin değeri '55' olacaktır.
+		}
+
+> 'auto' return type : Geri dönüş değerinin türünü yazdığımız yere 'auto' yazıyoruz. 
+
+> 'ternery operator' ün ikinci ve üçüncü operatörleri 'L-Value Expression' ise, sonuç 'L-Value Expression'; en az birisi
+'R-Value Expression' ise sonuç 'R-Value Expression'.
+
+> ' extern "C" ' decleration : C dilinde derlenmiş kodların, C++ derleyicisinden çağrılmasına olanak veren mekanizma.
+Kullanımı ise şu şekildedir;
+	>> C dilinde bildirilen fonksiyonun geri dönüş değerini yazmadan ' extern "C" ' anahtar sözcüğünü yazıyoruz. Böylelikle
+	C dilinde derlenmiş kodları, C++ dosyalarında kullabiliyoruz.
+		* Örnek 1,
+			// Ahmo.h
+				int square(int);
+			
+			// Ahmo.c
+				int square(int x)
+				{
+					return x*x;
+				}
+				
+			// main.cpp
+				#include "Ahmo.h"
+				
+				int main()
+				{
+					int x = 4;
+					
+					std::cout << " x : " << square(4) << "\n";
+					
+					// Yukarıdaki kod derlenecektir fakat 'link' aşamasında hata alacağız. Bu 'bağlama' hatasını gidermek
+					// için de 'Ahmo.h' dosyası içerisinde bildirilen 'square()' fonksiyonunu şu şekilde bildireceğiz
+					// " extern "C" square(int); "
+					// Artık kodumuz başarıyla çalışabilir. Fakat bu durumda, 'Ahmo.c' dosyasına 'Ahmo.h' başlık dosyasını
+					// eklediğimizde sentaks hatasını alacağız. Çünkü C dilinde ' extern "C" ' şeklinde bir anahtar sözcük
+					// yok. Ya ayrı başlık dosyaları olacak, ya bütün fonksiyonları " extern "C" int square(int); " diye
+					// bildireceğiz ya da aşağıdaki gibi bir kullanım yapacağız;
+					/* 
+						// Neco.h
+						
+						#ifdef __cplusplus
+						extern "C" {
+						#endif
+						
+							int square(int);
+						
+						#ifdef __cplusplus
+						}
+						#endif
+						
+						
+						
+						// CPP DERLEYİCİSİNİN GÖRDÜĞÜ:
+							extern "C" {
+								int square(int);
+							}
+							
+						// C DERLEYİCİSİNİN GÖRDÜĞÜ:
+							int square(int);
+							
+						// SEBEBİ:
+						'__cplusplus' PREDEFINED MACRO IS ONLY FOR C++ COMPILER. __STDC__ IS COUNTERPART FOR C COMPILER.
+					*/
+				}
+					
+> C++ Dilindeki Tür Dönüştürme Operatörleri : C dilindeki tür dönüştürme operatörüne ek olarak (C-style casting), C++ dilinde
+dört adet daha tür dönüştürme operatörü vardır. Bunlar,
+	>> 'static_cast' : 
+		* Örnek 1,
+			// Some code here...
+			
+			int main()
+			{
+				int x{823}, y{23};
+				
+				double z = static_cast<double>(x) / y;
+			}
+	
+	>> 'const_cast' : 'const T*' türünden 'T*' türüne veya 'const int&' türünden 'int&' türüne yapılan dönüşümler için
+	kullanılır.
+		* Örnek 1,
+			// Some code here...
+			
+			int main()
+			{
+				int x{823};
+				
+				const int* cptr = &x;
+				
+				int* iptr = const_cast<int*>(cptr);
+			}
+
+	>> 'reinterpret_cast' : Farklı türden adreslerin birbirlerine dönüşümlerinde kullanılır.
+		* Örnek 1,
+			// Some code here...
+			
+			int main()
+			{
+				unsigned int x{823};
+				char* p = reinterpret_cast<char*>(&x);
+			}
+	
+	>> 'dynamic_cast' :  'inheritence' ağacında kullanılır. Çalışma zamanı çok biçimliliği, Run Time Polymorphism.
+	
+	>> 'void*' türünden 'int*' türüne dönüşüm yaparken 'static_cast' veya 'reinterpret_cast' kullanabiliriz.
+
+> C++17 ile dile eklenen 'init-statement in selection statements' : Bir ismin sadece ve sadece bir tane 'if-else' veya
+'switch' bloğunda bilinir olmasını sağlamaktır. Kapsam sızıntısının önüne geçmeyi hedefler. Evvelce kapsam sızıntılarını
+engellemek için ilgili bloğu bir '{}' içerisine alırlardı. 
+	* Örnek 1, C++17 ile kullanılan yöntem
+		#include <string>
+		#include <iostream>
+		int foo()
+		{
+			return 31;
+		}
+		int main()
+		{	
+			std::string str;
+			std::cout << "Bir yazi giriniz: ";
+			std::getline(std::cin, str); // INPUT => Ahmet Kandemir Pehlivanli
+			if(auto idx = str.find('a'); idx != std::string::npos) // if-with init. since C++17
+			{
+				std::cout << "bulundu. indeks : " << idx << "\n"; // OUTPUT => bulundu. indeks : 7
+				str[idx] = '@';
+				std::cout << "[" << str.size() << "] : " << str << "\n"; // OUTPUT => [25] : Ahmet K@ndemir Pehlivanli
+			}
+			else
+			{
+				std::cout << "bulunamadi.";
+			}
+			
+			switch(auto x = foo(); x)
+			{
+				//..
+			}
+		}
+	
+	* Örnek 2, Geleneksel Yaklaşım
+		#include <string>
+		#include <iostream>
+		int main()
+		{	
+			{
+				std::string str;
+				std::cout << "Bir yazi giriniz: ";
+				std::getline(std::cin, str); // INPUT => Ahmet Kandemir Pehlivanli
+				auto idx = str.find('a'); 
+				if(idx != std::string::npos) 
+				{
+					std::cout << "bulundu. indeks : " << idx << "\n"; // OUTPUT => bulundu. indeks : 7
+					str[idx] = '@';
+					std::cout << "[" << str.size() << "] : " << str << "\n"; // OUTPUT => [25] : Ahmet K@ndemir Pehlivanli
+				}
+				else
+				{
+					std::cout << "bulunamadi.";
+				}
+			}
+		}
+		
+	* Örnek 3, Aşağıdaki kullanımı, yukarıdaki 'if-with-initializor' ile karıştırmayalım.
+		#include <string>
+		#include <iostream>
+		int foo()
+		{
+			return 31;
+		}
+		int main()
+		{	
+			// Bu tip kullanım ezelden beridir dilde mevcut ve 'x' burada bir lojik yorumlamaya e tabii tutuluyor.
+			// " x != 0 " ifadesi gibi düşünebiliriz. 'int' yerine 'auto' da yazabiliriz.
+			if(int x = foo())
+			{
+				std::cout << "x : " << x << "\n"; // OUTPUT => x : 31
+			}
+		}
+
+> 'Contextual Keyword' : Tek başlarına kullanıldıklarında bir 'keyword' değil fakat özel yerlerde kullanıldıklarında bir
+'keyword' olarak işlev gören kelimelerdir. Bunlar, C++11 ile dile eklenen 'override' kelimesi ile 'final' kelimesidir.
+
+> AŞAĞIDAKİ KONTROLLER DERLEME ZAMANINDA YAPILIR VE 'static' TÜRE İLİŞKİNDİR:
+	>> İsim Arama : '.', '->' ve '::' operatörleri ile yapılan isim aramalar derleme zamanında yapıldığından 'static' türe
+	göre isim aranır. Üye fonksiyonun içinde yapılan aramalarda da 'static' türe bakılır.
+	>> Erişim kontrolü de yine 'static' türe göre yapılır.
+	>> Varsayılan argümanlar da yine 'static' türe göre belirlenir.
+
+> İskambil kartlarının İngilizceleri: Club(Sinek), Diamond(Karo), Heart(Kupa), Spade(Maça). Bunların her birine de 'suit'
+denmektedir. Her bir 'suit' ise 13 adet 'rank' ten oluşmaktadır.
+
+> Fonksiyon yazarken dökümantasyonunda, iş bu fonksiyona 'nullptr' argüman gönderilmesi ve 'nullptr' değer döndürmesi ne
+manaya gelecektir, sorusunun cevabını mutlaka belirtmeliyiz. Yani o fonksiyonu üçüncü parti kişilere açacaksak mutlaka ÇOK
+İYİ dökümante ETMELİYİZ.
+
+> Kitap Tavsiyesi : Writing SOLID Code by Steve Maguire. C dilinde Bug-free kod yazmak için OKUNMALI.
+
+> Derleyiciye iteratör döngüsü yazdıran döngü deyimine 'range-based for-loop' denmektedir.
+	* Örnek 1,
+		//..
+		int main()
+		{
+			std::vector<int> iVec{ 10, 20, 30, 40 ,50 };
+			
+			for(auto x : iVec)
+				std::cout << x << ", ";
+			/*
+				for(auto iter = iVec.begin(); iter != iVec.end(); ++iter) {
+					auto x = *iter; std::cout << x << ", ";
+				}
+			*/
+
+			for(auto& x : iVec)
+				std::cout << x << ", ";
+			/*
+				for(auto iter = iVec.begin(); iter != iVec.end(); ++iter) {
+					auto& x = *iter; std::cout << x << ", ";
+				}		
+			*/
+
+			for(const auto& x : iVec)
+				std::cout << x << ", ";
+			/*  
+				for(auto iter = iVec.begin(); iter != iVec.end(); ++iter) {
+					const auto& x = *iter; std::cout << x << ", ";
+				}
+			*/
+
+			// GÖRÜLDÜĞÜ ÜZERE BİR KABIN TAMAMI ÜZERİNDE İŞLEM YAPMAK ZORUNDAYIZ.
+		}
+
+> C++17 öncesi dönemde 'inline-variable' kullanımına alternatifler: 'inline' anahtar sözcüğünün değişkenleri nitelemesi C++17
+ile dile eklendiğinden, bundan önceki dönemlerde aşağıdaki gibi bir kullanım uygulanabilir;
+	* Örnek 1,
+		// theHeader.hpp
+		//..
+		inline int& get_instance()
+		{
+			static int x = 100; // 'x' her hangi bir türden olabilir.
+			
+			return x;
+		}
+		
+		// main.cpp
+		#include "theHeader.hpp"
+		//..
+		int main()
+		{
+			auto& x = get_instance();
+			
+			//..
+		}
+
+> C++ dilinde kullanılan akronimler:
+	>> AAA : Almost Always 'auto'
+	>> ADL : Argument Dependent Look-Up
+	>> ODR : One Definition Rule
+	>> RAII: Resource Acquisition Is Initialization
+	>> EBO : Empty Base Optimization
+	>> STL : Standart Template Library
+	>> SFINAE : Subtitution Failure Is Not An Error
+

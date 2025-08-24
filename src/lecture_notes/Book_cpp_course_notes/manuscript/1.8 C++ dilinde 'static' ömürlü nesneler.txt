@@ -1,0 +1,151 @@
+> 'static' YEREL DEĞİŞKENLER VE GLOBAL DEĞİŞKENLERİN HAYAT GELİŞLERİ: 
+	>> AYNI KAYNAK DOSYADAKİ 'static' ÖMÜRLÜ VE GLOBAL İSİM ALANINDAKİ NESNELER/DEĞİŞKENLER, BİLDİRİM SIRASINA GÖRE,
+	'main()' FONKSİYONU ÇAĞRISINDAN EVVEL HAYATA GELİRLER. YANİ 'main()' ÇAĞRISINDAN YAPILMADAN ÖNCE, İLK BİLDİRİLEN NESNE
+	İLK HAYATA GELİR. 
+		* Örnek 1,
+			//inside main.cpp
+			#include <iostream>
+
+			class A{
+				public:
+					A()
+					{
+						std::cout << "A::A() was called.\n";
+					}
+					~A()
+					{
+						std::cout << "A::~A() was called.\n";
+					}
+			};
+
+			class B{
+				public:
+					B()
+					{
+						std::cout << "B::B() was called.\n";
+					}
+					~B()
+					{
+						std::cout << "B::~B() was called.\n";
+					}
+			};
+
+			class C{
+				public:
+					C()
+					{
+						std::cout << "C::C() was called.\n";
+					}
+					~C()
+					{
+						std::cout << "C::~C() was called.\n";
+					}
+			};
+
+			A ax;
+			B bx;
+
+			int main()
+			{
+				std::cout << "int main() was called.\n";
+				C cx;
+				
+				return 0;
+			}
+
+		Bu örnekteki A, B ve C isimlerinin bir tür ismi olduğunu ve sırasıyla 'ax', 'bx' ve 'cx' isimlerinin ise o türlerden
+		değişkenler olduğunu varsayalım. Bu üç değişken de aynı kaynak dosya içerisinde. Bu durumda hayata önce 'ax' isimli
+		değişken, sonrasında 'bx' isimli değişken gelecek. Sonrasında 'main()' fonksiyonu çağrılacak ve 'cx' isimli değişken
+		hayata gelecek. Buradaki önemli nokta BU DEĞİŞKENLER ÇAĞRILMASALAR BİLE HAYATA GELİYORLAR. Hayata veda ederlerken de
+		hayata son gelen, ilk veda edecek. Yani bu sefer de sırasıyla önce 'cx', sonra 'bx', son olarak da 'ax' hayata veda
+		edecek. 'main()' FONKSİYONUNDAN ÇIKTIKTAN SONRA.
+			>>>> 'main()' fonksiyonunun çağrılmasından evvel bir fonksiyon çağırtmak:
+					// Some code here...
+					int foo(void);
+					int g = foo();
+					// C diline göre bu çağrı bir sentaks hatasıdır. Çünkü C dilinde 'global' değişkenler
+					// 'constant expression' ile hayata gelmeli. Fakat Cpp dilinde böyle bir zorunluluk yoktur.
+					int main()
+					{
+						std::cout << "int main() was called.\n";
+					}
+
+					int foo(void)
+					{
+						std::cout << "int foo(void) was called.\n";
+						return 1;
+					}
+
+					// Yukarıdaki durumda 'g' isimli global değişken hayata 'main()' çağrısından önce geleceği için, 'foo()' fonksiyonunu çağırtmış olacağız.
+
+	>> 'static' ÖMÜRLÜ YEREL BİR NESNE/DEĞİŞKENLERİN HAYATA GELMELERİ İÇİN, İÇİNDE BULUNMUŞ OLDUKLARI FONKSİYONLARIN EN AZ
+	BİR DEFA ÇAĞRILMALARI GEREKMEKTEDİR. BU NESNELERİN HAYATI İSE 'main()' FONKSİYONUNDAN ÇIKTIKTAN SONRA BİTMEKTEDİR.
+		* Örnek 1,
+			// Some code here...
+			#include <iostream>
+
+			class A{
+				public:
+					A()
+					{
+						std::cout << "A::A() was called.\n";
+					}
+					~A()
+					{
+						std::cout << "A::~A() was called.\n";
+					}
+			};
+
+			class B{
+				public:
+					B()
+					{
+						std::cout << "B::B() was called.\n";
+					}
+					~B()
+					{
+						std::cout << "B::~B() was called.\n";
+					}
+			};
+
+			class C{
+				public:
+					C()
+					{
+						std::cout << "C::C() was called.\n";
+					}
+					~C()
+					{
+						std::cout << "C::~C() was called.\n";
+					}
+			};
+
+			void foo()
+			{
+				static C cx;
+			}
+
+			int main()
+			{
+				std::cout << "int main() was called.\n";
+
+				for(int i = 0; i < 3; ++i)
+					foo();
+				
+				std::cout << "int main() was called.\n";
+				return 0;
+			}
+
+			/* # PROGRAM ÇIKTISI #
+				int main() was called.
+				C::C() was called.
+				int main() was called.
+				C::~C() was called.
+			*/
+
+	>> FARKLI KAYNAK DOSYALARDAKİ 'static' ÖMÜRLÜ VE GLOBAL İSİM ALANINDAKİ DEĞİŞKENLERİN HAYATA GELME SIRASI
+	'unspecified behaviour'. BİR DİĞER DEYİŞLE SIRALAMA, DERLEYİCİYE BAĞLIDIR (Bkz. Static Init. Fiasco). 
+
+	>> NOT : BU İKİ ÖRNEKTE DE GÖRÜLDÜĞÜ GİBİ 'static' YEREL DEĞİŞKENLER HAYATA GELMELERİ İÇİN İÇİNDE TANIMLANDIKLARI
+	FONKSİYONUN ÇAĞRILMASI GEREKMEKTE. FAKAT GLOBAL DEĞİŞKENLER İÇİN BÖYLE BİR DURUM SÖZ KONUSU DEĞİLDİR. O DEĞİŞKENLER
+	ÇAĞRILMASALAR BİLE HAYATA GELMEKTEDİRLER.

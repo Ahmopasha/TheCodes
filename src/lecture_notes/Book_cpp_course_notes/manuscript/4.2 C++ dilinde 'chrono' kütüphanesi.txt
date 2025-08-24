@@ -1,0 +1,654 @@
+> 'std::chrono' kütüphanesi : C++11 ile dile eklenmiştir. Tarih ve zaman işlemleri için de kullanılır. Kütüphanedekileri
+kullanabilmek için 'chrono' isim alanını nitelememiz gerekmektedir.
+	>> Pekiştirici örnekler,
+		* Örnek 1,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					nx is 76324721 nanosecond long.
+					mx is 76 second long.
+				*/
+				
+				using namespace std::chrono;
+				
+				auto nx{ 76324721ns }; // Buradaki 'nx' gerçekten de 76324721 nanosaniye süresindedir.
+				std::cout << "nx is " << nx.count() << " nanosecond long.\n";
+				
+				milliseconds mx{ duration_cast<milliseconds>(nx) };
+				// Basamağın altındaki süreden yukarıya otomatik dönüşüm olmadığından,
+				// bu şekilde bir dönüşüm gerçekleştirdik.
+				std::cout << "mx is " << mx.count() << " millisecond long.\n";
+				
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			// C++20 öncesine kadar aşağıdaki 'insert' işlevi mevcut değildi.
+			template<typename R, typename P>
+			std::ostream& operator<<(std::ostream& os, const std::chrono::duration<R, P>& dur)
+			{
+				return os << de(dur.count()) << " * (" << de(P::num) << " / " << de(P::den) << ")";    
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Second      : 1 * (1 / 1)
+					Millisecond : 11 * (1 / 1.000)
+					Nanosecond  : 111 * (1 / 1.000.000.000)
+				*/
+				
+				using namespace std::chrono;
+				
+				// 'operator<<()' fonksiyonunun ikinci parametresi olan 'duration' aslında iki parametre
+				// almaktadır. Bu parametrelerden ilki içeride kullanılacak 'tick' sayacının türü.
+				// Diğeri de içeride kullanılan 'ratio' ya ait oran bilgisi.
+				
+				std::cout << "Second      : " << 1s << "\n";
+				std::cout << "Millisecond : " << 11ms << "\n";
+				std::cout << "Nanosecond  : " << 111ns << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 3,
+			//..
+			template<typename R, typename P>
+			std::ostream& operator<<(std::ostream& os, const std::chrono::duration<R, P>& dur)
+			{
+				return os << de(dur.count()) << " * (" << de(P::num) << " / " << de(P::den) << ")";    
+			}
+
+			using halfSecond = std::chrono::duration<long long int, std::ratio<1,2>>;
+
+			constexpr std::chrono::duration<long double> operator""_QS (long double value) 
+			{
+				return std::chrono::duration<long double, std::ratio<1, 4>>{value};
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Second            : 123 * (1 / 1)
+					Half of Second    : 654 * (1 / 2)
+					Quarter of Second : 246.853.091 * (1 / 1)
+					Nanosecond        : 65.123 * (1 / 1.000.000.000)
+					Total Duration    : 246.853.541 * (1 / 1)
+				*/
+				
+				using namespace std::chrono;
+				
+				std::cout << "Second            : " << 123s << "\n";               // 123 saniye 
+				std::cout << "Half of Second    : " << halfSecond{ 654 } << "\n";  // 327 saniye
+				std::cout << "Quarter of Second : " << 987412365._QS << "\n";      // 246853091.2 saniye
+				std::cout << "Nanosecond        : " << 65123ns << "\n";            // 0.000065123 saniye
+				
+				std::cout << "Total Duration    : " 
+					<< duration_cast<seconds>((123s + halfSecond{ 654 } + 987412365._QS + 65123ns)) 
+					<< "\n"; // 246853541.2 saniye
+				
+				return 0;
+			}
+			
+		* Örnek 4,
+			//..
+			template<typename R, typename P>
+			std::ostream& operator<<(std::ostream& os, const std::chrono::duration<R, P>& dur)
+			{
+				return os << de(dur.count()) << " * (" << de(P::num) << " / " << de(P::den) << ")";    
+			}
+
+			using halfSecond = std::chrono::duration<long long int, std::ratio<1,2>>; // Saniyenin yarısı
+			using frame = std::chrono::duration<double, std::ratio<1, 10>>; // Saniyenin onda biri.
+			using Day = std::chrono::duration<int, std::ratio<60 * 60 * 24>>; // Bir gündeki saniye sayısı.
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Half Second : 131
+					Millisecond : 65500
+					Millisecond : 65.500 * (1 / 1.000)
+					Frame       : 655
+					Day         : 0
+				*/
+				
+				using namespace std::chrono;
+				
+				halfSecond x{ 128 }; // 64 saniye / 128 yarım saniye.
+				
+				++x; ++x; ++x; // 65.5 saniye / 131 yarım saniye
+				
+				std::cout << "Half Second : " << x.count() << "\n";
+				std::cout << "Millisecond : " << milliseconds{ x }.count() << "\n";
+				std::cout << "Millisecond : " << milliseconds{ x } << "\n";
+				std::cout << "Frame       : " << frame{ x }.count() << "\n";
+				std::cout << "Day         : " << duration_cast<Day>(x).count() << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 5,
+			//..
+			using dsec = std::chrono::duration<double>; // Saniye türü.
+			int main() 
+			{
+				using namespace std::chrono;
+
+				microseconds us{ 7654777 };
+				std::cout << us.count() << "\n"; // OUTPUT => 7654777
+				
+				nanoseconds ns = us; // Daha ince(fine) türden, daha kalın(coarse) türe otomatik dönüşüm vardır.
+				std::cout << us.count() << "\n"; // OUTPUT => 7654777
+				
+				// milliseconds msx = us; // GEÇERSİZ. Daha ince türe otomatik dönüşüm YOKTUR.
+
+				// Dolayısıyla bizler dönüştürmeliyiz. Fakat veri kaybı meydana gelebilir.
+				milliseconds msx = duration_cast<milliseconds>(us);
+				
+				std::cout << msx.count() << "\n"; // OUTPUT => 7654
+				
+				msx = ceil<milliseconds>(us); // Yukarıya tamamlayacaktır.
+				std::cout << msx.count() << "\n"; // OUTPUT => 7655
+				
+				msx = floor<milliseconds>(us); // Aşağıya tamamlayacaktır.
+				std::cout << msx.count() << "\n"; // OUTPUT => 7654
+				
+				msx = round<milliseconds>(us); // '.5' yukarısını yukarıya, '.5' aşağısını da aşağı tamamlıyor.
+				std::cout << msx.count() << "\n"; // OUTPUT => 7655
+				
+				dsec ds = us;
+				std::cout << ds.count() << "\n"; // OUTPUT => 7.65478
+				
+				return 0;
+			}
+			
+		* Örnek 6,
+			//..
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					milisaniye olarak sureyi girin : 123456789
+					34 saat, 17 dakika, 36 saniye, 789 salise.
+				*/
+				
+				using namespace std;
+				using namespace chrono;
+
+				long long mSec;
+				
+				std::cout << "milisaniye olarak sureyi girin : ";
+				std::cin >> mSec; // 'mSec' is 'long long'
+				
+				milliseconds ms{ mSec }; // 'ms' is 'milliseconds'
+				hours hrs{ duration_cast<hours>(ms) }; // 'hrs' is 'hours'
+				
+				// 'ms' bir milisaniye değerinden. Bir saate göre modunu alırsak, geriye kalan bilgi dakikadır.
+				minutes mns{ duration_cast<minutes>( ms % 1h ) };
+				
+				// 'ms' bir milisaniye değerinden. Bir dakikaya göre modunu alırsak, geriye kalan saniyedir.
+				seconds sc{ duration_cast<seconds>( ms % 1min ) };
+				
+				// 'ms' bir milisaniye değerinden. Bir saniyeye göre modunu alırsak, geriye kalan milisaniyedir.
+				milliseconds msc{ ms % 1s };
+				
+				if( hrs.count() )
+					std::cout << hrs.count() << " saat, ";
+					
+				if( mns.count() )
+					std::cout << mns.count() << " dakika, ";
+					
+				if( sc.count() )
+					std::cout << sc.count() << " saniye, ";
+					
+				if( msc.count() )
+					std::cout << msc.count() << " salise.\n";
+				
+				return 0;
+			}
+			
+		* Örnek 7,
+			//..
+			// 'pulseSecond' demek '100' saniye demektir.
+			using pulseSecond = std::chrono::duration<long long, std::ratio<100>>;
+			
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					12300
+					12400
+				*/
+				
+				using namespace std;
+				using namespace chrono;
+
+				pulseSecond pss{ 123 }; // 123000 saniye demektir.
+				std::cout << seconds{ pss }.count() << "\n";
+				++pss; // '100' saniye daha eklendi.
+				std::cout << seconds{ pss }.count() << "\n";
+				
+				return 0;
+			}
+
+	>> Tarih-zaman çizgisinde herhangi bir noktayı gösteren 'time-point' ler vardır. Bu 'time-point' leri yorumlayabilmemiz
+	için bizlerin bir 'epoch' noktasına, yani başlangıç noktasına ihtiyacımız vardır. Buradan hareketle diyebiliriz ki iki
+	'time-point' arasındaki fark aslında bir 'duration' şeklindedir. İşte bize bunu veren de 'clock' sınıfı. Aşağıdaki
+	örnekleri inceleyelim.
+		* Örnek 1,
+			//..
+			---------------------------------------------------------------- Tarih-Zaman Çizgisi
+			^							^								   ^
+			|							|								   |
+			|							|								   |
+			|							|								   |
+			|						Time-point						   Time-point
+			|						    |								   |
+			|						    |								   |
+			|							| <---------- Duration ----------> |
+			|							
+			|
+		  Epoch
+		 
+		>>> Bize verilen 'clock' sınıfları ise şunlardır: 'system_clock', 'steady_clock' ve 'high_resolution_clock'. Bir
+		'event' in süresi ölçülürken 'steady_clock' kullanılması tavsiye olunur çünkü 'system_clock' bizim sistemimize
+		bağlıdır. Hesap sırasında alınan 'time-point' ler arasında sistemimizin saati değiştiğinde dengeler bozulabilir. İşte
+		'steady_clock' bunun olmayacağının garantisini vermektedir. Bunu da sınıfın 'is_steady' değişkeni üzerinden
+		öğrenebiliriz.
+			* Örnek 1,
+				//..
+				int main() 
+				{
+					/*
+						# OUTPUT #
+						false
+						true
+					*/
+					
+					using namespace std;
+					using namespace chrono;
+
+					std::cout << std::boolalpha << system_clock::is_steady << "\n";
+					std::cout << std::boolalpha << steady_clock::is_steady << "\n";
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				int main() 
+				{
+					/*
+						# OUTPUT #
+						Duration of the event : 1.06e-07
+						It lasted 0 seconds.
+						It lasted 0 milliseconds.
+						It lasted 0 microseconds.
+						It lasted 106 nanoseconds.
+					*/
+					
+					using namespace std;
+					using namespace chrono;
+
+					// İlk 'time-point' bilgisini 'timePointOne' isimli değişkende sakladık.
+					auto timePointOne{ steady_clock::now() };
+					
+					// Some events occured here...
+					
+					// İkinci 'time-point' bilgisi de 'timePointTwo' isimli değişkende sakladık.
+					auto timePointTwo{ steady_clock::now() };
+					
+					std::cout << "Duration of the event : " 
+						<< duration<double>(timePointTwo - timePointOne).count() << "\n";
+					
+					std::cout << "It lasted " 
+						<< seconds{ duration_cast<seconds>(timePointTwo-timePointOne) }.count() << " seconds.\n";
+					
+					std::cout << "It lasted " 
+						<< milliseconds{ duration_cast<milliseconds>(timePointTwo-timePointOne) }.count() 
+						<< " milliseconds.\n";
+					
+					std::cout << "It lasted " 
+						<< microseconds{ duration_cast<microseconds>(timePointTwo-timePointOne) }.count() 
+						<< " microseconds.\n";
+					
+					std::cout << "It lasted " 
+						<< nanoseconds{ duration_cast<nanoseconds>(timePointTwo-timePointOne) }.count() 
+						<< " nanoseconds.\n";
+					
+					return 0;
+				}
+				
+			* Örnek 3,
+				//..
+				int main() 
+				{
+					/*
+						# OUTPUT #
+						islem basliyor...
+						islem sone erdi...
+						Duration : 4877 milliseconds
+						Duration : 4.8775 seconds
+					*/
+					
+					using namespace std;
+					using namespace chrono;
+					
+					std::vector<int> iVec;
+					mt19937 eng;
+					uniform_int_distribution<> dist{ 0, 1'000'000 };
+					std::cout << "islem basliyor...\n";
+					auto tp_start{ steady_clock::now() };
+					
+					fcs(iVec, 10'000'000, [&]{ return dist(eng); });
+					sort(iVec.begin(), iVec.end());
+					
+					auto tp_end{ steady_clock::now() };
+					std::cout << "islem sone erdi...\n";
+					
+					std::cout << "Duration : " 
+						<< duration_cast<milliseconds>(tp_end - tp_start).count() << " milliseconds\n";
+
+					std::cout << "Duration : " << duration<double>{tp_end - tp_start}.count() << " seconds\n";
+					
+					return 0;
+				}
+				
+			* Örnek 4,
+				//..
+				long long runTimeFibonacci(unsigned n)
+				{
+					return n < 2 ? n : runTimeFibonacci(n-1) + runTimeFibonacci(n-2);
+				}
+
+				int main() 
+				{
+					/*
+						# OUTPUT #
+						Bir sayi girin : 50
+						Fibonacci of 50 is 12586269025
+						Duration : 153.926 second.
+					*/
+					
+					using namespace std;
+					using namespace chrono;
+					
+					unsigned n; std::cout << "Bir sayi girin : "; std::cin >> n;
+					
+					auto start{ steady_clock::now() };
+					
+					auto val{ runTimeFibonacci(n) };
+					
+					auto end{ steady_clock::now() };
+					
+					std::cout << "Fibonacci of " << n << " is " << val << "\n";
+					std::cout << "Duration : " << duration<double>{end-start}.count() << " second.\n";
+					
+					return 0;
+				}
+				
+			* Örnek 5,
+				//..
+				using namespace std;
+				using namespace chrono;
+					
+				void printTime()
+				{
+					static const char* const pmons[] = 
+					{
+						"Jan",
+						"Feb",
+						"Mar",
+						"Apr",
+						"May",
+						"Jun",
+						"Jul",
+						"Aug",
+						"Sep",
+						"Oct",
+						"Nov",
+						"Dec",
+					};
+					
+					static const char* const pdays[] = 
+					{
+						"Mon",
+						"Tue",
+						"Wed",
+						"Thru",
+						"Fri",
+						"Sat",
+						"Sun"
+					};
+					
+					// C++ dilindeki 'time-point', C dilindeki versiyonuna dönüştürüldü.
+					time_t timer = system_clock::to_time_t( system_clock::now() );
+					
+					auto p = localtime(&timer); // C dilindeki kullanım şekli.
+					std::cout << std::setfill('0');
+					
+					std::cout << std::setw(2) << p->tm_mday << " "
+							  << pmons[p->tm_mon] << " "
+							  << p->tm_year + 1900 << " "
+							  << pdays[p->tm_wday] << " "
+							  << std::setw(2) << p->tm_hour << " "
+							  << std::setw(2) << p->tm_min << " "
+							  << std::setw(2) << p->tm_sec << " ";
+				}
+
+				void printTime(const time_t& timer)
+				{
+					static const char* const pmons[] = 
+					{
+						"Jan",
+						"Feb",
+						"Mar",
+						"Apr",
+						"May",
+						"Jun",
+						"Jul",
+						"Aug",
+						"Sep",
+						"Oct",
+						"Nov",
+						"Dec",
+					};
+					
+					static const char* const pdays[] = 
+					{
+						"Mon",
+						"Tue",
+						"Wed",
+						"Thru",
+						"Fri",
+						"Sat",
+						"Sun"
+					};
+					
+					auto p = localtime(&timer); // C dilindeki kullanım şekli.
+					std::cout << std::setfill('0');
+					
+					std::cout << std::setw(2) << p->tm_mday << " "
+							  << pmons[p->tm_mon] << " "
+							  << p->tm_year + 1900 << " "
+							  << pdays[p->tm_wday] << " "
+							  << std::setw(2) << p->tm_hour << " "
+							  << std::setw(2) << p->tm_min << " "
+							  << std::setw(2) << p->tm_sec << " ";
+				}
+
+				int main() 
+				{
+					/*
+						# OUTPUT #
+								
+						-----------------------------------
+						06 Jun 2022 Tue 20 23 08 
+						-----------------------------------
+						06 Jun 2022 Tue 20 23 08 
+						-----------------------------------
+						Kac dakika : 35
+						
+						-----------------------------------
+						35 dakika oncesi : 06 Jun 2022 Tue 19 48 08 
+						-----------------------------------
+						35 dakika sonrasi : 06 Jun 2022 Tue 20 58 08 
+						-----------------------------------
+					*/
+					
+					std::cout << "\n-----------------------------------\n";
+					
+					mt19937 eng( 
+						static_cast<unsigned>(duration_cast<milliseconds>( system_clock::now().time_since_epoch() ).count()) 
+					);
+					// i. 'system_clock::now()' fonksiyonu bize bir 'time-point' döndürmektedir.
+					// ii. Bu 'time-point' bünyesindeki '.time_since_epoch()' fonksiyonu ile orjinden geçen süreyi alıyoruz.
+					// iii. Bu süreyi 'millisecond' haline getiriyoruz.
+					// iv. Bu 'millisecond' şeklindeki süreyi 'unsigned' veri tipine dönüştürüyoruz.
+					// v. 'unsigned' veri tipini de TOHUM DEĞERİ olarak kullanıyoruz. 
+					
+					printTime();
+					
+					std::cout << "\n-----------------------------------\n";
+					
+					auto tp_now{ system_clock::now() }; // Bir 'time-point' temin ettik.
+
+					// Bunu C dilindeki 'time_t' versiyonuna dönüştürüp, kullandık.
+					printTime(system_clock::to_time_t(tp_now));
+					
+					std::cout << "\n-----------------------------------\n";
+						
+					int min; std::cout << "Kac dakika : "; std::cin >> min;
+					
+					std::cout << "\n-----------------------------------\n";
+					
+					// Temin ettiğimiz 'time-point' den önceki 'min' dakika öncesine gittik ve bunun C dilindeki
+					// 'time_t' versiyonuna dönüştürdük.
+					time_t timer = system_clock::to_time_t(tp_now - minutes{min});
+					
+					std::cout << min << " dakika oncesi : "; printTime(timer);
+					// Bu değer ile 'min' kadar önceki 'time-point' kullanıldı.
+					
+					std::cout << "\n-----------------------------------\n";
+					
+					timer = system_clock::to_time_t(tp_now + minutes{min});
+					std::cout << min << " dakika sonrasi : "; printTime(timer);
+					
+					std::cout << "\n-----------------------------------\n";
+					
+					return 0;
+				}
+				
+			* Örnek 6,
+				//..
+				using namespace std;
+				using namespace chrono;
+					
+				int main() 
+				{
+					/*
+						# OUTPUT #
+						1654546364861952106
+						19149
+					*/
+					
+					auto timePoint{ system_clock::now() }; // İlk 'time-point' elde edildi.
+					
+					std::cout << timePoint.time_since_epoch().count() << "\n"; // Orijinden geçen süre. 
+					
+					using Days = duration<int, ratio<24 * 60 * 60>>; // Bir gün içindeki saniye miktarı.
+					
+					// Orijindne geçen süre 'Gün' haline getirildi.
+					std::cout << duration_cast<Days>(timePoint.time_since_epoch()).count() << "\n";
+					
+					return 0;
+				}
+				
+			* Örnek 7,
+				//..
+				using namespace std;
+				using namespace chrono;
+
+				std::vector<int> spendTime(size_t n)
+				{
+					vector<int> ivec(n);
+					generate(begin(ivec), end(ivec), rand);
+					sort(begin(ivec), end(ivec));
+					
+					return ivec;
+				}
+
+				int main() 
+				{
+					/*
+						# OUTPUT #
+						Duration : 5690335439 nanoseconds.
+						Duration : 5690 milliseconds.
+						Duration : 5690335 microseconds.
+						Duration : 5 seconds. 
+					*/
+
+					auto tp_start = steady_clock::now();
+					auto x = spendTime(10'000'000);
+					auto tp_end = steady_clock::now();
+					
+					std::cout << "Duration : " 
+						<< nanoseconds{ tp_end - tp_start }.count() << " nanoseconds.\n";
+
+					std::cout << "Duration : " 
+						<< duration_cast<milliseconds>( tp_end - tp_start).count() << " milliseconds.\n";
+
+					std::cout << "Duration : " 
+						<< duration_cast<microseconds>( tp_end - tp_start).count() << " microseconds.\n";
+
+					std::cout << "Duration : "
+						<< duration_cast<seconds>( tp_end - tp_start).count() << " seconds.\n";
+					
+					return 0;
+				}
+				
+			* Örnek 8,
+				//..
+				using namespace std;
+				using namespace chrono;
+
+				std::vector<int> spendTime(size_t n)
+				{
+					vector<int> ivec;
+					generate_n(back_inserter(ivec), n, rand);
+					sort(begin(ivec), end(ivec));
+					
+					return ivec;
+				}
+
+				int main() 
+				{
+					/*
+						# OUTPUT #
+						Duration : 4857310217 nanoseconds.
+						Duration : 4857 milliseconds.
+						Duration : 4857310 microseconds.
+						Duration : 4 seconds.
+					*/
+
+					auto tp_start = steady_clock::now();
+					auto x = spendTime(10'000'000);
+					auto tp_end = steady_clock::now();
+					
+					std::cout << "Duration : " << nanoseconds{ tp_end - tp_start }.count() << " nanoseconds.\n";
+
+					std::cout << "Duration : " 
+						<< duration_cast<milliseconds>( tp_end - tp_start).count() << " milliseconds.\n";
+
+					std::cout << "Duration : " 
+						<< duration_cast<microseconds>( tp_end - tp_start).count() << " microseconds.\n";
+
+					std::cout << "Duration : " 
+						<< duration_cast<seconds>( tp_end - tp_start).count() << " seconds.\n";
+					return 0;
+				}
