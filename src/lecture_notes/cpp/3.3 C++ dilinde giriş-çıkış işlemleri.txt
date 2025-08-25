@@ -1,0 +1,4143 @@
+> Input-Output Operations : Aşağıdaki kalıtım hiyerarşisini inceleyelim.
+										ios_base
+											|
+										basic_ios<>
+								/					\				   <= 'virtual-inheritence'. 
+						basic_istream<>			basic_ostream<>		   <= Sırasıyla giriş ve çıkış işlemleri için.
+								| 	\					/	|
+								|	   basic_iostream<>     |			   <= Hem giriş hem çıkış işlemleri için.
+								|			  |				|
+								|			  |  			|
+					basic_istringstream<>  |		basic_ostringstream<>  <= Bellekten giriş ve çıkış işlemleri için.
+											|
+											|
+								basic_stringstream<>				   <= Bellekten hem giriş hem çıkış işlemleri için.
+											
+											
+Yukarıdaki kalıtım hiyerarşisinde gösterilmeyen ama dosya işlemlerinde kullanılan kalıtım hiyerarşisi de aşağıdaki gibidir.
+													...
+													 |
+													...
+											/					\
+									basic_istream<>			basic_ostream<>	
+									/    | 	\					/	|	\
+								   /	 |	   basic_iostream<>     |    \
+								  /      |			|		|		|     \
+								 /       |          |		|		|      \
+					basic_ifstream<>	 |          |		|		|    basic_ofstream<>
+					                     |          |		|		|
+										... 	   ...		|	   ...
+															|
+														basic_fstream<>
+	
+Yukarıdaki hiyerarşide gösterilmeyen fakat arka planda bütün okuma ve yazma işlemlerini yapan bir sınıf daha vardır.
+
+													basic_streambuf<>
+														 |
+													basic_stringbuf<>
+								
+Şimdi bu zamana kadar en çok kullandığımız iki sınıf nesnesi olan 'std::cout' ve 'std::cin' nesnelerini inceleyelim:
+    >> 'std::cout' : Bizim hep kullandığımız 'cout' nesnemiz, 'basic_ostream<>' sınıfının 'char' açılımı türündendir.
+    Yani 'ostream' sınıf türünden. Aslında bu 'ostream' ise 'basic_ostream' sınıfının 'char' açılımının tür eş ismi
+    şeklindedir. Eğer açılım 'whar_t' türünden olsaydı, tür eş ismi olarak 'wostream' ismini kullanacaktık.
+        >>> 'void*' parametreli üye fonksiyon olan '.operator<<()', argüman olarak aldığı ifadenin adresini yazdırırken
+        'const char*' parametreli global fonksiyon olan 'operator<<()' ise yazının kendisini ekrana yazdırmaktadır.
+            * Örnek 1,
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                        Ahmet
+                        0x556a02baa054
+                    */
+                    
+                    const char* name{"Ahmet"};
+                    
+                    std::operator<<(std::cout, name);
+                    // Global versiyon yazının kendisini yazdırırken.
+                    // Geri dönüş değeri birinci parametreye geçilen argümana ait bir referans.
+                    
+                    std::cout << "\n";
+                    
+                    std::cout.operator<<(name); // Üye version ise adresini yazdırmaktadır.
+                                                // Geri dönüş değeri '*this'.
+                    return 0;
+                }
+        
+        >>> Yine 'std::string', 'std::bitset', 'std::complex' vs. sınıf türlerinden parametreli fonksiyonları da vardır.
+            * Örnek 1,
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                        [Ahmet], [00000000000000011110001001000000], [(1.4,6.7)]
+                    */
+                    
+                    std::string name{"Ahmet"};
+                    
+                    std::bitset<32> bs{123456ul};
+                    
+                    std::complex<double> c{1.4, 6.7};
+                    
+                    std::cout << "[" << name << "], [" << bs << "], [" << c << "]\n";
+                    
+                    return 0;
+                }
+                
+        >>> 'custom-type' dediğimiz türler için ise global bir 'operator<<()' fonksiyonu yazmalıyız. Örneğin, 'Date'
+        sınıfı.
+            * Örnek 1,
+                //..
+                class MyCustom{
+                    public:
+                        inline static int counter{}; // C++17
+                        void showCounter()const{ std::cout << "Counter: " << counter << "\n"; }
+                    public:
+                        MyCustom(){ ++counter; }
+                        ~MyCustom(){ --counter; }
+                };
+
+                // İlgili sınıfımızı 'private' bölümüne erişmek isteseydik, ilgili sınıf içerisinde iş bu fonksiyonun
+                // 'friend' bildirimini/tanımını yapmak zorundaydık.
+                std::ostream& operator<<(std::ostream& os, const MyCustom& other)
+                {
+                    other.showCounter();
+                    return os << "\n";
+                }
+
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                        Counter: 1
+
+                        Counter: 2
+                        
+                        Counter: 4
+                        
+                        Counter: 4
+                    */
+                    
+                    MyCustom m0; std::cout << m0;
+                    MyCustom m1; std::cout << m1;
+                    MyCustom m2, m3; operator<<(operator<<(std::cout, m2), m3);
+
+                    return 0;
+                }
+        
+    >>> 'std::cin' : Bizim hep kullandığımız 'cin' nesnemiz, 'basic_ostream<>' sınıfının 'char' açılımı türündendir.
+    Yani 'istream' sınıf türünden. Aslında bu 'istream' ise 'basic_ostream' sınıfının 'char' açılımının tür eş ismi
+    şeklindedir. Eğer açılım 'whar_t' türünden olsaydı, tür eş ismi olarak 'wistream' ismini kullanacaktık.
+    
+Öte yandan formatlama ayarları aslında kalıtım hiyerarşisinin en tepesinde bulunan 'ios_base' sınıfının 'public' üye
+fonksiyonları yapılmaktadır. Dolayısla iş bu fonksiyonlara, ilgili sınıftan kalıtım yoluyle elde edilen, alt seviye sınıflar
+vesilesiyle de ulaşabiliriz. Aşağıda detayları açıklanacak olan formatlama bayrakları, 'fmtflags' türünden 'constexpr static'
+veri elemanlarıdır. 'fmtflags' ise bir tür eş ismi olup, hangi türe ait olduğu derleyicye göre değişmektedir. Bu formatlama
+ayarlarını kategorize edersek;
+    * Örnek 1, 'fmtflags' türünün temsili bir gösterimi:
+        //..
+        class iosbase{
+            public:
+                typedef int fmtflags;
+                constexpr static fmtflags basefield;
+                //...
+        };
+        
+    >> 'boolean' veri tipinde tutulan formatlama ayarları: Pozitif sayılarda '+' işaretinin kullanılıp kullanılmayacağı,
+    sırasyıla sekiz tabanlı ve on altı tabanlı rakamları yazdırırken '0' ve '0x' işaretlerinin kullanılıp kullanılmayacağı,
+    'bool' türden bir değişkenin '0' / '1' şeklinde mi yoksa 'false' / 'true' şeklinde mi yazılacağı bilgisi için kullanılır.
+    Buna ek olarak küsüratlı rakamları yazdırırken '.' işaretinden sonra sıfır rakamının gelmesi durumunda bu rakamın
+    gösterilip gösterilmeyeceği ayarını da yine bu tip formatlama ayarları ile sağlayabiliriz. Özetle bu tip formatlama
+    ayarları için kısaca 'ON/OFF Flag' diyebiliriz. 
+        * Örnek 1, bitsel seviyedeki işlemleri gerçekleştiren 'fmtflags' tür eş isminin kullandığı veri tipi:
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    St13_Ios_Fmtflags
+                */
+                
+                std::cout << typeid(std::ios_base::fmtflags).name() << "\n";
+
+                return 0;
+            }
+            
+        * Örnek 2, 'On/Off' bayraklarının yazdırılması:
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    boolalpha => [00000000000000000000000000000001]
+                    showbase  => [00000000000000000000001000000000]
+                    showpos   => [00000000000000000000100000000000]
+                    skipws    => [00000000000000000001000000000000]
+                    uppercase => [00000000000000000100000000000000]
+                */
+
+                std::cout << "boolalpha => [" << std::bitset<32>{ std::ios::boolalpha } << "]\n";
+                // 'bool' veri tipini 'true/false' biçimde yazdırmaya yarıyor.
+                
+                std::cout << "showbase  => [" << std::bitset<32>{ std::ios::showbase } << "]\n";
+                // Kullanılan sayı sistemini de yazdırmak için kullanılıyor.
+                
+                std::cout << "showpos   => [" << std::bitset<32>{ std::ios::showpos } << "]\n";
+                // Pozitif rakamlar için '+' işaretinin koyulmasını sağlar.
+                
+                std::cout << "skipws    => [" << std::bitset<32>{ std::ios::skipws } << "]\n";
+                
+                std::cout << "uppercase => [" << std::bitset<32>{ std::ios::uppercase } << "]\n";
+                // On altılık sayı sistemindeki harflerin büyük harf olmasını sağlar.
+                
+
+                return 0;
+            }
+
+        * Örnek 3, 'bool' türden değişkenleri yazdırırken:
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Flags => [4098]
+                    Flags => [4099]
+                    Flags => [4099]
+                */
+                
+                // Arka plandaki 'fmtflags' değişkenini geri döndürmektedir eğer bir parametre geçmezsek.
+                std::cout << "Flags => [" << std::cout.flags() << "]\n";
+                
+                // Herhangi bir parametre geçmemiz durumunda sadece ilgili bayrağı 'set' etmektedir.
+                std::cout.flags(std::cout.flags() | std::ios_base::boolalpha);
+                std::cout << "Flags => [" << std::cout.flags() << "]\n";
+                
+                // Yukarıdaki uzun kullanım yerine aynı işi yapan '.setf()' fonksiyonunu da kullanabiliriz.
+                std::cout.setf(std::ios_base::boolalpha);
+                std::cout << "Flags => [" << std::cout.flags() << "]\n";
+                
+                return 0;
+            }
+                
+        * Örnek 4,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    1
+                    true
+                    true
+                    true
+                    1
+                    1
+                */
+                
+                // İlgili 'boolalpha' bayrağı henüz ayarlanmamışken:
+                std::cout << (10 > 5) << "\n";
+                
+                // İlgili 'boolalpha' bayrağı artık ayarlandı:
+                std::cout.setf(std::ios_base::boolalpha);
+                std::cout << (10 > 5) << "\n";
+                
+                // 'std::ios_base', en tepedeki taban sınıfın ismi. 'basic_ios' sınıfının
+                // 'char' türden açılımının tür eş ismi 'ios' olduğundan, 'std::ios_base::boolalpha'
+                // yerine 'std::ios::boolalpha' da yazabiliriz.
+                std::cout.setf(std::ios::boolalpha);
+                std::cout << (10 > 5) << "\n";
+                
+                // Kalıtım olduğu için 'std::ios' yerine, 'std::ostream' de yazabiliriz.
+                std::cout.setf(std::ios::boolalpha);
+                std::cout << (10 > 5) << "\n";
+                
+                // ...
+                
+                // Peki ilgili bayrağı tekrar eski haline getirmek için:
+                std::cout.flags(std::cout.flags() & ~std::ios::boolalpha);
+                std::cout << (10 > 5) << "\n";
+                
+                // Yine yukarıdaki işi yapan '.unsetf()' isimli üye fonksiyonu da çağırabiliriz:
+                std::cout.unsetf(~std::ios::boolalpha);
+                std::cout << (10 > 5) << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 5, Arka planda kullanılan sayı sistemini de göstermektedir.
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    x : 54703
+                    x : d5af
+                    x : 0xd5af
+                */
+
+                int x = 54703;
+                std::cout << "x : " << x << "\n";
+                
+                std::cout << std::hex; // Artık on altılık sayı sistemi kullanılacaktır.
+                std::cout << "x : " << x << "\n";
+                
+                std::cout.setf(std::ios::showbase); // Artık kullanılan sayı sistemi de yazdırılacaktır.
+                std::cout << "x : " << x << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 6,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    x : 54703
+                    x : +54703
+                */
+
+                int x = 54703;
+                std::cout << "x : " << x << "\n";
+                
+                std::cout.setf(std::ios::showpos); // Pozitif rakamlar için '+' işaretini de ekleyecektir.
+                std::cout << "x : " << x << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 7,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    x : 54703
+                    x : d5af
+                    x : 0xd5af
+                    x : 0XD5AF
+                */
+
+                int x = 54703;
+                std::cout << "x : " << x << "\n";
+                
+                std::cout << std::hex; // Artık on altılık sayı sistemi kullanılacaktır.
+                std::cout << "x : " << x << "\n";
+                
+                std::cout.setf(std::ios::showbase); // Artık kullanılan sayı sistemi de yazdırılacaktır.
+                std::cout << "x : " << x << "\n";
+                
+                std::cout.setf(std::ios::uppercase); // Artık harfler büyük harf haline geldiler.
+                std::cout << "x : " << x << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 8,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    d : 1
+                    d : 1.00000
+                */
+
+                double d{1};
+                std::cout << "d : " << d << "\n";
+                
+                std::cout.setf(std::ios::showpoint);
+                std::cout << "d : " << d << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 9,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    x : 54703
+                    x : d5af
+                    x : 0XD5AF
+                */
+
+                int x = 54703;
+                std::cout << "x : " << x << "\n";
+                
+                std::cout << std::hex; // Artık on altılık sayı sistemi kullanılacaktır.
+                std::cout << "x : " << x << "\n";
+                
+                // Artık kullanılan sayı sistemi de yazdırılacaktır.
+                // Artık harfler büyük harf haline geldiler.
+                std::cout.setf(std::ios::showbase | std::ios::uppercase); 
+                std::cout << "x : " << x << "\n";
+                
+                return 0;
+            }
+    
+    >> Hangi sayı sisteminin kullanılacağını belirleyen bayraklar:			
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    x : 100
+                    x : 64
+                    x : 144
+                    std::ios::basefield => [00000000000000000000000001001010]
+                    std::ios::dec       => [00000000000000000000000000000010]
+                    std::ios::hex       => [00000000000000000000000000001000]
+                    std::ios::oct       => [00000000000000000000000001000000]
+                */
+                
+                int x = 100;
+                
+                // Varsayılan ayar olarak onluk sayı sisteminde yazdırmaktadır.
+                std::cout << "x : " << x << "\n"; 
+                
+                // Herhangi başka bir sayı sisteminde yazdırmak için öncelikle ilgili bayrakları
+                // sıfırlamamız gerekmektedir. Sonrasında da ilgili sayı sistemine hitap eden
+                // bayrağı 'set' etmemiz gerekmektedir.
+                // On altılık sayı sisteminde yazdırmak için: 
+                std::cout.setf(std::ios::hex, std::ios::basefield);
+                std::cout << "x : " << x << "\n";
+                
+                // Sekizlik sayı sisteminde yazdırmak için:
+                std::cout.setf(std::ios::oct, std::ios::basefield);
+                std::cout << "x : " << x << "\n";
+                
+                // Yukarıda kullanılan 'std::ios::basefield' aslında ilgili bütün bitleri '1' şeklindedir.
+                std::cout << "std::ios::basefield => [" << std::bitset<32>{std::ios::basefield} << "]\n";
+                std::cout << "std::ios::dec       => [" << std::bitset<32>{std::ios::dec} << "]\n";
+                std::cout << "std::ios::hex       => [" << std::bitset<32>{std::ios::hex} << "]\n";
+                std::cout << "std::ios::oct       => [" << std::bitset<32>{std::ios::oct} << "]\n";
+                return 0;
+            }
+                
+        * Örnek 2,
+            //..
+            void func(std::ostream& os)
+            {
+                if(os.flags() & std::ios::boolalpha)
+                    std::cout << "true false şeklinde yazmaktadır.\n";
+                else
+                    std::cout << "0 1 şeklinde yazmaktadır.\n";
+                    
+                // 'if' parantezi içerisinde;
+                // i. İlgili '.flags()' fonksiyon çağrısı ile o anki bayrakların durum bilgisi elde ediliyor.
+                // ii. Bu bayrakları 'std::ios::boolalpha' bayrağı ile 'bitsel-ve' işlemine sokuyoruz.
+                // iii. Her iki bayrak da '1' ise programın akışı yukarıdaki 'std::cout' çağrısına,
+                // eğer en az bir tanesi '0' ise programın akışı aşağıdaki 'std::cout' çağrısına geçmektedir.
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    0 1 şeklinde yazmaktadır.
+                    true false şeklinde yazmaktadır.
+                */
+                
+                func(std::cout);
+                
+                std::cout.setf(std::ios::boolalpha);
+                
+                func(std::cout);
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            void func(std::ostream& os, int x)
+            {
+                auto fm = os.flags();
+                
+                os.setf(std::ios::hex, std::ios::basefield);
+                
+                std::cout << "x : " << x << "\n";
+                
+                os.flags(fm);
+            }      
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    x : 100
+                    x : 64
+                    x : 100
+                */
+                int x = 100;
+                
+                std::cout << "x : " << x << "\n";
+                
+                func(std::cout, x);
+                
+                std::cout << "x : " << x << "\n";
+                
+                return 0;
+            }
+            
+    >> Gerçek sayıların yazdırılmasında kullanılan bayraklar:
+        * Örnek 1,
+            //..
+            void printFloatFormat(std::ostream& os)
+            {
+                if(os.flags() & std::ios::fixed)
+                    std::cout << "The flag of fixed has been set...\n";
+                
+                if(os.flags() & std::ios::scientific)
+                    std::cout << "The flag of scientific has been set...\n";
+                
+                if(os.flags() & std::ios::scientific & std::ios::fixed)
+                    std::cout << "The flag of both has been fixed...\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    3.14165
+                    7.43534e+07
+                    The flag of fixed has been set...
+                    3.141653
+                    74353425.872346
+                    The flag of scientific has been set...
+                    3.141653e+00
+                    7.435343e+07
+                    The flag of fixed has been set...
+                    The flag of scientific has been set...
+                    0x1.9221b39347992p+1
+                    0x1.1ba2c477d483p+26
+                */
+                
+                // Gerçek sayının büyüklüğüne göre format bayrağı otomatik olarak 'set'
+                // edilmektedir.
+                printFloatFormat(std::cout);
+                std::cout << 3.1416534871234 << "\n";
+                std::cout << 74353425.872345692345 << "\n"; 
+                
+                // Eğer bizler 'fixed' bayrağını 'set' etmek istiyorsak:
+                std::cout.setf(std::ios::fixed, std::ios::floatfield);
+                printFloatFormat(std::cout);
+                std::cout << 3.1416534871234 << "\n";
+                std::cout << 74353425.872345692345 << "\n";
+                
+                // Eğer bizler 'scientific' bayrağını 'set' etmek istiyorsak:
+                std::cout.setf(std::ios::scientific, std::ios::floatfield);
+                printFloatFormat(std::cout);
+                std::cout << 3.1416534871234 << "\n";
+                std::cout << 74353425.872345692345 << "\n"; 
+                
+                // Eğer bizler hem 'scientific' hem de 'fixed' bayrağını 'set' etmek istiyorsak:
+                std::cout.flags(std::ios::scientific | std::ios::fixed); // Hexadecimal sayı sisteminde yazdıracaktır.
+                printFloatFormat(std::cout);
+                std::cout << 3.1416534871234 << "\n";
+                std::cout << 74353425.872345692345 << "\n"; 
+                
+                return 0;
+            }
+            
+    >> Yazma alanı genişliğini ayarlayan üye fonksiyonlar: Bu tip üye fonksiyonlar budamaya neden olmazlar. '.width()'
+    fonksiyonuna argüman geçmeden geri dönüş değerini kullanırsak, o anki yazma alanı genişlik bilgisini 'get' etmiş oluruz.
+    Eğer iş bu fonksiyona argüman geçersek de yazma alanı genişliğini 'set' etmiş oluruz. Yine '.fill()' fonksiyonu ile de
+    yazma alanı daha büyük olduğu durumlarda doldurma karakterini 'get' ve 'set' edebiliriz. Yazma alanı genişlik bilgisini
+    'set' eden bayraklar yukarıdaki bayraklar gibi kalıcı değiller. Sadece ve sadece kendilerinden sonraki ilk argüman için
+    geçerli olurlar.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    [0] => 1234567
+                    1234567
+                */
+                
+                int x{1'234'567};
+                
+                // Varsayılan yazım alanı genişliği sıfırdır:
+                auto n = std::cout.width();
+                std::cout << "[" << n << "] => " << x << "\n";
+                
+                // Yazım alanı genişliği budamaya neden olmaz:
+                std::cout.width(3);
+                std::cout << x << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    1234567     Karaman
+                            1234567Karaman
+                            1234567Karaman
+                */
+                
+                
+                int x{1'234'567};
+                std::string name{"Karaman"};
+                
+                std::cout.width(12);
+                std::cout.setf(std::ios::left, std::ios::adjustfield);
+                std::cout << x << name;
+                
+                std::cout << "\n";
+                
+                std::cout.width(12);
+                std::cout.setf(std::ios::right, std::ios::adjustfield);
+                std::cout << x << name;
+                
+                std::cout << "\n";
+                
+                std::cout.width(12);
+                std::cout.setf(std::ios::internal, std::ios::adjustfield);
+                std::cout << x << name;
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    n : 32
+                    1234567.....Karaman
+                    
+                    ?????1234567Karaman
+                    
+                    *****1234567Karaman
+                */
+                
+                
+                int x{1'234'567};
+                std::string name{"Karaman"};
+                
+                int n = std::cout.fill(); // ASCII tablosu karşılığıdır.
+                std::cout << "n : " << n << "\n";
+                
+                std::cout.fill('.');
+                std::cout.width(12);
+                std::cout.setf(std::ios::left, std::ios::adjustfield);
+                std::cout << x << name << "\n";
+                
+                std::cout << "\n";
+                
+                std::cout.fill('?');
+                std::cout.width(12);
+                std::cout.setf(std::ios::right, std::ios::adjustfield);
+                std::cout << x << name << "\n";
+                
+                std::cout << "\n";
+                
+                std::cout.fill('*');
+                std::cout.width(12);
+                std::cout.setf(std::ios::internal, std::ios::adjustfield);
+                std::cout << x << name << "\n";
+                
+                std::cout << "\n";
+                
+                return 0;
+            }
+    
+    >> Giriş çıkış akımında kullanılan manipülatörler ve manipülatör kavramı: Aşağı örnekleri inceleyelim:
+        * Örnek 1, 'std::ostream' sınıfının temsili implementasyonu:
+            //..
+            class Ostream{
+                public:
+                    Ostream& operator<<(const char* c) { std::cout << c; return *this; } // 'const char*'
+
+                    Ostream& operator<<(int x) { std::cout << x << "\n"; return *this; }
+                    // I : 'int' veri tipini yazdırmak için
+                    
+                    Ostream& operator<<(double x) { std::cout << x << "\n"; return *this; }
+                    // II : 'double' veri tipini yazdırmak için
+                    
+                    // III : 'std::endl' fonksiyon şablonunun temsilisi.
+                    Ostream& operator<<(Ostream&(*funcPtr)(Ostream&))
+                    {
+                        return funcPtr(*this);
+                    }
+                    void flush(){ std::cout.flush(); }
+            };
+
+            // 'std::endl' fonksiyon şablonunun temsilisi.
+            Ostream& myEndl(Ostream& os)
+            {
+                os << "\n";
+                
+                os.flush();
+                
+                return os;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    100
+
+                    100.001
+                */
+                
+                int ival = 100; Ostream myCout; myCout << ival;
+                
+                myCout << myEndl;
+                
+                double dval = 100.001; myCout << dval;
+                
+                return 0;	
+                
+                // Çıktıtan da görüldüğü üzere bizler 'custom' manipülatörler yazabiliriz.
+                // Bunun sebebi 'std::cout' nesnesinin üye fonksiyonu olan '.operator<<()', 'function-pointer' argümanlı
+                // bir 'overload' a sahip olmasından dolayıdır. Bu fonksiyon göstericisi ise öyle bir fonksiyonu
+                // göstermektedir ki onun geri dönüş değeri ve aldığı argüman 'std::ostream&' türünden. 
+            }
+            
+        * Örnek 2,
+            //..
+            std::ostream& mySeparator(std::ostream& os)
+            {
+                return os << "\n-------------------------------\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    100
+                    -------------------------------
+                    100.001
+                */
+                
+                int ival = 100; 
+                
+                double dval = 100.001; 
+                
+                std::cout << ival << mySeparator << dval << std::endl;
+                
+                // Peki bizler bu yaklaşımı yukarıdaki bayraklar için de yazabilir miyiz?
+                // El-cevap: Aşağıdaki cevabı inceleyelim.
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            std::ostream& mySeparator(std::ostream& os)
+            {
+                return os << "\n-------------------------------\n";
+            }
+
+            std::ostream& myBoolAlphaFlag(std::ostream& os)
+            {
+                os.setf(std::ios::boolalpha);
+                return os;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    true
+                    -------------------------------
+                */
+                
+                std::cout << myBoolAlphaFlag << (10 > 5) << mySeparator;
+                
+                // Peki bizler nasıl tekrar eski haline alacağız?
+                // El-cevap: Aşağıdaki cevabı inceleyelim.
+                
+                return 0;
+            }
+            
+        * Örnek 4,
+            //..
+            std::ostream& mySeparator(std::ostream& os)
+            {
+                return os << "\n-------------------------------\n";
+            }
+
+            std::ostream& myBoolAlphaFlagToggleOn(std::ostream& os)
+            {
+                os.setf(std::ios::boolalpha);
+                return os;
+            }
+
+            std::ostream& myBoolAlphaFlagToggleOff(std::ostream& os)
+            {
+                os.unsetf(std::ios::boolalpha);
+                return os;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    true
+                    -------------------------------
+                    1
+                    -------------------------------
+                */
+                
+                std::cout << myBoolAlphaFlagToggleOn << (10 > 5) << mySeparator;
+                
+                std::cout << myBoolAlphaFlagToggleOff << (10 > 5) << mySeparator;
+                
+                // Buradaki örneklerde kullanılan 'On/Off' bayraklarına ek olarak yukarıdaki sayı sistemini değiştiren, 
+                // gerçek sayıların gösteriminde kullanılan ve yazma alan genişliğini ayarlayan diğer bayrakları da
+                // benzer şekilde kullanabiliriz.
+                return 0;
+            }
+            
+        * Örnek 5,
+            //..
+            std::ostream& mySeparator(std::ostream& os)
+            {
+                return os << "\n-------------------------------\n";
+            }
+
+            std::ostream& myHexxer(std::ostream& os)
+            {
+                os.setf(std::ios::hex, std::ios::basefield);
+                return os;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    x : 100
+                    x : 64
+                    -------------------------------
+                */
+                
+                int x = 100; std::cout << "x : " << x << "\n";
+                
+                std::cout << myHexxer << "x : " << x << mySeparator;
+                
+                return 0;
+            }
+
+    Yukarıdaki örneklerde temsili implementasyonları gösterilenler için aslında standart kütüphane içerisinde manipülatörler
+    bulunmaktadır.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    0x3039
+                */
+                
+                std::cout << std::left << std::showbase << std::hex;
+                
+                int x{12345};
+                std::cout << x << "\n";
+                
+                return 0;
+            }
+            
+    >> Parametreli manipülatörlerin kullanımı: Bunları kullanabilmek için 'iomanip' başlık dosyasını çağırmamız gerekmektedir.
+    Yine kalıcı değil sadece bir sonraki yazma işlemi için geçerlidir.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    17 => su
+                    35 => nusret
+                    45 => nedim
+                    56 => fugen
+                    60 => derya
+                    61 => papatya
+                    82 => nefes
+                    70 => asim
+                    25 => aziz
+                    83 => tansu
+                    -------------------
+                    17  => su        
+                    35  => nusret    
+                    45  => nedim     
+                    56  => fugen     
+                    60  => derya     
+                    61  => papatya   
+                    82  => nefes     
+                    70  => asim      
+                    25  => aziz      
+                    83  => tansu 
+                */
+                
+                std::vector<std::pair<int, std::string>> myVec;
+                
+                fcs(myVec, 10, []{ return std::make_pair(Irand{0, 100}(), rname()); });
+                
+                for(const auto&[ID, name] : myVec)
+                    std::cout << ID << " => " << name << "\n";
+                    
+                std::cout << "-------------------\n";
+                
+                std::cout << std::left;
+                for(const auto&[ID, name] : myVec)
+                    std::cout << std::setw(3) << ID << " => " << std::setw(10) << name << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    3.14159
+                    -------------------
+                    3.1416  
+                    -------------------
+                    3.1416  
+                    -------------------
+                */
+                
+                double PI{3.14159265359};
+                
+                std::cout << PI << "\n";
+                
+                std::cout << "-------------------\n";
+                
+                //Senaryo - I
+                std::cout.setf(std::ios::left, std::ios::adjustfield); // Sola dayayarak yazması için.
+                std::cout.setf(std::ios::fixed, std::ios::floatfield); // 'fixed' şeklinde yazması için.
+                std::cout.precision(4); // Ondalık kısımdan dört rakam yazması için.
+                std::cout.width(8); // Yazma alanı genişliği.
+                std::cout << PI << "\n";
+                
+                std::cout << "-------------------\n";
+                
+                // Senaryo - II
+                std::cout << std::left << std::fixed << std::setprecision(4) << std::setw(8) << PI << "\n";
+                
+                std::cout << "-------------------\n";
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    3.14159
+                    -------------------
+                    3.142***********
+                    -------------------
+                */
+                
+                double PI{3.14159265359};
+                
+                std::cout << PI << "\n";
+                
+                std::cout << "-------------------\n";
+                
+                std::cout << std::left << std::setfill('*') << std::setw(16) << std::setprecision(4) << PI << "\n";
+                
+                std::cout << "-------------------\n";
+                
+                return 0;
+            }
+            
+        * Örnek 4,
+            //..
+            class lineSeparator{
+                public:
+                    lineSeparator() = default;
+                    lineSeparator(int totalLine) : m_lineCounter{totalLine}{}
+                    friend std::ostream& operator<<(std::ostream& os, const lineSeparator& other)
+                    {
+                        for(size_t i{}; i < other.m_lineCounter; ++i)
+                            os << "\n";
+                            
+                        return os;
+                    }
+                private:
+                    int m_lineCounter{1};
+            };
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    3.14159
+                    3.1*****
+                    
+                    
+                    
+                    3.142***********
+                */
+                
+                double PI{3.14159265359};
+                
+                std::cout << PI;
+                
+                std::cout << lineSeparator{};
+                
+                std::cout << std::left << std::setfill('*') << std::setw(8) << std::setprecision(2) << PI << "\n";
+                
+                std::cout << lineSeparator{3};
+                
+                std::cout << std::left << std::setfill('*') << std::setw(16) << std::setprecision(4) << PI << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 5,
+            //..
+            class lineSeparator{
+                public:
+                    lineSeparator() = default;
+                    lineSeparator(int totalLine) : m_lineCounter{totalLine}{}
+                    friend std::ostream& operator<<(std::ostream& os, const lineSeparator& other)
+                    {
+                        for(size_t i{}; i < other.m_lineCounter; ++i)
+                            os.put(' ');
+                            
+                        return os;
+                    }
+                private:
+                    int m_lineCounter{1};
+                };
+                                    
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                        Ali Veli  Mahmut   Ulya
+                    */
+                    std::cout << "Ali" 
+                        << lineSeparator{} << "Veli" 
+                        << lineSeparator{2} << "Mahmut" 
+                        << lineSeparator{3} << "Ulya" << "\n";
+                    
+                    return 0;
+                }
+
+Şimdi de bu işlemlerin, bu kütüphanedeki diğer özelliklere, öğelere değinelim:
+    >> Giriş çıkış akımlarının 'conditional-state' bilgisi: Yukarıdaki bayraklar 'fmtflags' türünden değişkenlerken,
+    burada ilgili durum bilgisini tutan değişkenler ise 'iostate' türünden değişkenlerdir. 'iostate' ise tipik olarak
+    'int' türündendir. İlgili değişkenlerin yine 'static constexpr' olduklarını da unutmayalım. Bu değişkenler ise
+    'std::ios::goodbit', 'std::ios::failbit', 'std::ios::eofbit' ve 'std::ios::badbit' şeklinde isimlendirilmiştir.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    iostate : St12_Ios_Iostate
+                */
+                
+                std::cout << "iostate : " << typeid(std::ios::iostate).name() << "\n";
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    std::ios::goodbit : 00000000000000000000000000000000
+                    std::ios::failbit : 00000000000000000000000000000100
+                    std::ios::eofbit  : 00000000000000000000000000000010
+                    std::ios::badbit  : 00000000000000000000000000000001
+                */
+                
+                std::cout << "std::ios::goodbit : " << std::bitset<32>{std::ios::goodbit} << "\n";
+                
+                // Okuma işlemi yaparken bir başarısızlık söz konusu olduğunda bu bitler 'set' edilir.
+                // Örneğin, bir formatlama hatası var ise 'failbit' 'set' edilmektedir veya akımın
+                // 'buffer' ında karakter yokken okuma yapıldığında 'eofbit' ve 'failbit' 'set' edilir.
+                std::cout << "std::ios::failbit : " << std::bitset<32>{std::ios::failbit} << "\n";
+                std::cout << "std::ios::eofbit  : " << std::bitset<32>{std::ios::eofbit} << "\n";
+                
+                // Kendini tekrardan 'recover' edemediği durumlarda bu bit 'set' edilmektedir. Örneğin,
+                // giriş-çıkış işlemleri için yeterli bellek alanı elde edilemez ise.
+                std::cout << "std::ios::badbit  : " << std::bitset<32>{std::ios::badbit} << "\n";
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            void print_stream_state(std::istream& os)
+            {
+                if(os.rdstate() == 0)
+                {
+                    std::cout << "Akim, iyi durumda.\n"; return;
+                }
+                
+                std::cout << "failbit => " << (os.rdstate() & std::ios::failbit ? "set" : "unset") << "\n";
+                std::cout << "eofbit  => " << (os.rdstate() & std::ios::eofbit ? "set" : "unset") << "\n";
+                std::cout << "badbit  => " << (os.rdstate() & std::ios::badbit ? "set" : "unset") << "\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Akim, iyi durumda.
+                    Bir tam sayi giriniz: 15
+                    Girilen tam sayi : 15
+                    Akim, iyi durumda.
+                */
+                
+                print_stream_state(std::cin);
+                
+                int x{}; std::cout << "Bir tam sayi giriniz: "; std::cin >> x;
+                std::cout << "Girilen tam sayi : " << x << "\n";
+                print_stream_state(std::cin);
+                return 0;
+            }
+            
+        * Örnek 4,
+            //..
+            void print_stream_state(std::istream& os)
+            {
+                if(os.rdstate() == 0)
+                {
+                    std::cout << "Akim, iyi durumda.\n"; return;
+                }
+                
+                std::cout << "failbit => " << (os.rdstate() & std::ios::failbit ? "set" : "unset") << "\n";
+                std::cout << "eofbit  => " << (os.rdstate() & std::ios::eofbit ? "set" : "unset") << "\n";
+                std::cout << "badbit  => " << (os.rdstate() & std::ios::badbit ? "set" : "unset") << "\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Akim, iyi durumda.
+                    Bir tam sayi giriniz: ali
+                    Girilen tam sayi : 0
+                    failbit => set
+                    eofbit  => unset
+                    badbit  => unset
+                */
+                
+                print_stream_state(std::cin);
+                
+                int x{}; std::cout << "Bir tam sayi giriniz: "; std::cin >> x;
+                std::cout << "Girilen tam sayi : " << x << "\n";
+                print_stream_state(std::cin);
+                return 0;
+            }
+            
+        * Örnek 5,
+            //..
+            void print_stream_state(std::istream& os)
+            {
+                if(os.rdstate() == 0)
+                {
+                    std::cout << "Akim, iyi durumda.\n"; return;
+                }
+                
+                std::cout << "failbit => " << (os.rdstate() & std::ios::failbit ? "set" : "unset") << "\n";
+                std::cout << "eofbit  => " << (os.rdstate() & std::ios::eofbit ? "set" : "unset") << "\n";
+                std::cout << "badbit  => " << (os.rdstate() & std::ios::badbit ? "set" : "unset") << "\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Akim, iyi durumda.
+                    Bir tam sayi giriniz: ^a 
+                    Girilen tam sayi : 0
+                    failbit => set
+                    eofbit  => unset
+                    badbit  => unset
+                */
+                
+                print_stream_state(std::cin);
+                
+                int x{}; std::cout << "Bir tam sayi giriniz: "; std::cin >> x;
+                std::cout << "Girilen tam sayi : " << x << "\n";
+                print_stream_state(std::cin);
+                return 0;
+            }
+            
+        * Örnek 6,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir tam sayi giriniz: ali
+                    HATA!!!
+                    HATA!!!
+                */
+                int x{}; std::cout << "Bir tam sayi giriniz: "; std::cin >> x;
+                
+                // Arka planda 'std::cin.operator bool()' fonksiyonu çağrılmıştır.
+                if(std::cin)
+                {
+                    std::cout << "Girilen tam sayi : " << x << "\n";
+                }
+                else
+                {
+                    std::cout << "HATA!!!\n";
+                }
+                
+                std::cin >> x;
+                
+                // İlgili bayrakları direkt olarak 'get' etmek yerine, bu fonksiyonu da çağırabiliriz.
+                if(std::cin.good())
+                {
+                    std::cout << "Girilen tam sayi : " << x << "\n";
+                }
+                else
+                {
+                    std::cout << "HATA!!!\n";
+                }
+                
+                return 0;
+            }
+            
+        * Örnek 7,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir tam sayi giriniz: ali
+                    HATA!!!
+                    HATA!!!
+                */
+                int x{}; std::cout << "Bir tam sayi giriniz: "; std::cin >> x;
+                
+                // Arka planda 'std::cin.operator!()' fonksiyonu çağrılmıştır.
+                if(!std::cin)
+                {
+                    std::cout << "HATA!!!\n";
+                }
+                else 
+                {
+                    std::cout << "Girilen tam sayi : " << x << "\n";
+                }
+                
+                std::cin >> x;
+                
+                // İlgili bayrakları direkt olarak 'get' etmek yerine, bu fonksiyonu da çağırabiliriz.
+                if(std::cin.fail())
+                {
+                    std::cout << "HATA!!!\n";
+                }
+                else
+                {
+                    std::cout << "Girilen tam sayi : " << x << "\n";
+                }
+                
+                return 0;
+            }
+            
+        * Örnek 8,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir tam sayi giriniz: ayşe
+                    HATA!!!
+                    HATA!!!
+                */
+                int x{}; std::cout << "Bir tam sayi giriniz: "; std::cin >> x;
+                
+                if(std::cin.eof())
+                {
+                    std::cout << "Girilen tam sayi : " << x << "\n";
+                }
+                else
+                {
+                    std::cout << "HATA!!!\n";
+                }
+                
+                std::cin >> x;
+                
+                if(std::cin.bad())
+                {
+                    std::cout << "Girilen tam sayi : " << x << "\n";
+                }
+                else
+                {
+                    std::cout << "HATA!!!\n";
+                }
+                return 0;
+            }
+            
+        * Örnek 9,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir tam sayi giriniz: ahmet
+                    Hatali giriş yaptınız. Tekrar deneyiniz...
+                    Bir tam sayi giriniz: ^X
+                    Hatali giriş yaptınız. Tekrar deneyiniz...
+                    Bir tam sayi giriniz: ^Z
+                    12ahmet
+                    Girilen tam sayi : 12
+                */
+                
+                int x{};
+                
+                for(;;)
+                {
+                    std::cout << "Bir tam sayi giriniz: ";
+                    if(std::cin >> x; std::cin.good())
+                    {
+                        std::cout << "Girilen tam sayi : " << x << "\n";
+                        break;
+                    }
+                    else if(std::cin.eof())
+                    {
+                        std::cout << "Bir giriş yapmadınız...\n";
+                        std::cin.clear();
+                        // Programın akışı buraya girmişse demektir ki bir hata bayrağı 'set'
+                        // edilmiş. Tekrardan okumanın yapılabilmesi için bütün hata bayraklarının
+                        // tekrardan eski haline getirilmesi gerekiyor.
+                        // Eğer bu fonksiyona argüman olarak bir 'flag' geçersek, sadece onu tekrardan
+                        // eski haline getirmektedir.
+                    }
+                    else if(std::cin.fail() || std::cin.bad())
+                    {
+                        std::cout << "Hatali giriş yaptınız. Tekrar deneyiniz...\n";
+                        
+                        // Yukarıdaki aynı sebepten dolayı burada da bayrakları eski haline getirmemiz gerekiyor.
+                        std::cin.clear();
+                        
+                        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                        // Programın akışı buraya girmişse 'buffer' a karakter aktarılmış demektir.
+                        // Sağlıklı giriş için 'buffer' içerisindeki bütün karakterleri, 'buffer' dan
+                        // çıkartmalıyız. Boşluk karakterini görene kadar bütün karakterler çıkartılacaktır.
+                    }
+                    else
+                    {
+                        std::cout << "Something unexpected occured...\n.";
+                        std::exit(EXIT_FAILURE);
+                    }
+                }
+                
+                return 0;
+            }
+            
+        * Örnek 10,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir rakam girin : 12AhmetKandemirPehlivanli12
+                    Girilen rakam : 12
+                    Geride kalan karakterler : [AhmetKandemirPehlivanli12]
+                */
+                
+                int x{};
+                
+                std::cout << "Bir rakam girin : "; std::cin >> x;
+                if(std::cin)
+                    std::cout << "Girilen rakam : " << x << "\n";
+                
+                std::string tempBufferChars{};
+                std::cin >> tempBufferChars;
+                std::cout << "Geride kalan karakterler : [" << tempBufferChars << "]\n";
+                    
+                return 0;
+            }
+            
+        * Örnek 11,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir rakam girin : 12AhmetKandemirPehlivanliQ21
+                    Girilen rakam : 12
+                    Geride kalan rakamlar : [21]
+                */
+                
+                int x{};
+                
+                std::cout << "Bir rakam girin : "; std::cin >> x;
+                if(std::cin)
+                    std::cout << "Girilen rakam : " << x << "\n";
+                
+                // 'Q' karakteri gelene kadar bütün karakterler 'buffer' dan boşaltıldı.
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), 'Q');
+                
+                int tempBufferInt{};
+                std::cin >> tempBufferInt;
+                std::cout << "Geride kalan rakamlar : [" << tempBufferInt << "]\n";
+                    
+                return 0;
+            }
+
+    >> Bellekte üzerinde okuma ve yazma işlemlerini gerçekleştiren sınıflar: 'sstream' başlık dosyasını çağırmamız
+    gerekiyor. Bünyesinde 'std::ostringstream', 'std::istringstream' ve 'std::stringstream' sınıflarını içermektedir.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    --------------------------
+                    ID   : [6144]
+                    Name : [Ahmet]
+                    Age  : [17]
+                    --------------------------
+                */
+                
+                std::ostringstream oss; // Belleğe yazmak için kullanılacak.
+                
+                int ival{17};
+                int ID{6144};
+                std::string name{"Ahmet"};
+                
+                // Değişkenler belleğe yazıldılar.
+                oss << "ID   : [" << ID << "]\n" 
+                    << "Name : [" << name << "]\n"
+                    << "Age  : [" << ival << "]\n";
+                    
+                // Bellekteki değişkenleri bir 'std::string' olarak tekrar geri alabiliriz:
+                std::cout << "--------------------------\n" << oss.str() << "--------------------------\n";
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            std::string get_log_file_name()
+            {
+                std::ostringstream oss;
+                
+                time_t timer;
+                time(&timer);
+                tm* p{ localtime(&timer) };
+                
+                oss.fill('0');
+                
+                oss << p->tm_year + 1900 
+                    << '_' << std::setw(2) << (p->tm_mon + 1)
+                    << '_' << std::setw(2) << (p->tm_mday)
+                    << '_' << std::setw(2) << (p->tm_hour)
+                    << '_' << std::setw(2) << (p->tm_min)
+                    << '_' << std::setw(2) << (p->tm_sec) << ".log";
+                    
+                return oss.str();
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    [2022_05_22_23_51_18.log]
+                */
+                
+                std::cout << "[" << get_log_file_name() << "]\n";
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            class Triple{
+                public:
+                    //...
+                    friend std::ostream& operator<<(std::ostream& os, const Triple& other) { 
+                        return os << "(" << other.m_a << ", " << other.m_b << ", " << other.m_c << ")\n"; 
+                    }
+                private:
+                    //...  
+            };
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    0x7ffd2976a66c adresinde yeni bir nesne hayata geldi.
+                                (17, 9, 1993)
+                        => Ahmet Kandemir Pehlivanli
+                    0x7ffd2976a66c adresindeki nesnenin hayatı sona erdi.
+                */
+                
+                Triple mx{17, 9, 1993};
+                
+                std::cout << std::setw(10) << mx << " => Ahmet Kandemir Pehlivanli\n";
+                
+                // Çıktıdan da görüldüğü üzere yazma alanı genişliği kendinden sonraki ilk 
+                // karakteri etkilediğinden, ilgili sınıf nesnesi ile ismim arasında 10 karakterlik
+                // boşluk meydana gelmedi. 
+                
+                return 0;
+            }
+            
+        * Örnek 4,
+            //..
+            class Triple{
+                public:
+                    //..
+                    friend std::ostream& operator<<(std::ostream& os, const Triple& other)
+                    { 
+                        std::ostringstream oss;
+                        oss << "(" << other.m_a << ", " << other.m_b << ", " << other.m_c << ")\n";
+                        return os << oss.str();
+                    }
+                private:
+                    //..  
+            };
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    0x7fff05f7bacc adresinde yeni bir nesne hayata geldi.
+                    (17, 9, 1993)
+                        => Ahmet Kandemir Pehlivanli
+                    0x7fff05f7bacc adresindeki nesnenin hayatı sona erdi.
+                */
+                
+                Triple mx{17, 9, 1993};
+                
+                std::cout << std::setw(10) << mx << " => Ahmet Kandemir Pehlivanli\n";
+                
+                // Evet işte şimdi tam da istediğimiz gibi oldu. 
+                
+                return 0;
+            }
+            
+        * Örnek 5,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Day   : 17
+                    Month : 9
+                    Year  : 1993
+                    Name  : Ahmet
+                */
+                
+                std::istringstream iss{"17 9 1993 Ahmet"};
+                size_t day, month, year;
+                std::string name;
+                
+                iss >> day >> month >> year >> name;
+                
+                std::cout << "Day   : " << day << "\n"
+                            << "Month : " << month << "\n"
+                            << "Year  : " << year << "\n"
+                            << "Name  : " << name << "\n";
+                return 0;
+            }
+            
+        * Örnek 6,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir yazi girin : Bugün ilk defa İstanbul'a kar yağdığını gördüm.
+                    [Bugün]
+                    [ilk]
+                    [defa]
+                    [İstanbul'a]
+                    [kar]
+                    [yağdığını]
+                    [gördüm.]
+                */
+                
+                std::cout << "Bir yazi girin : ";
+                std::string sLine; std::getline(std::cin, sLine);
+                
+                std::istringstream iss{sLine};
+                std::string word{};
+                
+                while(iss >> word)
+                    std::cout << "[" << word << "]\n";
+                    
+                return 0;
+            }
+            
+        * Örnek 7,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    [dilber01.txt]
+                    [dilber01.txtsu02.txt]
+                    [dilber01.txtsu02.txtemine03.txt]
+                    [dilber01.txtsu02.txtemine03.txtsoner04.txt]
+                */
+                
+                std::ostringstream oss;
+                oss << std::setfill('0');
+                
+                for(size_t i{1}; i < 5; ++i)
+                {
+                    oss << rname() << std::setw(2) << i << ".txt";
+                    std::cout << "[" << oss.str() << "]";
+                }
+                
+                // Çıktıdan da görüldüğü üzere 'oss' 'buffer' boşaltılmadığı için.
+                return 0;
+            }
+            
+        * Örnek 8,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    [celal01.txt][suphi02.txt][menekse03.txt][egemen04.txt]
+                */
+                
+                for(size_t i{1}; i < 5; ++i)
+                {
+                    std::ostringstream oss;
+                    oss << std::setfill('0');
+                    oss << rname() << std::setw(2) << i << ".txt";
+                    std::cout << "[" << oss.str() << "]";
+                }
+                
+                // Çıktıdan da görüldüğü üzere 'oss' 'buffer' boşaltılmadığı için.
+                return 0;
+            }
+            
+        * Örnek 9,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    [feramuz01.txt][sami02.txt][rumeysa03.txt][gursel04.txt]
+                */
+                
+                std::ostringstream oss;
+                oss << std::setfill('0');
+                    
+                for(size_t i{1}; i < 5; ++i)
+                {
+                    oss << rname() << std::setw(2) << i << ".txt";
+                    std::cout << "[" << oss.str() << "]";
+                    oss.str(""); // İlgili fonksiyona boş bir yazı geçildiğinde, 'buffer' sıfırlanmaktadır.
+                }
+                
+                return 0;
+            }
+
+    >> 'ostream_iterator' hatırlatması: Bir 'range' içerisindeki öğeleri bir akıma yazdırmak için kullanılır.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    bekir, adem, pinat, rumeysa, papatya,
+                */
+                
+                std::vector<std::string> sVec; 
+                fcs(sVec, 5, rname); 
+                std::copy(sVec.begin(), sVec.end(), std::ostream_iterator<std::string>(std::cout, ", "));
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    sidre gazi ece aykut emrecan 
+                    -----------------------------------------------------------------------------
+                    n a c e r m e _ t u k y a _ e c e _ i z a g _ e r d i s 
+                    -----------------------------------------------------------------------------
+                */
+                
+                std::vector<std::string> sVec; fcs(sVec, 5, rname);
+                
+                print(sVec);
+                
+                std::ostringstream oss;
+                
+                std::copy(sVec.begin(), sVec.end(), std::ostream_iterator<std::string>(oss, "_"));
+                
+                auto myStr{ oss.str() };
+                
+                myStr.pop_back();
+                
+                std::reverse(myStr.begin(), myStr.end());
+                
+                print(myStr);
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    gunay | derin | aylin | alican | sinem | sumeyye | ceyhun | pakize | ercument | murathan | 
+                */
+                
+                // Hedef 'range' i aşağıdaki bilgiler ışığında doldurmaca
+                std::generate_n( 
+                    std::ostream_iterator<std::string>{std::cout, " | "}, // Hedef 'range' için başlangıç konumu
+                    10, // Kaç defa aşağıdaki 'callable' çağrılacağı bilgisi
+                    rname // Çağrılacak 'callable'
+                );
+                
+                return 0;
+            }
+            
+    >> 'std::istream_iterator' : 'std::ostream_iterator' a nazaran herhangi bir akımdan okuma yapmamızı sağlamaktadır.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    1 11 111 222 22 2
+                    a
+                    [6] => 1-11-111-222-22-2-
+                    -----------------------------------------------------------------------------
+                */
+                
+                std::vector<int> iVec{ std::istream_iterator<int>(std::cin), std::istream_iterator<int>{} };
+                // Yukarıdaki parametreler ile bir 'range' oluşturmuş olduk. Giriş akımındaki bütün rakamları,
+                // 'iVec' isimli kaba aktaracaktır.
+                // Girişi sonlandırmak için herhangi bir karakter girişi yapabiliriz. 
+                
+                std::cout << "[" << iVec.size() << "] => ";
+                print(iVec, "-");
+                
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Max Element : 12 24 36 48 60 72 a
+                    72
+                */
+                
+                std::cout << "Max Element : " 
+                    << *std::max_element( std::istream_iterator<int>(std::cin), std::istream_iterator<int>{} ) 
+                    << "\n"; 
+                // Bir önceki örnekteki gibi bir 'range' oluşturduğumuz için, bu 'range' i ise 'std::max_element()'
+                // fonksiyonuna argüman olarak geçebildik. Böylelikle girdiğimiz sayılar arasındaki en büyük sayıyı
+                // bulmuş olduk.
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Toplam: 1 11 111 -111 -11 -1 a
+                    0
+                */
+                
+                std::cout << "Toplam: " 
+                    << std::accumulate( std::istream_iterator<int>(std::cin), std::istream_iterator<int>{}, 0 ) 
+                    << "\n";
+                // İş bu fonksiyon, 'numeric' başlık dosyasında bildirilmiş olup bir 'range' içerisindeki
+                // rakamları, bir baz değer üzerine toplamaktadır. Bahsi geçen baz değer ise ikinci parametreye
+                // geçilen argüman şeklindedir.
+                
+                // std::cout << "Toplam: " << std::accumulate( std::istream_iterator<int>(std::cin), {}, 0 ) << "\n";
+                // C++17 ile birlikte yukarıdaki 'std::accumulate()' fonksiyonunun ilk iki parametresine geçilen 'range'
+                // bilgilerinden ikinci argüman yerine sadece '{}' yazarak tür çıkarımını derleyiciye de yaptırtabiliriz.
+                
+                return 0;
+            }
+            
+        * Örnek 4, Aşağıdaki örnekte üç farklı kod bloğu aynı blok içerisinde yazılmıştır. Bloğu üçe bölerek ayrı ayrı
+        çalıştırmalısınız.
+            //..
+            int main()
+            {
+                // From 'vector' to a file.
+                /*
+                    # source.txt #
+                    askin_muglali
+                    korhan_poturgeli
+                    fugen_kayabasi
+                    caner_dunyalik
+                    yunus_ordulu
+                    ceyhun_yarma
+                    efe_comakci
+                    emirhan_kaplan
+                    rumeysa_yavas
+                    teslime_eloglu
+                */
+                std::vector<std::string> sVec; fcs(sVec, 10, []{ return rname() + "_" + rfname(); });
+                std::ofstream ofs{ "source.txt" }; // Bir dosyaya yazılacaktır.
+
+                if(!ofs)
+                    std::exit(EXIT_FAILURE);
+                
+                // Bir dosyaya yazılacaktır.
+                std::copy(std::begin(sVec), std::end(sVec), std::ostream_iterator<std::string>(ofs, "\n"));
+                
+                // From the file to 'std::set'
+                /*
+                    # OUTPUT #
+                    cengiz_kahraman
+                    durmus_fedai
+                    hilal_kecisakal
+                    hulki_topatan
+                    menekse_soysalan
+                    metin_cengaver
+                    nagehan_keskin
+                    poyraz_sonuzun
+                    seyhan_akgunes
+                    tayfun_topatan
+                    
+                    -----------------------------------------------------------------------------
+                */
+                std::ifstream ifs{ "source.txt" };
+                if(!ifs)
+                    std::exit(EXIT_FAILURE);
+                    
+                // C++17 ve sonrasındaki dönemde ikinci argüman için tür çıkarımı yapılacaktır.
+                std::set<std::string> mySet{ std::istream_iterator<std::string>{ifs}, {} };
+                
+                print(mySet, "\n");
+                
+                
+                // From the 'std::set' to the same file.
+                /*
+                    # source.txt #
+                    cengiz_kahraman
+                    durmus_fedai
+                    hilal_kecisakal
+                    hulki_topatan
+                    menekse_soysalan
+                    metin_cengaver
+                    nagehan_keskin
+                    poyraz_sonuzun
+                    seyhan_akgunes
+                    tayfun_topatan
+                */
+                std::ofstream ofs{ "source.txt" }; // Bir dosyaya yazılacaktır.
+                if(!ofs)
+                    std::exit(EXIT_FAILURE);
+
+
+                std::copy(std::begin(mySet), std::end(mySet), std::ostream_iterator<std::string>(ofs, "\n"));
+                // Bir dosyaya yazılacaktır.
+                
+                return 0;
+            }
+            
+        * Örnek 5,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                */
+                
+                // Most Vexing Parse
+                std::vector<std::string> sVec( 
+                    std::istream_iterator<std::string>(std::cin), 
+                    std::istream_iterator<std::string>() 
+                );
+                
+                std::cout << "[" << sVec.size() << "]\n";
+                
+                return 0;
+            }
+            
+        * Örnek 6,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    1 3 5 7 9 9 7 5 3 1 a
+                    1_1_3_3_5_5_7_7_9_9_
+                */
+                
+                // Standart giriş akımından alınan yazıları alfabetik sıraya göre ekrana yazma:
+                std::multiset<int> myMultiSet{ std::istream_iterator<int>{std::cin}, {} };
+                
+                std::copy(std::begin(myMultiSet), std::end(myMultiSet), std::ostream_iterator<int>{std::cout, "_"});
+                
+                return 0;
+            }
+            
+        * Örnek 7,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Bir yazi girin => Bugün hava kapalı olduğundan, bütün gün başım ağrıdı.
+                    Bugün
+                    ağrıdı.
+                    başım
+                    bütün
+                    gün
+                    hava
+                    kapalı
+                    olduğundan,
+                */
+                
+                std::string str{}; 
+                std::cout << "Bir yazi girin => "; 
+                std::getline(std::cin, str); 
+                std::istringstream iss{str};
+                
+                std::string singleWord{}; std::vector<std::string> theMessage{};
+                
+                while(iss >> singleWord)
+                    theMessage.push_back(singleWord);
+                    
+                std::sort(theMessage.begin(), theMessage.end());
+                
+                std::copy(theMessage.begin(), theMessage.end(), std::ostream_iterator<std::string>{std::cout, "\n"});
+                
+                return 0;
+            }
+            
+    >> '.rdbuf()' fonksiyonu: 'std::streambuf' türünden bir gösterici döndürmekte olup ilgili çıkış akımının 'buffer'
+    adresini döndürmektedir.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    cengiz_kahraman
+                    durmus_fedai
+                    hilal_kecisakal
+                    hulki_topatan
+                    menekse_soysalan
+                    metin_cengaver
+                    nagehan_keskin
+                    poyraz_sonuzun
+                    seyhan_akgunes
+                    tayfun_topatan
+                */
+                
+                std::ifstream ifs{ "source.txt" };
+                // Bahsi geçen dosya açıldığında içerisindeki yazılar bu dosyanın 'buffer' bölgesine aktarılmakta.
+                
+                std::cout << ifs.rdbuf();
+                // İş bu '.rdbuf()' fonksiyonu ise yukarıda açıklanan 'buffer' bölgesinin adresini döndürmekte.
+                // 'std::ostream' sınıfının da ilgili 'buffer' parametre türünden bir 'inserter' operatörü var.
+                
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            // fcopy source.txt dest.txt
+            int main(int argc, char** argv)
+            {
+                /*
+                    # OUTPUT #
+                */
+                
+                if(argc != 3)
+                {
+                    std::cerr << "usage : <fcopy> <source_file_name> <dest_file_name>\n"; 
+                    return 1;
+                }   
+                
+                std::ifstream ifs{ argv[1] };
+                //...
+                
+                std::ofstream ofs{ argv[2] };
+                //...
+                
+                ofs << ifs.rdbuf();
+                
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    using ofs...
+                    47802 1
+                    using std::cout...
+                    47802 1
+                    using ofs after manipulating its format settings...
+                    0XBABA true
+                    using std::cout w/o formating its format settings...
+                    47802 1
+                */
+                std::ostream ofs{ std::cout.rdbuf() };
+                // Artık 'ofs' ile 'std::cout' aynı 'buffer' bölgesini kullanmaktalar.
+                
+                ofs << "using ofs...\n";
+                int ival{ 47802 }; bool flag{ true };
+                ofs << ival << " " << flag << "\n";
+                
+                std::cout << "using std::cout...\n";
+                std::cout << ival << " " << flag << "\n";
+                
+                ofs << std::uppercase << std::hex << std::showbase << std::boolalpha;
+                ofs << "using ofs after manipulating its format settings...\n";
+                ofs << ival << " " << flag << "\n";
+                
+                std::cout << "using std::cout w/o formating its format settings...\n";
+                std::cout << ival << " " << flag << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 4,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    0XBABA_0XDEDE_4.19E+03_false
+                    47802_57054_4187.72_0
+                */
+                
+                std::ostream ofs{ std::cout.rdbuf() };
+                // Artık 'ofs' ile 'std::cout' aynı 'buffer' bölgesini kullanmaktalar.
+                
+                ofs.setf(std::ios::boolalpha | std::ios::uppercase | std::ios::showbase);
+                ofs.setf(std::ios::hex, std::ios::basefield);
+                ofs.setf(std::ios::scientific, std::ios::floatfield);
+                ofs.precision(2);
+                
+                int x{ 47'802 }, y{ 57'054 };
+                double z{ 4187.7233 };
+                
+                ofs << x << "_" << y << "_" << z << "_" << (x > y) << "\n";
+                std::cout << x << "_" << y << "_" << z << "_" << (x > y) << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 5,
+            //..
+            void print_file_n_times(const std::string& fileName, int counter)
+            {
+                std::ifstream ifs{ fileName };
+                if(!ifs)
+                {
+                    std::cerr << "dosya acilamadi...\n"; 
+                    std::exit(EXIT_FAILURE);
+                }
+                while(--counter)
+                {
+                    std::cout << ifs.rdbuf();
+                    std::cout << "\n-----------------------------\n";
+                    ifs.seekg(0); // Dosya konum göstericisi tekrardan en başa alındı.
+                }
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    cengiz_kahraman
+                    durmus_fedai
+                    hilal_kecisakal
+                    hulki_topatan
+                    menekse_soysalan
+                    metin_cengaver
+                    nagehan_keskin
+                    poyraz_sonuzun
+                    seyhan_akgunes
+                    tayfun_topatan
+                    
+                    -----------------------------
+                    cengiz_kahraman
+                    durmus_fedai
+                    hilal_kecisakal
+                    hulki_topatan
+                    menekse_soysalan
+                    metin_cengaver
+                    nagehan_keskin
+                    poyraz_sonuzun
+                    seyhan_akgunes
+                    tayfun_topatan
+                    
+                    -----------------------------
+                */
+                
+                print_file_n_times("source.txt", 3);
+                
+                return 0;
+            }
+            
+        * Örnek 6,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Ahmet Kandemir Pehlivanli
+                    Local Content => Ulya Yürük
+                */
+                
+                std::streambuf* defaultCoutBuffer{ std::cout.rdbuf() };
+                
+                std::ostringstream oss;
+                
+                std::cout.rdbuf( oss.rdbuf() );
+                // Artık 'std::cout', 'oss' isimli değişkenin 'buffer' alanını kullanmakta.
+                // Dolayısıyla ekran yerine belleğe yazacaktır.
+                                                
+                std::cout << "Ulya Yürük\n";
+                
+                std::cout.rdbuf(defaultCoutBuffer);
+                // 'std::cout' artık kendi 'buffer' alanını kullanmaktadır.
+                // Dolayısıyla bellek yerine ekrana yazacaktır.
+                                                    
+                std::cout << "Ahmet Kandemir Pehlivanli\n";
+                std::cout << "Local Content => " << oss.str() << "\n";
+                
+                return 0;
+            }
+            
+    >> Giriş çıkış işlemlerinde 'Exception Handling' : Giriş-çıkış akımları üzerinde yapılan işlemler herhangi bir hata
+    fırlatmamaktadır.
+        * Örnek 1,
+            //..
+            void print_exception_state(const std::istream& ib)
+            {
+                auto currentState{ ib.exceptions() }; // İş bu fonksiyonu bu haliyle kullanırsak 'getter' görevi görür.
+                
+                std::cout << "\n----------------------------------------------------\n";
+                
+                if(currentState == 0)
+                    std::cout << "hata durumunda exception throw etmez.\n";
+                
+                if(currentState & std::ios::eofbit)
+                    std::cout << "eofbit set edildiginde, exception throw eder.\n";
+                    
+                if(currentState & std::ios::failbit)
+                    std::cout << "failbit set edildiginde, exception throw eder.\n";
+                    
+                if(currentState & std::ios::badbit)
+                    std::cout << "badbit set edildiginde, exception throw eder.\n";
+                    
+                std::cout << "\n----------------------------------------------------\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                            
+                    ----------------------------------------------------
+                    hata durumunda exception throw etmez.
+                    
+                    ----------------------------------------------------
+                    
+                    ----------------------------------------------------
+                    badbit set edildiginde, exception throw eder.
+                    
+                    ----------------------------------------------------
+                    
+                    ----------------------------------------------------
+                    eofbit set edildiginde, exception throw eder.
+                    failbit set edildiginde, exception throw eder.
+                    
+                    ----------------------------------------------------
+                */
+                
+                print_exception_state(std::cin);
+                
+                std::cin.exceptions(std::ios::badbit); // Artık iş bu fonksiyon 'setter' olarak işlev görmekte.
+                print_exception_state(std::cin);
+                
+                std::cin.exceptions(std::ios::failbit | std::ios::eofbit);
+                print_exception_state(std::cin);
+                
+                return 0;
+            }
+            
+        * Örnek 2,
+            //..
+            void print_exception_state(const std::istream& ib)
+            {
+                auto currentState{ ib.exceptions() }; // İş bu fonksiyonu bu haliyle kullanırsak 'getter' görevi görür.
+                
+                std::cout << "\n----------------------------------------------------\n";
+                
+                if(currentState == 0)
+                    std::cout << "hata durumunda exception throw etmez.\n";
+                
+                if(currentState & std::ios::eofbit)
+                    std::cout << "eofbit set edildiginde, exception throw eder.\n";
+                    
+                if(currentState & std::ios::failbit)
+                    std::cout << "failbit set edildiginde, exception throw eder.\n";
+                    
+                if(currentState & std::ios::badbit)
+                    std::cout << "badbit set edildiginde, exception throw eder.\n";
+                    
+                std::cout << "\n----------------------------------------------------\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    
+                    ----------------------------------------------------
+                    failbit set edildiginde, exception throw eder.
+                    
+                    ----------------------------------------------------
+                    Bir rakam girin : ahmet
+                    Hata yakalandi... => basic_ios::clear: iostream error
+                */
+                
+                auto defaultCinStateFlags{ std::cin.exceptions() };
+                
+                std::cin.exceptions(std::ios::failbit); // 'failbit' isimli bayrak 'set' edildi.
+                print_exception_state(std::cin);
+                
+                try{
+                    std::cout << "Bir rakam girin : ";
+                    int x;
+                    std::cin >> x;
+                    std::cout << "Girilen rakam : " << x << "\n";
+                }
+                catch(const std::exception& ex)
+                {
+                    std::cout << "Hata yakalandi... => " << ex.what() << "\n";
+                }
+                
+                return 0;
+            }
+            
+        * Örnek 3,
+            //..
+            void print_exception_state(const std::istream& ib)
+            {
+                auto currentState{ ib.exceptions() }; // İş bu fonksiyonu bu haliyle kullanırsak 'getter' görevi görür.
+                
+                std::cout << "\n----------------------------------------------------\n";
+                
+                if(currentState == 0)
+                    std::cout << "hata durumunda exception throw etmez.\n";
+                
+                if(currentState & std::ios::eofbit)
+                    std::cout << "eofbit set edildiginde, exception throw eder.\n";
+                    
+                if(currentState & std::ios::failbit)
+                    std::cout << "failbit set edildiginde, exception throw eder.\n";
+                    
+                if(currentState & std::ios::badbit)
+                    std::cout << "badbit set edildiginde, exception throw eder.\n";
+                    
+                std::cout << "\n----------------------------------------------------\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    
+                    ----------------------------------------------------
+                    failbit set edildiginde, exception throw eder.
+                    
+                    ----------------------------------------------------
+                    Bir rakam girin : ahmet
+                    std::terminate cagrildi....
+                    myterminate cagrildi....
+                    std::abort() cagrildi
+                */
+                
+                auto defaultCinStateFlags{ std::cin.exceptions() };
+                
+                std::cin.exceptions(std::ios::failbit); // 'failbit' isimli bayrak 'set' edildi.
+                print_exception_state(std::cin);
+                
+                std::set_terminate(my_terminate); // 'std::abort' yerine bizim sonlandırıcı fonksiyonumuz çağrılacaktır.
+                
+                std::cout << "Bir rakam girin : ";
+                int x;
+                std::cin >> x;
+                std::cout << "Girilen rakam : " << x << "\n";
+                
+                return 0;
+            }
+            
+        * Örnek 4,
+            //..
+            double readSum(std::istream& is)
+            {
+                auto oldException{ is.exceptions() };
+                
+                // 'failbit' veya 'badbit' ler 'set' edildiğinde, 'exception throw' edecek hale geldi.
+                is.exceptions( std::ios::failbit | std::ios::badbit );
+                
+                double dval, sum{};
+                
+                try{
+                    while(is >> dval)
+                        sum += dval;
+                }
+                catch(...)
+                {
+                    if(!is.eof()) // Bu bloğa girmesi halinde okunacak 'byte' kalmamış demektir.
+                    {
+                        is.exceptions( oldException );
+                        // Bu akımı kullanan başka kodlar olabileceği için bayraklar tekrar eski haline getirildi.
+                        
+                        throw; // 'exception re-throw' edilmiştir.
+                    }
+                }
+                
+                is.exceptions( oldException );
+                
+                return sum;
+            }
+
+            int main()
+            {
+                // std::istringstream iss{ "2.6 3.4 5.6 7.8 9.1" }; // OUTPUT => Sum : 28.5
+                
+                std::istringstream iss{ "2.6 3.4 ali 7.8 9.1" };
+                // OUTPUT => giris-cıkıs hatasi... => basic_ios::clear: iostream error
+                
+                double sum;
+                
+                try{
+                    sum = readSum(iss);
+                }
+                catch(const std::ios::failure& ex)
+                {
+                    std::cerr << "giris-cıkıs hatasi... => " << ex.what() << "\n"; return 1;
+                }
+                catch(const std::exception& ex)
+                {
+                    std::cerr << "standart kutuphane hatasi... => " << ex.what() << "\n"; return 2;
+                }
+                catch(...)
+                {
+                    std::cerr << "bilinmeyen bir hata...\n"; return 3;
+                }
+                
+                std::cout << "Sum : " << sum << "\n";
+                
+                return 0;
+            }
+
+Pekiyi söz konusu giriş-çıkış işlemleri dosyalar nezdine vuku bulacaksa, bizi neler beklemektedir? Üç adet sınıf şablonumuz
+vardır ve bunlar 'fstream' başlık dosyasında tanımlanmışlardır. Sırasıyla bu sınıflar, 
+    'std::ifstream',
+    'std::ofstream',
+    'fstream'
+şeklindedirler. Bu sınıflardan 'std::ifstream' sınıfı 'std::istream' sınıfından, 'std::ofstream' sınıfı 'std::ostream'
+sınıfından ve 'std::fstream' sınıfı ise 'std::iostream' sınıfından kalıtım yoluyla elde	edilmiş olduklarından sırasıyla
+okuma, yazma ve hem yazma hem okuma arayüzüne sahiptirler. Bu üç sınıfımız 'default constructable'	olduklarından, böyle bir
+senaryoda herhangi bir dosya ile ilişkilendirilmemiş sınıf nesnesi hayata getirmiş oluyoruz. Bu ilişki bilgisini de sınıfın
+'.is_open()' fonksiyonu vesilesi ile öğrenebiliriz. Örneğin,
+    * Örnek 1,
+        //..
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Acik bir dosya yoktur...
+                Acil bir dosya VARDIR...
+                Acik bir dosya yoktur...
+                Acik bir dosya yoktur...
+            */
+            
+            std::ifstream ifs;
+            if(ifs.is_open())
+            {
+                std::cout << "Acil bir dosya VARDIR...\n";
+            }
+            else
+            {
+                std::cout << "Acik bir dosya yoktur...\n";
+            }
+            
+            std::ifstream ifsTwo{ "source.txt" };
+            if(ifsTwo.is_open())
+            {
+                std::cout << "Acil bir dosya VARDIR...\n";
+            }
+            else
+            {
+                std::cout << "Acik bir dosya yoktur...\n";
+            }
+            
+            ifsTwo.close();
+            if(ifsTwo.is_open())
+            {
+                std::cout << "Acil bir dosya VARDIR...\n";
+            }
+            else
+            {
+                std::cout << "Acik bir dosya yoktur...\n";
+            }
+            
+            std::ifstream ifsThree{ "sourceTwo.txt" };
+            if(ifsThree.is_open())
+            {
+                std::cout << "Acil bir dosya VARDIR...\n";
+            }
+            else
+            {
+                std::cout << "Acik bir dosya yoktur...\n";
+            }
+            
+            // İş bu '.is_open()' fonksiyonu dosya açma işleminin başarılı bir şekilde yapılıp yapılmadığı değil,
+            // ilgili sınıf nesnesinin bir dosya ile ilişkilendirilip ilişkilendirilmediğini SINAMAKTADIR.
+            
+            return 0;
+        }
+
+Şimdi de bu hususa ilişkin özellikleri madde madde irdeleyelim:
+    >> Sınıflarımınız 'Dtor.' fonksiyonları ise 'RAII'	deyimini gütmektedir.
+    
+    >> Yazma amacıyla dosya oluştururken;
+        >>> Dosya yok ise yeni bir dosya oluşturulur.
+        >>> Dosya var ise içerisindeki bilgiler silinir, dosya sıfırlanır.
+        
+    >> İş bu sınıflarımızı kullanarak bir dosya açacaksak ya sınıfın '.open()' isimli fonksiyonunu ya da parametreli 'Ctor.'
+    fonksiyonlarına çağrı yapmamız gerekmektedir. Fakat unutmamalıyız ki parametreli 'Ctor.' fonksiyonuna çağrı yaparsak,
+    dosya açış mod bilgisini de geçmeliyiz.
+        >>> Dosya açış mod bilgisi taban sınıftan gelen 'std::ios_base::openmode' türden maskelerdir. Bu maskeler
+            'in', 'out', 'trunc', 'binary' ve 'ate'
+        şeklindedir. Bu bayraklardan;
+            >>>> 'trunc' : Dosyanın sıfırlanması içindir. İçindeki verileri kaybedeceğiz.
+            >>>> 'ate' : Dosya konum göstericisini dosyanın sonuna ötelemektedir.
+            >>>> 'binary' : Dosyayı 'text' yerine 'binary' modda açmak içindir.
+        
+        >>> Dosya açım sırasında bu maskeleri kullanmazsak varsayılan bayraklar;
+            >>>> 'std::ifstream' sınıfı için 'std::ios::in', 
+            >>>> 'std::ofstream' sınıfı için 'std::ios::out' ve 'std::ios::trunc' bayrakları, 
+            >>>> 'std::fstream'  sınıfı için 'std::ios::in'  ve 'std::ios::out' şeklindedir.
+    
+    >> C dilindeki dosya işlemleri ile karşılaştırılması:	
+        * Örnek 1,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "r") };
+                
+                // In Cpp lang.
+                std::ifstream ifs{ "source.txt" };
+                
+                return 0;
+            }
+        
+        * Örnek 2,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "rb") };
+                
+                // In Cpp lang.
+                std::ifstream ifs{ "source.txt", std::ios::binary };
+                
+                return 0;
+            }	
+        
+        * Örnek 3,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "r+") };
+                
+                // In Cpp lang.
+                std::fstream fs{ "source.txt" };
+                
+                return 0;
+            }
+            
+        * Örnek 4,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "rb+") };
+                
+                // In Cpp lang.
+                std::fstream fs{ "source.txt", std::ios::binary };
+                
+                return 0;
+            }
+            
+        * Örnek 5,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "w") };
+                
+                // In Cpp lang.
+                std::ofstream ofs{ "source.txt" };
+                
+                return 0;
+            }
+            
+        * Örnek 6,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "wb") };
+                
+                // In Cpp lang.
+                std::ofstream ofs{ "source.txt", std::ios::binary};
+                
+                return 0;
+            }
+            
+        * Örnek 7,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "w+") };
+                
+                // In Cpp lang.
+                std::fstream fs{ "source.txt" };
+                
+                return 0;
+            }
+            
+        * Örnek 8,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "wb+") };
+                
+                // In Cpp lang.
+                std::fstream fs{ "source.txt", std::ios::binary };
+                
+                return 0;
+            }
+            
+        * Örnek 9,
+            //..
+            int main()
+            {
+                // In C lang.
+                FILE* f{ fopen("source.txt", "a") };
+                
+                // In Cpp lang.
+                std::fstream fs{ "source.txt", std::ios::app };
+                
+                return 0;
+            }
+    
+    >> Dosyanın açılamaması durumunda ilgili akım nesnesi 'fail' duruma geçecektir ve '.is_open()' fonksiyonu 'true' değer
+    döndürecektir.
+        * Örnek 1,
+            //..
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Dosya acilamadi...
+                */
+                std::ifstream ifs{ "sourceTwo.txt" };
+                
+                // if(ifs.fail())
+                if(!ifs)
+                {
+                    std::cerr << "Dosya acilamadi...\n";
+                    return 1;
+                }
+                else
+                {
+                    std::cout << "Dosya acildi...\n";
+                }
+                
+                if(ifs.is_open())
+                {
+                    std::cout << "Dosya acildi...\n";
+                }
+
+                return 0;
+            }
+    
+    >> Sınıf nesnesinin kendisi hayattayken dosyayı kapatmak için '.close()' fonksiyonunu çağırabiliriz. Böylelikle dosya
+    kapatılacaktır. Sonrasında aynı nesne ile başka bir dosya açmak için '.open()' fonksiyonuna çağrı yapmamız gerekmektedir.
+    
+    >> Dosyadan okuma ve yazma işlemleri: C dilindeki formatlı giriş çıkış işlemlerinin('fscanf()', 'fprintf()') Cpp
+    dilindeki karşılığı '.operator<<()' ve '.operator>>()' fonksiyonlarıdır. Yine C dilindeki formatsız giriş çıkış
+    işlemlerinin('fread()', 'fwrite()') Cpp dilindeki karşılığı ise '.write()' ve '.read()' isimlerindeki üye
+    fonksiyonlardır.
+            * Örnek 1,
+                //..
+                int main()
+                {
+                    /*
+                        # prime_005.txt #
+                        2 | 3 | 5 | 7 | 11 | 
+                    */
+                    
+                    size_t totalPrime{ 5 }; // İlk beş asal sayı.
+                    
+                    // Dosyamızın ismini ilk önce belleğe yazacağız.
+                    std::ostringstream oss; 
+                    oss << std::setfill('0');
+                    oss << "prime_" << std::setw(3) << totalPrime << ".txt";
+                    
+                    // Dosyamızı 'yazma' modunda açıyoruz.
+                    std::ofstream ofs{ oss.str() };
+                    if(!ofs)
+                    {
+                        std::cerr << "dosya olusturulamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyamıza yazma işlemini gerçekleştiriyoruz.
+                    size_t primeNumber{ 2 };
+                    size_t primeCounter{ 0 };
+                    while(primeCounter < totalPrime)
+                    {
+                        if(isprime(primeNumber))
+                        {
+                            ofs << primeNumber << " | ";
+                            ++primeCounter;
+                        }
+                        
+                        ++primeNumber;
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 2,
+                //..
+                int main()
+                {
+                    /*
+                        # prime_005.txt #
+                        2 | 3 | 5 | 
+                        7 | 11 |  
+                    */
+                    
+                    size_t totalPrime{ 5 }; // İlk beş asal sayı.
+                    
+                    // Dosyamızın ismini ilk önce belleğe yazacağız.
+                    std::ostringstream oss; 
+                    oss << std::setfill('0');
+                    oss << "prime_" << std::setw(3) << totalPrime << ".txt";
+                    
+                    // Dosyamızı 'yazma' modunda açıyoruz.
+                    std::ofstream ofs{ oss.str() };
+                    if(!ofs)
+                    {
+                        std::cerr << "dosya olusturulamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyamıza yazma işlemini gerçekleştiriyoruz.
+                    size_t primeNumber{ 2 };
+                    size_t primeCounter{ 0 };
+                    while(primeCounter < totalPrime)
+                    {
+                        if(isprime(primeNumber))
+                        {
+                            if(primeCounter && primeCounter % 3 == 0)
+                                ofs << "\n";
+                                
+                            ofs << primeNumber << " | ";
+                            ++primeCounter;
+                        }
+                        
+                        ++primeNumber;
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 3,
+                //..
+                int main()
+                {
+                    /*
+                        # prime_005.txt #
+                        0X2 | 0X3 | 0X5 | 
+                        0X7 | 0XB |  
+                    */
+                    
+                    size_t totalPrime{ 5 }; // İlk beş asal sayı.
+                    
+                    // Dosyamızın ismini ilk önce belleğe yazacağız.
+                    std::ostringstream oss; 
+                    oss << std::setfill('0');
+                    oss << "prime_" << std::setw(3) << totalPrime << ".txt";
+                    
+                    // Dosyamızı 'yazma' modunda açıyoruz.
+                    std::ofstream ofs{ oss.str() };
+                    if(!ofs)
+                    {
+                        std::cerr << "dosya olusturulamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyamıza yazma işlemini gerçekleştiriyoruz.
+                    size_t primeNumber{ 2 };
+                    size_t primeCounter{ 0 };
+                    ofs << std::left << std::hex << std::showbase << std::uppercase;
+                    while(primeCounter < totalPrime)
+                    {
+                        if(isprime(primeNumber))
+                        {
+                            if(primeCounter && primeCounter % 3 == 0)
+                                ofs << "\n";
+                                
+                            ofs << std::setw(3) << primeNumber << " | ";
+                            ++primeCounter;
+                        }
+                        
+                        ++primeNumber;
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 4,
+                //..
+                int main()
+                {
+                    /*
+                        # source.txt #
+                        sadettin otaci       - bursa, 27 Mayis 1950 Cumartesi
+                        ufuk altinisik       - batman, 05 Ocak 1974 Cumartesi
+                        devrim ergin         - kirklareli, 30 Aralik 1991 Pazartesi
+                        nihat olmez          - batman, 24 Nisan 1976 Cumartesi
+                        polat supuren        - bolu, 23 Aralik 1987 Carsamba
+                        abdullah elebasi     - siirt, 17 Temmuz 1972 Pazartesi
+                        semsit cansever      - tokat, 17 Agustos 2016 Carsamba
+                        melih kapici         - batman, 28 Ekim 1968 Pazartesi
+                        durmus temiz         - adana, 10 Subat 2011 Persembe
+                        nihat uluocak        - duzce, 07 Haziran 1955 Sali
+                    */
+                    
+                    std::ofstream ofs{ "source.txt" };
+                    if(!ofs)
+                    {
+                        std::cerr << "Dosya olusturulamadi...\n"; 
+                        return 1;
+                    }
+                    
+                    ofs << std::left;
+                    for(size_t i{}; i < 10; ++i)
+                    {
+                        ofs << std::setw(20) 
+                            << (rname() + " " + rfname()) 
+                            << " - " << rtown() << ", " << Date::random() << "\n";    
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 5,
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                        sadettin
+                        otaci
+                        -
+                        bursa,
+                        27
+                        Mayis
+                        1950
+                        Cumartesi
+                        ufuk
+                        altinisik
+                        -
+                        batman,
+                        05
+                        Ocak
+                        1974
+                        Cumartesi
+                        devrim
+                        ergin
+                        -
+                        kirklareli,
+                        30
+                        Aralik
+                        1991
+                        Pazartesi
+                        nihat
+                        olmez
+                        -
+                        batman,
+                        24
+                        Nisan
+                        1976
+                        Cumartesi
+                        polat
+                        supuren
+                        -
+                        bolu,
+                        23
+                        Aralik
+                        1987
+                        Carsamba
+                        abdullah
+                        elebasi
+                        -
+                        siirt,
+                        17
+                        Temmuz
+                        1972
+                        Pazartesi
+                        semsit
+                        cansever
+                        -
+                        tokat,
+                        17
+                        Agustos
+                        2016
+                        Carsamba
+                        melih
+                        kapici
+                        -
+                        batman,
+                        28
+                        Ekim
+                        1968
+                        Pazartesi
+                        durmus
+                        temiz
+                        -
+                        adana,
+                        10
+                        Subat
+                        2011
+                        Persembe
+                        nihat
+                        uluocak
+                        -
+                        duzce,
+                        07
+                        Haziran
+                        1955
+                        Sali
+                    */
+                    
+                    // Dosyamızı 'okuma' modunda açıyoruz.
+                    std::ifstream ifs{ "source.txt" };
+                    if(!ifs)
+                    {
+                        std::cerr << "Dosya acilamadi...\n";
+                        return 1;
+                    }
+                    
+                    std::string words{};
+                    while( ifs >> words )
+                    {
+                        std::cout << words << "\n";
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 6,
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                        sadettin otaci - bursa, 27 Mayis 1950 Cumartesi 
+                        ufuk altinisik - batman, 05 Ocak 1974 Cumartesi 
+                        devrim ergin - kirklareli, 30 Aralik 1991 Pazartesi 
+                        nihat olmez - batman, 24 Nisan 1976 Cumartesi 
+                        polat supuren - bolu, 23 Aralik 1987 Carsamba 
+                        abdullah elebasi - siirt, 17 Temmuz 1972 Pazartesi 
+                        semsit cansever - tokat, 17 Agustos 2016 Carsamba 
+                        melih kapici - batman, 28 Ekim 1968 Pazartesi 
+                        durmus temiz - adana, 10 Subat 2011 Persembe 
+                        nihat uluocak - duzce, 07 Haziran 1955 Sali 
+                    */
+                    
+                    // Dosyamızı 'okuma' modunda açıyoruz.
+                    std::ifstream ifs{ "source.txt" };
+                    if(!ifs)
+                    {
+                        std::cerr << "Dosya acilamadi...\n";
+                        return 1;
+                    }
+                    
+                    std::string words{};
+                    size_t wordCounter{};
+                    while( ifs >> words )
+                    {
+                        if( wordCounter && wordCounter % 8 == 0)
+                        {
+                            std::cout << "\n";
+                        }
+                        
+                        std::cout << words << " ";
+                        ++wordCounter;
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 7,
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT # 
+                        sadettin otaci       - bursa, 27 Mayis 1950 Cumartesi
+                        ufuk altinisik       - batman, 5 Ocak 1974 Cumartesi
+                        devrim ergin         - kirklareli, 30 Aralik 1991 Pazartesi
+                        nihat olmez          - batman, 24 Nisan 1976 Cumartesi
+                        polat supuren        - bolu, 23 Aralik 1987 Carsamba
+                        abdullah elebasi     - siirt, 17 Temmuz 1972 Pazartesi
+                        semsit cansever      - tokat, 17 Agustos 2016 Carsamba
+                        melih kapici         - batman, 28 Ekim 1968 Pazartesi
+                        durmus temiz         - adana, 10 Subat 2011 Persembe
+                        nihat uluocak        - duzce, 7 Haziran 1955 Sali
+                    */
+                    
+                    // Dosyamızı 'okuma' modunda açıyoruz.
+                    std::ifstream ifs{ "source.txt" };
+                    if(!ifs)
+                    {
+                        std::cerr << "Dosya acilamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyamız içerisindekileri ayrı ayrı değişkenlerde saklayacağız.
+                    std::string name, surname, town, bMonth, bWeekDay;
+                    size_t bDay, bYear;
+                    char wordSeparator;
+                    
+                    // Dosyadan okuduklarımızı da ekrana yazacağız.
+                    std::cout << std::left;
+                    while( ifs >> name >> surname >> wordSeparator >> town >> bDay >> bMonth >> bYear >> bWeekDay )
+                    {
+                        std::cout << std::setw(20) 
+                            << (name + " " + surname) << " " 
+                            << wordSeparator << " " << town << " " 
+                            << bDay << " " << bMonth << " " << bYear << " " << bWeekDay << "\n"; 
+                    }
+                    
+                    return 0;
+                }
+            
+            * Örnek 8,
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT # 
+                        [80] => sadettin
+                        otaci
+                        -
+                        bursa,
+                        27
+                        Mayis
+                        1950
+                        Cumartesi
+                        ufuk
+                        altinisik
+                        -
+                        batman,
+                        05
+                        Ocak
+                        1974
+                        Cumartesi
+                        devrim
+                        ergin
+                        -
+                        kirklareli,
+                        30
+                        Aralik
+                        1991
+                        Pazartesi
+                        nihat
+                        olmez
+                        -
+                        batman,
+                        24
+                        Nisan
+                        1976
+                        Cumartesi
+                        polat
+                        supuren
+                        -
+                        bolu,
+                        23
+                        Aralik
+                        1987
+                        Carsamba
+                        abdullah
+                        elebasi
+                        -
+                        siirt,
+                        17
+                        Temmuz
+                        1972
+                        Pazartesi
+                        semsit
+                        cansever
+                        -
+                        tokat,
+                        17
+                        Agustos
+                        2016
+                        Carsamba
+                        melih
+                        kapici
+                        -
+                        batman,
+                        28
+                        Ekim
+                        1968
+                        Pazartesi
+                        durmus
+                        temiz
+                        -
+                        adana,
+                        10
+                        Subat
+                        2011
+                        Persembe
+                        nihat
+                        uluocak
+                        -
+                        duzce,
+                        07
+                        Haziran
+                        1955
+                        Sali
+                    */
+                    
+                    std::ifstream ifs{ "source.txt" };
+                    if(!ifs)
+                    {
+                        std::cerr << "Dosya acilamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyadaki kelimeleri kaba aktarmış olduk.
+                    std::vector<std::string> sVec{ std::istream_iterator<std::string>{ifs}, {} };
+                    std::cout << "[" << sVec.size() << "] => ";
+                    
+                    std::copy(sVec.begin(), sVec.end(), std::ostream_iterator<std::string>{std::cout, "\n"});
+                    return 0;
+                }
+                
+            * Örnek 9, 'source.txt' dosyasındaki satır sayısı ikiye indirilmiştir.
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT # 
+                        [s] | [a] | [d] | [e] | [t] | [t] | [i] | [n] | [ ] | [o] | [t] | [a] | [c] | [i] | [ ] | [ ] | 
+                        [ ] | [ ] | [ ] | [ ] | [ ] | [-] | [ ] | [b] | [u] | [r] | [s] | [a] | [,] | [ ] | [2] | [7] | 
+                        [ ] | [M] | [a] | [y] | [i] | [s] | [ ] | [1] | [9] | [5] | [0] | [ ] | [C] | [u] | [m] | [a] | 
+                        [r] | [t] | [e] | [s] | [i] | [ ] | [u] | [f] | [u] | [k] | [ ] | [a] | [l] | [t] | [i] | [n] |
+                        [i] | [s] | [i] | [k] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [ ] | [-] | [ ] | [b] | [a] | [t] |
+                        [m] | [a] | [n] | [,] | [ ] | [0] | [5] | [ ] | [O] | [c] | [a] | [k] | [ ] | [1] | [9] | [7] |
+                        [4] | [ ] | [C] | [u] | [m] | [a] | [r] | [t] | [e] | [s] | [i] | [] | 
+                    */
+                    
+                    std::ifstream ifs{ "source.txt" };
+                    if(!ifs)
+                    {
+                        std::cerr << "Dosya acilamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyadaki yazıları 'byte' nezdinde okuyacağız.
+                    char c{};
+                    while(ifs.get(c))
+                    {
+                        std::cout << "[" << c << "] | ";
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 10, 'source.txt' dosyasındaki satır sayısı ikiye indirilmiştir.
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT # 
+                        sadettin otaci       - bursa, 27 Mayis 1950 Cumartesi
+                        ufuk altinisik       - batman, 05 Ocak 1974 Cumartesi
+                    */
+                    
+                    std::ifstream ifs{ "source.txt" };
+                    if(!ifs)
+                    {
+                        std::cerr << "Dosya acilamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyadaki yazıları 'byte' nezdinde okuyacağız.
+                    char c{};
+                    while(ifs.get(c))
+                    {
+                        std::cout.put(c); 
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 11, 'source.txt' dosyasındaki satır sayısı ikiye indirilmiştir.
+                //..
+                int main()
+                {
+                    /*
+                        # OUTPUT # 
+                        sadettin otaci       - bursa, 27 Mayis 1950 Cumartesi
+                        ufuk altinisik       - batman, 05 Ocak 1974 Cumartesi
+                    */
+                    
+                    std::ifstream ifs{ "source.txt" };
+                    if(!ifs)
+                    {
+                        std::cerr << "Dosya acilamadi...\n";
+                        return 1;
+                    }
+                    
+                    // Dosyadaki yazıları 'byte' nezdinde okuyacağız.
+                    int c{};
+                    while( (c = ifs.get()) != EOF)
+                    {
+                        std::cout.put(c); 
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 12,
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT # 
+                    */
+                    
+                    // Komut satırından girilen kelimelerin adedi 3 olmalı.
+                    if(argc != 3)
+                    {
+                        std::cerr << "usage : <fcopy> <source_file_name> <dest_file_name>\n";
+                        return 1;
+                    }
+                    
+                    std::ifstream ifs{ "source.txt", std::ios::binary };
+                    if(!ifs)
+                    {
+                        std::cerr << argv[1] << " dosyasi acilamadi.\n";
+                        return 2;
+                    }
+                    
+                    std::ofstream ofs{ "dest.txt", std::ios::binary };
+                    if(ofs.fail())
+                    {
+                        std::cerr << argv[3] << " dosyasi olusturulamadi.\n";
+                        return 3;
+                    }
+                    
+                    size_t byteCounter{};
+                    char c{};
+                    while(ifs.get(c))
+                    {
+                        ofs.put(c);
+                        ++byteCounter;
+                    }
+                    
+                    std::cout << "Toplamda " << byteCounter << "byte kopyalanmisitr.\n";
+                    
+                    return 0;
+                }
+                
+            * Örnek 13,
+                //..
+                
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        C:\Users\ahmet>cd C:\Users\ahmet\source\repos\OutputFiles
+
+                        C:\Users\ahmet\source\repos\OutputFiles>rename ConsoleApplication2.exe kopyala.exe
+
+                        C:\Users\ahmet\source\repos\OutputFiles>kopyala source.exe dest.exe
+                        Toplamda 55296byte kopyalanmisitr.
+                    */
+
+                    if (argc != 3)
+                    {
+                        std::cerr << "usage : <fcopy> <source_file_name> <dest_file_name>\n";
+                        return 1;
+                    }
+
+                    std::ifstream ifs{ "source.exe", std::ios::binary };
+                    if (!ifs)
+                    {
+                        std::cerr << argv[1] << " dosyasi acilamadi.\n";
+                        return 2;
+                    }
+
+                    std::ofstream ofs{ "dest.exe", std::ios::binary };
+                    if (ofs.fail())
+                    {
+                        std::cerr << argv[3] << " dosyasi olusturulamadi.\n";
+                        return 3;
+                    }
+
+                    size_t byteCounter{};
+                    char c{};
+                    while (ifs.get(c))
+                    {
+                        ofs.put(c);
+                        ++byteCounter;
+                    }
+
+                    std::cout << "Toplamda " << byteCounter << "byte kopyalanmisitr.\n";
+
+                    return 0;
+                }
+                
+            * Örnek 14,
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        C:\Users\ahmet\Desktop\Separator>main copy.exe 1000
+                        88026 byte buyuklugunda copy.exe dosyasi 1000 byte buyuklugunda 89 adet dosyaya bolunmustur.
+                    */
+
+                    // Komut satirina yazılacak argümanların adedi üç olmalı.
+                    if(argc != 3)
+                    {
+                        std::cerr << "usage : <separate> <file_name>.exe <byte_amount>\n"; return 1;
+                    }
+
+                    std::ifstream ifs{ argv[1], std::ios::binary }; // Dosyayi 'binary' modda ve okuma amacıyla açıyoruz.
+                    if(ifs.fail())// Dosya açilamaz ise program sonlanacaktır.
+                    {
+                        std::cerr << argv[1] << " isimli dosya acilamadi.\n"; return 2;
+                    }
+
+                    char c{}; // 'byte' kısım haline okuma yaparken kullanılacak değişken.
+
+                    int byteCount{}, fileCount{}, chunkAmount{ std::atoi(argv[2]) };
+                    // Sırasıyla okunan 'byte' adedi, oluşturulan dosyaların adedi ve her bir dosyanın olması
+                    // gereken büyüklük bilgisi.
+                    
+                    std::ofstream ofs; // Yazma amacı için kullanılacak sınıf türünden değişken.
+
+                    while(ifs.get(c))
+                    {
+                        // İlgili sınıfımız herhangi bir dosya ile ilişkilendirilmemişse, programın akışı
+                        // içeriye girecektir.
+                        if(!ofs.is_open())
+                        {
+                            std::ostringstream oss; // Dosya ismi oluşturmak için bellek kullanıyoruz.
+                            oss << std::setfill('0');
+                            oss << "part_" << std::setw(3) << fileCount << ".par"; // Dosya ismini oluşturduk.
+                            
+                            // İlgili sınıf nesnemiz ile dosyayı ilişkilendirmiş olduk.
+                            ofs.open(oss.str(), std::ios::binary);
+
+                            if(!ofs) // Dosya açılmaz ise program sonlanacaktır.
+                            {
+                                std::cerr << oss.str() << " isimli dosya olusturulamadi.\n"; return 3;
+                            }
+
+                            // Programın akışı buraya geldiğinde dosya açılmış demektir ve sayacı bir arttırıyoruz.
+                            ++fileCount;
+                        }
+
+                        // Okumuş olduğumuz ilk 'byte' değerini 'c' değişkeni üzerinden hedef dosyaya yazıyoruz.
+                        ofs.put(c);
+                        
+                        ++byteCount;
+
+                        // Kaç adet 'byte' yazıldığı bilgisi, hedef adede ulaşırsa ilgili dosya kapatılacaktır.
+                        if(byteCount % chunkAmount == 0)
+                        {
+                            ofs.close();
+                        }
+                    }
+
+                    std::cout << byteCount << " byte buyuklugunda " 
+                        << argv[1] << " dosyasi " << chunkAmount 
+                        << " byte buyuklugunda " << fileCount << " adet dosyaya bolunmustur.\n";
+
+                    return 0;
+                }
+                
+            * Örnek 15,
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        C:\Users\ahmet\Desktop\Separator>main.exe combinedFiles.exe
+                        89 adet dosya, 88026 byte buyuklugunda combinedFiles.exe dosyasi olarak birlestirildi.
+                    */
+
+                    // Komut satirina yazılacak argümanların adedi üç olmalı.
+                    if(argc != 2)
+                    {
+                        std::cerr << "usage : <combine>.exe <hedef_dosya_ismi>.exe\n"; return 1;
+                    }
+
+                    // Birleşim sonucu meydana gelecek dosya için kullanılacaktır.
+                    std::ofstream ofs{ argv[1], std::ios::binary };
+                    if(!ofs)
+                    {
+                        std::cerr << argv[1] << " dosyasi olusturulamadi...\n"; return 2;
+                    }
+
+                    int fileCount{}, byteCount{};
+                    char c{};
+
+                    for(;;)
+                    {
+                        std::ostringstream oss;
+                        oss << "part_" << std::setfill('0') << std::setw(3) << fileCount << ".par";
+                        
+                        // Tekil her bir dosyanın okunması için kullanılacaktır.
+                        std::ifstream ifs{oss.str(), std::ios::binary};
+                        
+                        if(!ifs)
+                        {
+                            break; // Tekil dosyalardan biri açılamadığında döngüden çıkacaktır.
+                        }
+
+                        ++fileCount; // Programın akışı buraya gelmişse tekil dosya açılmış demektir.
+
+                        while(ifs.get(c))
+                        {
+                            ofs.put(c);
+                            ++byteCount;
+                        }
+
+                        // Programın akışı buraya gelmişse dosyada okunacak 'byte' kalmadığı içindir. Dolayısıyla 'EOF'
+                        // bayrağı 'set' edilmiştir. Fakat her seferinde sınıf nesnemiz tekrar hayata geldiğinden,
+                        // bayrakları sıfırlamamıza gerek yoktur. Fakat devamında aynı sınıf nesnemiz ile okuma
+                        // yapacaksak '.clear()' üye fonksiyonunu çağırmamız gerekiyor.
+
+                        // Tekli dosyaları silebilmek için öncelikle o dosyayı kapatmamız gerekiyor.
+                        ifs.close();
+                        
+                        // 'remove' fonksiyonu C dilinden gelmekte olup, 'cstdlib' başlık dosyasında bildirilmiştir.
+                        // Dosya silmek için de kullanılır.
+                        if(std::remove(oss.str().c_str()))
+                        {
+                            std::cerr << oss.str() << " isimli dosya silinemedi.\n"; return 3;
+                        }
+
+                    }
+                    
+                    std::cout << fileCount << " adet dosya, " 
+                        << byteCount << " byte buyuklugunda " << argv[1] << " dosyasi olarak birlestirildi.\n";
+
+                    return 0;
+                }
+                
+            * Örnek 16,
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # primeNumber.dat #
+                             
+                             % ) + / 5 ; = C G I O S Y a e g k m q        £ § ­ ³ µ ¿ Á Å Ç Ó ß ã å é ï 
+                        ñ û ā ć č ď ĕ ę ě ĥ ĳ ķ Ĺ Ľ ŋ ő ś ŝ š ŧ ů ŵ Ż ſ ƅ ƍ Ƒ ƙ ƣ ƥ Ư Ʊ Ʒ ƻ ǁ ǉ Ǎ Ǐ Ǔ ǟ ǧ ǫ ǳ Ƿ ǽ ȉ ȋ ȝ 
+                    */
+
+                    // Formatsız yazma yapacağımız için 'binary' modda açmamız önemlidir.
+                    std::ofstream ofs{ "primeNumber.dat", std::ios::binary };
+                    
+                    if(!ofs)
+                    {
+                        std::cerr << "dosya olusturulamadi...\n"; return 1;
+                    }
+
+                    int primeCounter{}, primeNumber{2};
+
+                    while (primeCounter < 100)
+                    {
+                        if(isprime(primeNumber))
+                        {
+                            ofs.write(reinterpret_cast<char*>(&primeNumber), sizeof(int));
+                            ++primeCounter;
+                        }
+
+                        ++primeNumber;
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 17,
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        2 | 3 | 5 | 7 | 11 | 13 | 17 | 19 | 23 | 29 | 31 | 37 | 41 | 43 | 47 | 53 | 59 | 61 | 67 | 71 |
+                        73 | 79 | 83 | 89 | 97 | 101 | 103 | 107 | 109 | 113 | 127 | 131 | 137 | 139 | 149 | 151 | 157 |
+                        163 | 167 | 173 | 179 | 181 | 191 | 193 | 197 | 199 | 211 | 223 | 227 | 229 | 233 | 239 | 241 |
+                        251 | 257 | 263 | 269 | 271 | 277 | 281 | 283 | 293 | 307 | 311 | 313 | 317 | 331 | 337 | 347 |
+                        349 | 353 | 359 | 367 | 373 | 379 | 383 | 389 | 397 | 401 | 409 | 419 | 421 | 431 | 433 | 439 |
+                        443 | 449 | 457 | 461 | 463 | 467 | 479 | 487 | 491 | 499 | 503 | 509 | 521 | 523 | 541 | 
+                    */
+
+                    // Formatsız yazma yapacağımız için 'binary' modda açmamız önemlidir.
+                    std::ifstream ifs{ "primeNumber.dat", std::ios::binary };
+                    if(!ifs)
+                    {
+                        std::cerr << "dosya olusturulamadi...\n"; return 1;
+                    }
+
+                    int number{};
+
+                    while(ifs.read(reinterpret_cast<char*>(&number), sizeof(int)))
+                    {
+                        std::cout << number << " | ";
+                    }
+
+                    return 0;
+                }
+                
+            * Örnek 18, formatsız okuma yapıp, formatlı yazma işlemi. 
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        2               3               5               7               11              
+                        13              17              19              23              29              
+                        31              37              41              43              47              
+                        53              59              61              67              71              
+                        73              79              83              89              97              
+                        101             103             107             109             113             
+                        127             131             137             139             149             
+                        151             157             163             167             173             
+                        179             181             191             193             197             
+                        199             211             223             227             229             
+                        233             239             241             251             257             
+                        263             269             271             277             281             
+                        283             293             307             311             313             
+                        317             331             337             347             349             
+                        353             359             367             373             379             
+                        383             389             397             401             409             
+                        419             421             431             433             439             
+                        443             449             457             461             463             
+                        467             479             487             491             499             
+                        503             509             521             523             541  
+                    */
+
+                    // Formatsız yazma yapacağımız için 'binary' modda açmamız önemlidir.
+                    std::ifstream ifs{ "primeNumber.dat", std::ios::binary };
+                    if(!ifs)
+                    {
+                        std::cerr << "dosya acilamadi...\n"; return 1;
+                    }
+
+                    // Dosyaya yazma işlemi formatlı yapılacağından, 'binary' modda açmadık.
+                    std::ofstream ofs{ "primeNumber.txt" };
+                    
+                    if(!ofs)
+                    {
+                        std::cerr << "dosya olusturulamadi...\n"; return 2;
+                    }
+
+                    int primeCounter{};
+                    int number{};
+
+                    ofs << std::left;
+                    while(ifs.read(reinterpret_cast<char*>(&number), sizeof(int)))
+                    {
+                        if(primeCounter && primeCounter % 5 == 0)
+                            ofs << "\n";
+
+                        ofs << std::setw(16) << number;
+                        ++primeCounter;
+                    }
+
+                    return 0;
+                }
+                
+            * Örnek 19,
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        [100]
+                        2    
+                        3    
+                        5    
+                        7    
+                        11   
+                        13   
+                        17   
+                        19
+                        23
+                        29
+                        31
+                        37
+                        41
+                        43
+                        47
+                        53
+                        59
+                        61
+                        67
+                        71
+                        73
+                        79
+                        83
+                        89
+                        97
+                        101
+                        103
+                        107
+                        109
+                        113
+                        127
+                        131
+                        137
+                        139
+                        149
+                        151
+                        157
+                        163
+                        167
+                        173
+                        179
+                        181
+                        191
+                        193
+                        197
+                        199
+                        211
+                        223
+                        227
+                        229
+                        233
+                        239
+                        241
+                        251
+                        257
+                        263
+                        269
+                        271
+                        277
+                        281
+                        283
+                        293
+                        307
+                        311
+                        313
+                        317
+                        331
+                        337
+                        347
+                        349
+                        353
+                        359
+                        367
+                        373
+                        379
+                        383
+                        389
+                        397
+                        401
+                        409
+                        419
+                        421
+                        431
+                        433
+                        439
+                        443
+                        449
+                        457
+                        461
+                        463
+                        467
+                        479
+                        487
+                        491
+                        499
+                        503
+                        509
+                        521
+                        523
+                        541
+                    */
+
+                    // Formatsız yazma yapacağımız için 'binary' modda açmamız önemlidir.
+                    std::ifstream ifs{ "primeNumber.txt"};
+                    
+                    if(!ifs)
+                    {
+                        std::cerr << "dosya acilamadi...\n"; return 1;
+                    }
+
+                    std::vector<int> iVec{ std::istream_iterator<int>{ifs}, std::istream_iterator<int>{} };
+                    std::cout << "[" << iVec.size() << "]\n";
+
+                    std::copy(iVec.begin(), iVec.end(), std::ostream_iterator<int>{std::cout, "\n"});
+
+                    return 0;
+                }
+                
+            * Örnek 20,
+                //..
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        [25] => 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97
+                        ---------------------------------------------------
+                        [25] => 101 103 107 109 113 127 131 137 139 149 151 157 163 167 173 179 181 191 193 197 199 211
+                        223 227 229 
+                        ---------------------------------------------------
+                        [25] => 233 239 241 251 257 263 269 271 277 281 283 293 307 311 313 317 331 337 347 349 353 359
+                        367 373 379 
+                        ---------------------------------------------------
+                        [25] => 383 389 397 401 409 419 421 431 433 439 443 449 457 461 463 467 479 487 491 499 503 509
+                        521 523 541 
+                        ---------------------------------------------------
+                    */
+
+                    // Formatsız yazma yapacağımız için 'binary' modda açmamız önemlidir.
+                    std::ifstream ifs{ "primeNumber.dat"};
+                    if(!ifs)
+                    {
+                        std::cerr << "dosya acilamadi...\n"; return 1;
+                    }
+
+                    constexpr int SIZE{25};
+                    int a[SIZE];
+
+
+                    while (ifs.read(reinterpret_cast<char*>(a), SIZE * sizeof(int)))
+                    {
+                        // '.gcount()' fonksiyonu, okunan 'byte' büyüklüğünü yazdırmaktadır.
+                        auto n{ ifs.gcount() / sizeof(int) };
+                        
+                        std::cout << "[" << n << "] => ";
+                        std::copy(a, a + n, std::ostream_iterator<int>{std::cout, " "});
+                        std::cout << "\n---------------------------------------------------\n";
+                    }
+                    
+                    return 0;
+                }
+                
+            * Örnek 21,
+                //..
+                std::string get_text_from_file(const std::string& fileName)
+                {
+                    std::ifstream ifs{ fileName };
+                    if(!ifs)
+                    {
+                        throw std::runtime_error{ fileName + " dosyasi acilamadi."};
+                    }
+
+                    std::ostringstream oss;
+                    oss << ifs.rdbuf(); // Dosyanın 'buffer' bölgesindekileri belleğe aktarıyoruz.
+
+                    return oss.str();
+                }
+
+                int main(int argc, char** argv)
+                {
+                    /*
+                        # OUTPUT #
+                        #include <iomanip>  
+                        #include <iostream> 
+                        #include <fstream>  
+                        #include <sstream>  
+                        #include <vector>   
+                        #include <iterator> 
+                        #include <string>   
+                        #include <exception>
+
+                        std::string get_text_from_file(const std::string& fileName)
+                        {
+                            std::ifstream ifs{ fileName };
+                            if(!ifs)
+                            {
+                                throw std::runtime_error{ fileName + " dosyasi acilamadi."};
+                            }
+
+                            std::ostringstream oss;
+                            oss << ifs.rdbuf(); // Dosyanın 'buffer' bölgesindekileri belleğe aktarıyoruz.
+
+                            return oss.str();
+                        }
+
+                        int main(int argc, char** argv)
+                        {
+                            //
+                            //  # OUTPUT #
+                            //
+
+                            auto myText{get_text_from_file("main.cpp")};
+
+                            std::cout << myText;
+                            return 0;
+                        }
+                    */
+
+                    auto myText{get_text_from_file("main.cpp")};
+
+                    std::cout << myText;
+                    return 0;
+                }
+
+    >> Dosya konum göstericisinin konumunu ayarlayan fonksiyonlar sırasıyla '.seekg()' ki bunu okuma amacıyla yaptığımız
+    işlemlerde kullanabiliriz, '.seekp()' ki bunu da yazma amacıyla yaptığımız işlemlerde kullanabiliriz, fonksiyonlarıdır.
+    Dosya konum göstericisinin konum bilgisini döndüren fonksiyonlar ise '.tellg()' ve '.tellp()' fonksiyonlarıdır. Yine
+    sırasıyla okuma ve yazma işlemleri için kullanılırlar bu fonksiyonlar. Bu dört fonksiyonun sadece dosya işlemleri için
+    değil, belleğe yazarken de kullanılabilir olduğunu unutmayalım.
+		>>> C tekrarı: C dilinde dosya konum göstericisini 'set' eden 'fseek()' fonksiyonu şu üç parametre yapısına sahiptir.
+		İlk parametre 'FILE*' türünden bir değişken, ikinci parametre yazılacak byte-bloğu adedi ve üçüncü parametre ise
+		dosya konum göstericisinin hangi konumdan başlatılacağı bilgisi.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					//..
+					
+					// 'f' isimli değişkenin 'FILE*' türden bir değişken olduğunu varsayarsak;
+					fseek(f, 5, SEEK_SET);
+					// Dosya konum göstericisi dosyanın başına konumlandırıldı ve bu konumdan itibaren
+					// beş byte blokluk ötelendi. İkinci parametre 'long' türden ve sıfır ile pozitif bir değer
+					// aralığında olmalıdır.
+										   
+					fseek(f, -5, SEEK_CUR);
+					// Dosya konum göstericisinin aktüel konumu orjin olarak alınacaktır ve bu konumdan itibaren
+					// beş byte blokluk geriye doğru ötelendi. İkinci parametre 'long' türden ve negatif ile pozitif
+					// bir değer aralığında olabilir.
+											
+					fseek(f, -5, SEEK_END);
+					// Dosya konum göstericisi dosyanın sonuna konumlandırıldı ve bu konumdan itibaren
+					// beş byte blokluk geriye doğru ötelendi. İkinci parametre 'long' türden ve sıfır ile negatif bir değer
+					// aralığında olmalıdır.
+				}
+				
+		>>> C dilindeki 'fseek()' fonksiyonuna geçilen maskeler gibi C++ dilindeki '.seekg()' fonksiyonunun bir diğer
+		'overlaod' versiyonuna da benzer amaçlı maskeler geçiyoruz. Bu maskeler 'std::ios::beg', 'std::ios::cur' ve
+		'std::ios::end' maskeleridir.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					//..
+					std::istringstream iss;
+					
+					iss.seekg(0, std::ios::beg); // Dosya konum göstericisi dosyanın başına alındı.
+				}
+				
+			* Örnek 2,
+				//..
+				int main()
+				{
+					//..
+					std::istringstream iss;
+					
+					iss.seekg(0, std::ios::end); // Dosya konum göstericisi dosyanın sonuna alındı.
+				}
+				
+			* Örnek 3,
+				//..
+				int main()
+				{
+					//..
+					std::istringstream iss;
+					
+					iss.seekg(100, std::ios::cur); // Dosya konum göstericisi 100 birim ileriye doğru ötelendi.
+					
+					iss.seekg(-75, std::ios::cur); // Dosya konum göstericisi 75 birim geriye doğru ötelendi.
+				}
+				
+			* Örnek 4, Dosyanın boyutunu hesaplama:
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT # 
+						108
+						108
+					*/
+					
+					// Cpp-Style
+					std::ifstream ifs{ "source.txt" };
+					if(!ifs)
+					{
+						std::cerr << "Dosya acilamadi...\n";
+						return 1;
+					}
+					
+					ifs.seekg(0, std::ios::end); // Dosya konum göstericisi, dosyanın sonuna alındı.
+					std::cout << ifs.tellg() << "\n";
+					
+					// C-Style
+					FILE* filePtr = fopen("source.txt", "r");
+					if(!filePtr)
+					{
+						std::cerr << "Dosya acilamadi...\n";
+						return 2;
+					}
+					fseek(filePtr, 0, SEEK_END); // Dosya konum göstericisi, dosyanın sonuna alındı.
+					std::cout << ftell(filePtr) << "\n";
+					
+					return 0;
+				}
+				
+			* Örnek 5,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT # 
+						0
+						27
+						54
+						81
+						108
+					*/
+					
+					// Cpp-Style
+					std::ifstream ifs{ "source.txt" };
+					if(!ifs)
+					{
+						std::cerr << "Dosya acilamadi...\n";
+						return 1;
+					}
+					
+					ifs.seekg(0, std::ios::beg); // Dosya konum göstericisi, dosyanın başına alındı.
+					std::cout << ifs.tellg() << "\n";
+					
+					// Dosya konum göstericisi, en sonki konumdan itibaren 27-byte blok ileriye doğru ötelendi.
+					ifs.seekg(27, std::ios::cur);
+					std::cout << ifs.tellg() << "\n";
+					
+					// Dosya konum göstericisi, en sonki konumdan itibaren 27-byte blok ileriye doğru ötelendi.
+					ifs.seekg(27, std::ios::cur);
+					std::cout << ifs.tellg() << "\n";
+					
+					// Dosya konum göstericisi, en sonki konumdan itibaren 27-byte blok ileriye doğru ötelendi.
+					ifs.seekg(27, std::ios::cur);
+					std::cout << ifs.tellg() << "\n";
+					
+					// Dosya konum göstericisi, en sonki konumdan itibaren 27-byte blok ileriye doğru ötelendi.
+					ifs.seekg(27, std::ios::cur);
+					std::cout << ifs.tellg() << "\n";
+					
+					return 0;
+				}
+				
+			* Örnek 6,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT # 
+						The character => [s]
+						The character => [a]
+						The character => [d]
+						The character => [e]
+						The character => [t]
+						The character => [t]
+						The character => [i]
+						The character => [n]
+						The character => [ ]
+						The character => [o]
+						The character => [t]
+						The character => [a]
+						The character => [c]
+						The character => [i]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [-]
+						The character => [ ]
+						The character => [b]
+						The character => [u]
+						The character => [r]
+						The character => [s]
+						The character => [a]
+						The character => [,]
+						The character => [ ]
+						The character => [2]
+						The character => [7]
+						The character => [ ]
+						The character => [M]
+						The character => [a]
+						The character => [y]
+						The character => [i]
+						The character => [s]
+						The character => [ ]
+						The character => [1]
+						The character => [9]
+						The character => [5]
+						The character => [0]
+						The character => [ ]
+						The character => [C]
+						The character => [u]
+						The character => [m]
+						The character => [a]
+						The character => [r]
+						The character => [t]
+						The character => [e]
+						The character => [s]
+						The character => [i]
+						The character => [
+						]
+						The character => [u]
+						The character => [f]
+						The character => [u]
+						The character => [k]
+						The character => [ ]
+						The character => [a]
+						The character => [l]
+						The character => [t]
+						The character => [i]
+						The character => [n]
+						The character => [i]
+						The character => [s]
+						The character => [i]
+						The character => [k]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [ ]
+						The character => [-]
+						The character => [ ]
+						The character => [b]
+						The character => [a]
+						The character => [t]
+						The character => [m]
+						The character => [a]
+						The character => [n]
+						The character => [,]
+						The character => [ ]
+						The character => [0]
+						The character => [5]
+						The character => [ ]
+						The character => [O]
+						The character => [c]
+						The character => [a]
+						The character => [k]
+						The character => [ ]
+						The character => [1]
+						The character => [9]
+						The character => [7]
+						The character => [4]
+						The character => [ ]
+						The character => [C]
+						The character => [u]
+						The character => [m]
+						The character => [a]
+						The character => [r]
+						The character => [t]
+						The character => [e]
+						The character => [s]
+						The character => [i]
+						The character => [i]
+					*/
+					
+					// Cpp-Style
+					std::ifstream ifs{ "source.txt", std::ios::binary };
+					if(!ifs)
+					{
+						std::cerr << "Dosya acilamadi...\n";
+						return 1;
+					}
+					
+					char index{};
+					char byte{};
+					
+					// Reading the first character:
+					// Konum göstericisi dosyanın başına alındı.
+					ifs.seekg( index * sizeof(char), std::ios::beg );
+					// O konumdaki 'byte' bilgisi 'byte' isimli değişkene atandı.
+					ifs.read((&byte), sizeof(char));
+					std::cout << "The character => [" << byte << "]\n";
+					
+					// Reading the second character:
+					// Konum göstericisi dosyanın başına alındı ve ileriye doğru bir birim ötelendi.
+					ifs.seekg( (index + 1) * sizeof(char), std::ios::beg);
+					ifs.read(&byte, sizeof(char)); // O konumdaki 'byte' bilgisi 'byte' isimli değişkene atandı.
+					std::cout << "The character => [" << byte << "]\n";
+					
+					// Reading the third character:
+					ifs.seekg( (index) * sizeof(char), std::ios::cur); // Konum göstericisi aktuel konumu orjin olarak alındı.
+					ifs.read(&byte, sizeof(char)); // O konumdaki 'byte' bilgisi 'byte' isimli değişkene atandı.
+					std::cout << "The character => [" << byte << "]\n";
+					
+					// Reading the rest of the characters:
+					
+					for(;;)
+					{
+						// Konum göstericisi aktuel konumu orjin olarak alındı.
+						ifs.seekg( (index) * sizeof(char), std::ios::cur);
+						if(ifs)
+						{
+						   ifs.read(&byte, sizeof(char)); // O konumdaki 'byte' bilgisi 'byte' isimli değişkene atandı.
+							std::cout << "The character => [" << byte << "]\n"; 
+						}
+						else
+						{
+							return 1;
+						}
+					}
+					
+					return 0;
+				}
+				
+			* Örnek 7,
+				//..
+				int main()
+				{					
+					std::istringstream iss{ "Ahmet Kandemir Pehlivanli" };
+					std::string str{};
+					
+					iss >> str;
+					// İlk boşluk karakterine kadarki karakterler 'str' değişkenine kopyalandı.
+					// Dosya konum göstericisi artık 'Ahmet' ile 'Kandemir' kelimeleri arasındaki boşluk karakterini göstermektedir.
+					std::cout << "[" << str << "]\n"; // OUTPUT => Ahmet
+					
+					iss >> str;
+					// İkinci boşluk karakterine kadarki karakterler 'str' değişkenine kopyalandı.
+					// Dosya konum göstericisi artık 'Kandemir' ile 'Pehlivanli' kelimeleri arasındaki boşluk karakterini göstermektedir.
+					std::cout << "[" << str << "]\n"; // OUTPUT => Kandemir
+					
+					iss >> str;
+					// Üçüncü boşluk karakterine kadarki karakterler 'str' değişkenine kopyalandı.
+					// Dosya konum göstericisi artık dosyanın sonunu göstermektedir.
+					std::cout << "[" << str << "]\n"; // OUTPUT => Pehlivanli
+					
+					iss.seekg(0, std::ios_base::beg);
+					// std::ios::base // Dosya konum göstericisi tekrardan dosyanın başına alındı.
+					iss >> str;
+					std::cout << "[" << str << "]\n"; // OUTPUT => Ahmet
+					
+					iss.seekg(1, std::ios_base::cur); // Dosya konum göstericisinin aktuel konumu orjin olarak ele alındı.
+					iss >> str;
+					std::cout << "[" << str << "]\n"; // OUTPUT => Kandemir
+					
+					iss.seekg(1, std::ios_base::cur); // Dosya konum göstericisinin aktuel konumu orjin olarak ele alındı.
+					iss >> str;
+					std::cout << "[" << str << "]\n"; // OUTPUT => Pehlivanli
+					
+					iss.seekg(-19, std::ios_base::cur); // Dosya konum göstericisinin aktuel konumu orjin olarak ele alındı.
+					iss >> str;
+					std::cout << "[" << str << "]\n"; // OUTPUT => Kandemir
+					
+					// Dosya konum göstericisinin aktuel konumu orjin olarak ele alındı ve ilgili rakam adedince geriye
+					// doğru ötelendi.
+					iss.seekg(-14, std::ios_base::cur);
+					iss >> str;
+					std::cout << "[" << str << "]\n"; // OUTPUT => Ahmet
+					
+					// Dosya konum göstericisi dosyanın sonundan itibaren geriye doğru ötelendi..
+					iss.seekg(-25, std::ios_base::end);
+					iss >> str;
+					std::cout << "[" << str << "]\n"; // OUTPUT => Kandemir
+					return 0;
+				}
+				
+			* Örnek 8,
+				//..
+				void print_file_n_times(const std::string& fileName, int counter)
+				{
+					std::ifstream ifs{ fileName };
+					if(!ifs)
+					{
+						std::cerr << "dosya acilamadi...\n"; 
+						std::exit(EXIT_FAILURE);
+					}
+					while(--counter)
+					{
+						std::cout << ifs.rdbuf();
+						std::cout << "\n-----------------------------\n";
+						ifs.seekg(0); // Dosya konum göstericisi tekrardan en başa alındı.
+					}
+				}
+
+				int main()
+				{
+					/*
+						# OUTPUT # 
+						sadettin otaci       - bursa, 27 Mayis 1950 Cumartesi
+						ufuk altinisik       - batman, 05 Ocak 1974 Cumartesi
+						-----------------------------
+						sadettin otaci       - bursa, 27 Mayis 1950 Cumartesi
+						ufuk altinisik       - batman, 05 Ocak 1974 Cumartesi
+						-----------------------------
+					*/
+					
+					print_file_n_times("source.txt", 3);
+					return 0;
+				}
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,849 @@
+> 'TypeTraits' : Türler hakkında derleme zamanında bilgilendirme amaçlı kullanılan araçlar olup jenerik programlama tarafında
+kod yazılırken kullanılır. Bu işin temelindeyse 'integral_constant' türü yatmaktadır. 
+	>> 'STL' içerisinde bulunan 'integral_constant' sınıfının temsili implementasyonu:
+		* Örnek 1,
+			//..
+			template< typename T, T v> // 'T' hangi türe karşılık geliyorsa, 'v' de o türden bir değişken.
+			struct IntegralConstant{ // 'struct' kullanıldığına dikkat çekelim.
+				static constexpr T value = v; // 'value' isimli değişkenimizin türü 'T', değeri ise 'v'.
+				using value_type = T; // 'T' hangi türe karşılık geliyorsa, 'value_type' ise o türün eş ismi.
+				//...
+			};
+						
+
+			int main()
+			{
+				constexpr auto val{ IntegralConstant<int, 5>::value };
+				std::cout << "val : " << val << "\n"; // OUTPUT => val : 5
+				
+				IntegralConstant<char, 66>::value_type valTwo{ 'a' };
+				std::cout << "valTwo : " << valTwo << "\n"; // OUTPUT => valTwo : a
+				
+				IntegralConstant<bool, false>::value_type valThree{ false };
+				std::cout << "valThree : " << valThree << "\n"; // OUTPUT => valThree : 0
+				
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			template< typename T, T v> 
+			struct IntegralConstant{ 
+				static constexpr T value = v; 
+				using value_type = T;
+				using type = IntegralConstant; // 'type', sınıfımız neyin açılımı ise, onun tür eş ismi.
+				//...
+			};
+						
+
+			int main()
+			{
+				IntegralConstant<int, 4>::type::value_type val{ 31 }; // 'type', 'IntegralConstant<int, 4>' açılımının tür eş ismidir.
+				std::cout << "val : " << val << "\n"; // OUTPUT => val : 31
+				
+				return 0;
+			}
+			
+		* Örnek 3,
+			//..
+			template< typename T, T v> 
+			struct IntegralConstant{ 
+				static constexpr T value = v; 
+				using value_type = T;
+				using type = IntegralConstant;
+				constexpr operator value_type() const noexcept { return value; }
+				// Tür dönüştürme operatör fonksiyonudur.
+				// Sınıf türünden 'value' isimli nesnemiz, 'T' türden değişkene dönüştürülmektedir.
+				//...
+			};
+						
+
+			int main()
+			{
+				constexpr auto val{ IntegralConstant<int, 5>{} };
+				int a[val]{ 1, 2, 3, 4, 5 };
+				std::copy(a, a + 5, std::ostream_iterator<int>{std::cout, " "}); // OUTPUT => 1 2 3 4 5 
+				
+				return 0;
+			}
+			
+		* Örnek 4,
+			//..
+			template< typename T, T v> 
+			struct IntegralConstant{ 
+				static constexpr T value = v; 
+				using value_type = T;
+				using type = IntegralConstant;
+				constexpr operator value_type() const noexcept { return value; }
+				//...
+			};
+
+			using TrueType = IntegralConstant<bool, true>;
+			using FalseType = IntegralConstant<bool, false>;
+
+			struct Ahmo : TrueType{
+				// 'Ahmo' sınıfı 'IntegralConstant' sınıfının 'bool, true' açılımından 'public' kalıtım yoluyla türetilmiştir. 
+				//.. Taban sınıfın bütün 'public-interface' üyeleri artık bizim sınıfa katılmış oldu.
+			};
+
+			int main()
+			{
+				bool val{ Ahmo::value };
+				// 'Ahmo::value', taban sınıftan gelmekte. Taban sınıfımız ise 'IntegralConstant' sınıfının 'true' açılımı. 
+				// Dolayısıyla 'val' değişkenimizin türü 'bool', değeri de 'true'.
+										 
+				std::cout << "val : " << std::boolalpha << val << "\n"; // OUTPUT => val : true
+				return 0;
+			}
+			
+	>> Derleme zamanında bir türün 'pointer' türü olup olmadığının test edilmesi: 
+		* Örnek 1,
+			//..
+			
+			// I : 'primary' tür, 'false_type' dan türetildi.
+			template<typename T>
+			struct IsPointer : std::false_type{};
+
+			// II : Özelleştirme kullanarak ('explicit specialization' kullanıldı), 'true_type' lar için türetildi.
+			template<typename T>
+			struct IsPointer<T*> : std::true_type{};
+
+			// 'Template Specialization' kullanıldığı için,
+			// 'T' türü gösterici ise 'II' numaralı şablon açılacaktır.
+			// 'T' türü gösterici değil ise 'I' numaralı şablon açılacaktır.
+			// Dolayısıyla taban sınıftan gelen 'value' isimli değişkeni kullanarak,
+			// şablon parametresinin 'pointer' olup olmadığını sınayabiliriz.
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Evet, bir gösterici..
+				*/
+				
+				constexpr auto isPtr{ IsPointer<int*>::value };
+				// 'value' değişkeninin türü 'bool' ve değeri 'true' olacaktır,
+				// yukarıdaki özelleştirmeden dolayı.
+				if(isPtr)
+					std::cout << "Evet, bir gösterici...\n";
+				else
+					std::cerr << "Hayır, bir gösterici değil...\n";
+
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			// Sadece 'pointer' bir değişken gönderildiğinde işlev gören bir fonksiyon yazalım.
+			template<typename T>
+			void func(T x)
+			{
+				// Parantez içerisindeki ifade 'false' olduğunda ilgili yazı ekrana basılacaktır.
+				static_assert(std::is_pointer<T>::value, "T turu bir pointer olmalidir.");
+				std::cout << "The value at the address of [" << x << "] => " << *x << "\n";
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					The value at the address of [0x7ffefb698cf4] => 31
+				*/
+				
+				int a{31}; func(&a);
+				
+				// int b; func(b); // main.cpp:8:39: error: static assertion failed: T turu bir pointer olmalidir.
+
+				return 0;
+			}
+			
+		* Örnek 3,
+			//..
+			template< typename T, T v> 
+			struct IntegralConstant{ 
+				static constexpr T value = v; 
+				using value_type = T;
+				using type = IntegralConstant;
+				constexpr operator value_type() const noexcept { return value; }
+				//...
+			};
+
+			using TrueType = IntegralConstant<bool, true>;
+			using FalseType = IntegralConstant<bool, false>;
+			
+			// Eğer aşağıdaki şablonu özelleştirmezsek, bütün türler için 'false' değer üretecek,
+			// taban sınıftan gelen 'value' değişkeni.
+			template<typename T>
+			struct IsPointer : FalseType{};
+			
+			// İş bu özelleştirme ile 'pointer' tipler için 'value' değişkenimiz 'true' değer üretecektir.
+			template<typename T>
+			struct IsPointer<T*> : TrueType{};
+						
+			// Sadece 'pointer' bir değişken gönderildiğinde işlev gören bir fonksiyon yazalım.
+			template<typename T>
+			void func(T x)
+			{
+				// Parantez içerisindeki ifade 'false' olduğunda ilgili yazı ekrana basılacaktır.
+				static_assert(IsPointer<T>::value, "T turu bir pointer olmalidir.");
+				std::cout << "The value at the address of [" << x << "] => " << *x << "\n";
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					The value at the address of [0x7ffefb698cf4] => 31
+				*/
+				
+				int a{31}; func(&a);
+				
+				// int b; func(b); // main.cpp:8:39: error: static assertion failed: T turu bir pointer olmalidir.
+
+				return 0;
+			}
+			
+	>> Derleme zamanında bir türün 'integral' tür olup olmadığının test edilmesi:
+		* Örnek 1,
+			//..
+			// Sadece 'integral-type' bir değişken gönderildiğinde işlev gören bir fonksiyon yazalım.
+			template<typename T>
+			void func(T x)
+			{
+				// Parantez içerisindeki ifade 'false' olduğunda ilgili yazı ekrana basılacaktır.
+				static_assert(std::is_integral<T>::value, "T turu bir integal-type olmalidir.");
+				std::cout << "The value at the address of [" << &x << "] => " << x << "\n";
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					The value at the address of [0x7ffded53244c] => 31
+				*/
+				
+				int a{31}; func(a);
+				
+				// double b{31.13}; func(b); // error: static assertion failed: T turu bir integal-type olmalidir
+
+				return 0;
+			}
+			
+	>> C++17 ile birlikte taban sınıftan gelen 'value' değişkenini yazmak zahmetli olduğundan, bir kısaltma dile eklenmiştir.
+	İşte onun temsili implementasyonu:
+		* Örnek 1,
+			//..
+			template< typename T, T v> 
+			struct IntegralConstant{ 
+				static constexpr T value = v; 
+				using value_type = T;
+				using type = IntegralConstant;
+				constexpr operator value_type() const noexcept { return value; }
+				//...
+			};
+
+			using TrueType = IntegralConstant<bool, true>;
+			using FalseType = IntegralConstant<bool, false>;
+						
+			template<typename T>
+			struct IsPointer : FalseType{};
+
+			template<typename T>
+			struct IsPointer<T*> : TrueType{};
+
+			template<typename T>
+			inline constexpr bool IsPointer_v = IsPointer<T>::value; // C++17
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Hayir, bir gösterici değil...
+				*/
+				
+				bool isPtr {IsPointer_v<int>}; // 
+				if(isPtr)
+					std::cout << "Evet, bir gösterici...\n";
+				else
+					std::cerr << "Hayir, bir gösterici değil...\n";
+				
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					true / false
+				*/
+				
+				auto val{ std::is_pointer<int*>::value };
+				auto valTwo{ std::is_pointer_v<int> };
+				
+				std::cout << std::boolalpha << val << " / " << std::boolalpha << valTwo << "\n"; 
+				return 0;
+			}
+			
+	>> Pekiştirici örnekler,
+		* Örnek 1,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					false / true / false
+				*/
+				
+				auto val{ std::is_array<int*>::value };
+				auto valTwo{ std::is_array<int[]>::value };
+				auto valThree{ std::is_array<int>::value };
+				
+				std::cout << std::boolalpha << val 
+					<< " / " << std::boolalpha << valTwo << " / " << std::boolalpha << valThree << "\n"; 
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					false / true
+				*/
+				
+				auto val{ std::is_const<int>::value };
+				auto valTwo{ std::is_const<const int>::value };
+				
+				std::cout << std::boolalpha << val << " / " << std::boolalpha << valTwo << "\n"; 
+				return 0;
+			}
+			
+		* Örnek 3,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					false / true
+				*/
+				
+				auto val{ std::is_reference<int>::value };
+				auto valTwo{ std::is_reference<int &>::value };
+				
+				std::cout << std::boolalpha << val << " / " << std::boolalpha << valTwo << "\n"; 
+				return 0;
+			}
+			
+		* Örnek 4,
+			//..
+			template<typename T, typename U>
+			void foo(T x, U y)
+			{
+				if( std::is_same_v<T, U> )
+				{
+					std::cout << "They're same...\n";
+				}
+				else
+				{
+					std::cerr << "They're not same...\n";
+				}
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					They're not same...
+				*/
+				
+				foo(2, 2.2);
+				return 0;
+			}
+			
+		* Örnek 5,
+			//..
+			template< typename T, T v> 
+			struct IntegralConstant{ 
+				static constexpr T value = v; 
+				using value_type = T;
+				using type = IntegralConstant;
+				constexpr operator value_type() const noexcept { return value; }
+				//...
+			};
+
+			using TrueType = IntegralConstant<bool, true>;
+			using FalseType = IntegralConstant<bool, false>;
+
+			// Eğer aşağıdaki şablonu özelleştirmezsek, bütün türler için 'false' değer üretecek,
+			// taban sınıftan gelen 'value' değişkeni.
+			template<typename T> struct IsFloatingPoint : FalseType{};
+
+			// 'explicit specialization' kullanarak belli türleri kalıtım yoluyla elde ediyoruz;
+			template<> struct IsFloatingPoint<float> : TrueType{};
+			// 'float' için özelleştirme yaptığımız için, artık 'float' türler için 'true' değer elde edilecek.
+			
+			template<> struct IsFloatingPoint<double> : TrueType{};
+			// 'double' için de özelleştirme yaptığımız için, artık 'double' türler için de 'true' değer elde edilecek.
+			
+			template<> struct IsFloatingPoint<long double> : TrueType{};
+			// 'long double' için özelleştirme yaptığımız için, artık 'long double' türler için 'true' değer elde edilecek.
+
+			// Yukarıdaki türler, 'const' versiyonlarından farklı olduklarından, onlar için de özelleştirme
+			// yapmamız gerekebilir.
+			template<> struct IsFloatingPoint<const float> : TrueType{}; 
+			template<> struct IsFloatingPoint<const double> : TrueType{}; 
+			template<> struct IsFloatingPoint<const long double> : TrueType{};
+
+			// Yukarıdaki 'non-const' türler, 'volatile' versiyonlarından farklı olduklarından,
+			// onlar için de özelleştirme yapmamız gerekebilir.
+			template<> struct IsFloatingPoint<volatile float> : TrueType{}; 
+			template<> struct IsFloatingPoint<volatile double> : TrueType{}; 
+			template<> struct IsFloatingPoint<volatile long double> : TrueType{};
+
+			// Yukarıdaki 'non-const' türler, 'const-volatile' versiyonlarından farklı olduklarından,
+			// onlar için de özelleştirme yapmamız gerekebilir.
+			template<> struct IsFloatingPoint<const volatile float> : TrueType{}; 
+			template<> struct IsFloatingPoint<const volatile double> : TrueType{}; 
+			template<> struct IsFloatingPoint<const volatile long double> : TrueType{};
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					false
+					true
+					true
+					true
+					true
+					true
+					true
+					true
+					true
+					true
+					true
+					true
+					true
+				*/
+				
+				std::cout << std::boolalpha;
+				
+				std::cout << IsFloatingPoint<int>::value << "\n";
+				
+				std::cout << IsFloatingPoint<float>::value << "\n";
+				std::cout << IsFloatingPoint<double>::value << "\n";
+				std::cout << IsFloatingPoint<long double>::value << "\n";
+				
+				std::cout << IsFloatingPoint<const float>::value << "\n";
+				std::cout << IsFloatingPoint<const double>::value << "\n";
+				std::cout << IsFloatingPoint<const long double>::value << "\n";
+				
+				std::cout << IsFloatingPoint<volatile float>::value << "\n";
+				std::cout << IsFloatingPoint<volatile double>::value << "\n";
+				std::cout << IsFloatingPoint<volatile long double>::value << "\n";
+				
+				std::cout << IsFloatingPoint<const volatile float>::value << "\n";
+				std::cout << IsFloatingPoint<const volatile double>::value << "\n";
+				std::cout << IsFloatingPoint<const volatile long double>::value << "\n";
+				
+				return 0;
+			}
+		
+		* Örnek 6,
+			//..
+			
+			// 'T' her ne türden ise 'type' onun eş anlamlısı.
+			template<typename T> struct RemoveCV { using type = T; };
+			
+			// 'T' her ne türden ise 'type' onun eş anlamlısı.
+			template<typename T> struct RemoveCV<const T> { using type = T; };
+			
+			// 'T' her ne türden ise 'type' onun eş anlamlısı.
+			template<typename T> struct RemoveCV<volatile T> { using type = T; };
+			
+			// 'T' her ne türden ise 'type' onun eş anlamlısı.
+			template<typename T> struct RemoveCV<const volatile T> { using type = T; };
+
+			// 'RemoveCV' nin 'T' açılımındaki 'T' hangi tür ise, 'RemoveCV_T' de o türün eş anlamlısı.
+			template<typename T>
+			using RemoveCV_T = typename RemoveCV<T>::type;
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					true
+					true
+					true
+					false
+					false
+					false
+					true
+					true
+					true
+				*/
+				std::cout << std::boolalpha;
+				
+				std::cout << std::is_same_v<RemoveCV_T<const volatile int>, int> << "\n";
+				std::cout << std::is_same_v<RemoveCV_T<volatile int>      , int> << "\n";
+				std::cout << std::is_same_v<RemoveCV_T<const int>         , int> << "\n";
+				
+				std::cout << std::is_same_v<RemoveCV_T<const volatile int*>, int*> << "\n";
+				std::cout << std::is_same_v<RemoveCV_T<volatile int*>      , int*> << "\n";
+				std::cout << std::is_same_v<RemoveCV_T<const int*>         , int*> << "\n";
+				
+				std::cout << std::is_same_v<RemoveCV_T<int* const volatile>, int*> << "\n";
+				std::cout << std::is_same_v<RemoveCV_T<int* volatile>      , int*> << "\n";
+				std::cout << std::is_same_v<RemoveCV_T<int* const>         , int*> << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 7,
+			//..
+			template< typename T, T v> 
+			struct IntegralConstant{ 
+				static constexpr T value = v; 
+				using value_type = T;
+				using type = IntegralConstant;
+				constexpr operator value_type() const noexcept { return value; }
+				//...
+			};
+
+			template<typename T> struct RemoveCV { using type = T; }; 
+			template<typename T> struct RemoveCV<const T> { using type = T; };
+			template<typename T> struct RemoveCV<volatile T> { using type = T; }; 
+			template<typename T> struct RemoveCV<const volatile T> { using type = T; };
+
+			template<typename T>
+			struct IsFloatingPoint : IntegralConstant<
+														bool,
+														std::is_same_v<float, typename RemoveCV<T>::type> || 
+														std::is_same_v<double, typename RemoveCV<T>::type> || 
+														std::is_same_v<long double, typename RemoveCV<T>::type>
+													> {};
+			template<typename T>
+			inline constexpr bool IsFloatingPoint_V = IsFloatingPoint<T>::value;
+
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					false
+					true
+					true
+					true
+					true
+					true
+				*/
+				
+				std::cout << std::boolalpha;
+				std::cout << IsFloatingPoint_V<int> << "\n";
+				std::cout << IsFloatingPoint_V<float> << "\n";
+				std::cout << IsFloatingPoint_V<const float> << "\n";
+				std::cout << IsFloatingPoint_V<const volatile float> << "\n";
+				std::cout << IsFloatingPoint_V<double> << "\n";
+				std::cout << IsFloatingPoint_V<long double> << "\n";
+							
+				return 0;
+			}
+			
+		* Örnek 8,
+			//..
+			template<typename T>
+			struct IsFloatingPoint : std::integral_constant<
+				bool,
+				// std::is_same_v<float, typename std::remove_cv_t<T>>  ||
+				std::is_same<float, typename std::remove_cv<T>::type>::value ||
+				
+				// std::is_same_v<double, typename std::remove_cv_t<T>> ||
+				std::is_same<double, typename std::remove_cv<T>::type>::value ||
+				
+				// std::is_same_v<long double, typename std::remove_cv_t<T>>
+				std::is_same<long double, typename std::remove_cv<T>::type>::value
+			> {};
+
+			template<typename T>
+			inline constexpr bool IsFloatingPoint_V = IsFloatingPoint<T>::value;
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					false
+					true
+					true
+					true
+					true
+					true
+				.*/
+				
+				std::cout << std::boolalpha;
+				std::cout << IsFloatingPoint_V<int> << "\n";
+				std::cout << IsFloatingPoint_V<float> << "\n";
+				std::cout << IsFloatingPoint_V<const float> << "\n";
+				std::cout << IsFloatingPoint_V<const volatile float> << "\n";
+				std::cout << IsFloatingPoint_V<double> << "\n";
+				std::cout << IsFloatingPoint_V<long double> << "\n";
+							
+				return 0;
+			}
+			
+		* Örnek 9.1,
+			//..
+			// Eğer aşağıdaki özelleştirmeler olmasaydı, bütün türler için 'false' değer döndürecekti.
+			template<typename T> struct IsIntegral : std::false_type{};
+
+			// Artık aşağıdaki türler için özelleştirme yapıldığından,
+			// sadece aşağıdaki türler için 'true' değer döndürecektir.
+			template<> struct IsIntegral<unsigned char> : std::true_type{};  
+			template<> struct IsIntegral<signed char>   : std::true_type{}; 
+			template<> struct IsIntegral<char>          : std::true_type{}; 
+			template<> struct IsIntegral<const int>     : std::true_type{}; 
+			template<> struct IsIntegral<int>           : std::true_type{}; 
+			template<> struct IsIntegral<const long>    : std::true_type{}; 
+			template<> struct IsIntegral<long>          : std::true_type{}; 
+
+			template<typename T> inline constexpr bool IsIntegral_V = IsIntegral<T>::value;
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					1 / 0
+				*/
+				
+				std::cout << (IsIntegral<const long>::value) << " / " << (IsIntegral_V<float>) << "\n";     
+				return 0;
+			}
+			
+		* Örnek 9.2,
+			//..
+			template<typename> struct IsIntegralBase : std::false_type {};
+			template<> struct IsIntegralBase<bool> : std::true_type {};
+			template<> struct IsIntegralBase<short> : std::true_type {};
+			template<> struct IsIntegralBase<int> : std::true_type {};
+
+			template<typename T> struct IsIntegral : IsIntegralBase<std::remove_cv_t<T>> {};
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					0 / 0 / 1
+				*/
+				
+				std::cout << (IsIntegral<const long>::value) 
+					<< " / " << (IsIntegral<float>::value) << " / " 
+					<< (IsIntegral<bool>::value) <<  "\n";     
+
+				return 0;
+			}
+			
+		* Örnek 10,
+			//..
+			template<typename T>
+			struct IsIntegral : std::integral_constant<
+				bool,
+				std::is_same_v<unsigned char, typename std::remove_cv_t<T>> ||
+				std::is_same_v<signed char  , typename std::remove_cv_t<T>> || 
+				std::is_same_v<short        , typename std::remove_cv_t<T>> ||
+				std::is_same_v<char         , typename std::remove_cv_t<T>>
+			> {};
+
+			template<typename T>
+			inline constexpr bool IsIntegral_V = IsIntegral<T>::value;
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					0 / 0 / 1
+				*/
+				
+				std::cout << (IsIntegral<const long>::value) 
+					<< " / " << (IsIntegral_V<float>) << " / " << (IsIntegral_V<short>) << "\n";     
+				return 0;
+			}
+			
+		* Örnek 11,
+			//..
+			// 'volatile' özelliği eklemek için.
+			template<typename T> struct add_Volatile { using type = volatile T; };
+			template<typename T> using add_V_T = typename add_Volatile<T>::type;
+
+			// 'const' özelliği eklemek için.
+			template<typename T> struct add_Const { using type = const T; };
+			template<typename T> using add_C_T = typename add_Const<T>::type;
+
+			// 'const' ve 'volatile' özelliği eklemek için.
+			template<typename T> struct add_CV { using type = const volatile T; };
+			template<typename T> using add_CV_T = typename add_CV<T>::type;
+
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					true
+					true
+					true
+				*/
+				
+				std::cout << std::boolalpha;
+							
+				std::cout << std::is_same_v< add_CV_T<int>, const volatile int > << "\n";
+				std::cout << std::is_same_v< add_C_T<int>, const int > << "\n"; 
+				std::cout << std::is_same_v< add_V_T<int>, volatile int > << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 12,
+			//..
+			template<typename T>
+			void makeUnsigned(T x)
+			{
+				
+				//typename std::make_unsigned<T>::type other{ x };
+				std::make_unsigned_t<T> other{ x };
+				
+				std::cout << other << "\n";
+				
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Value : -31 => 4294967265
+					Value : 31 => 31
+				*/
+				
+				// Signed -> Unsigned
+				int a = -31;
+				std::cout << "Value : " << a << " => ";
+				makeUnsigned<int>(a);
+				
+				// Unsigned -> Unsigned
+				unsigned int b = 31;
+				std::cout << "Value : " << b << " => ";
+				makeUnsigned<unsigned int>(b);
+				
+				return 0;
+			}
+			
+		* Örnek 13,
+			//..
+			enum Neco : unsigned char{ x, y, z };
+			int main()
+			{
+				std::underlying_type<Neco> x; // 'x' is 'unsigned char'
+				
+				return 0;
+			}
+			
+		* Örnek 14,
+			//..
+			template<typename T, typename U>
+			struct IsSame : std::false_type{};
+
+			template<typename T>
+			struct IsSame<T,T> : std::true_type{};
+
+			template<typename T, typename U>
+			inline constexpr bool IsSame_V{ IsSame<T, U>::value };
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Same!!!
+				*/
+
+				if( !IsSame_V<int, double> )
+				{
+					std::cerr << "Not same!!!\n"; // OUTPUT in 'std::err' => Not same!!!
+				}
+				
+				if( IsSame_V<float, float> )
+				{
+					std::cout << "Same!!!\n"; // OUTPUT in 'std::out' => Same!!!
+				}
+				
+				return 0;
+			}
+			
+		* Örnek 15.1, Öyle bir 'func' işlevi olsun ki tam sayı türleri için bir kod bloğu, tam sayı olmayan türler için ayrı
+		bir kod bloğu çalışsın.
+			//..
+			'template' tür parametresine bağlı türü kullanmak için 'typename' anahtar sözcüğünü yazmamız gerekmektedir.
+			template<typename T>
+			void func_impl(T x, std::true_type)
+			{
+			   std::cout << "Tam sayilar için kullanilacak kod bloğu...\n"; 
+			}
+
+			template<typename T>
+			void func_impl(T x, std::false_type)
+			{
+				std::cout << "Diğer sayilar için kullanilacak kod bloğu...\n"; 
+			}
+
+			template<typename T>
+			void func(T x)
+			{
+				func_impl(x, typename std::is_integral<T>::type{});
+				// 'type' burada bir tür bilgisine denk gelmekte olup ya 'std::true_type' ya da 'std::false_type'
+				// türlerinden birisidir.
+				// 'Function Overload Resolution' için geçici nesne oluşturduk.
+				// 'typename' anahtar sözcüğünü kullanmak zorundayız çünkü bir tür bilgisi geçiyoruz.
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Tam sayilar için kullanilacak kod bloğu...
+					Diğer sayilar için kullanilacak kod bloğu...
+				*/
+
+				func<int>(12);
+				
+				func<float>(1.2f);
+				
+				return 0;
+			}
+			
+		* Örnek 15.2,
+			//..
+			template<typename T>
+			void func(T x)
+			{
+				if( std::is_integral_v<T> )
+				{
+					std::cout << "Tam sayilar için kullanilacak kod bloğu...\n"; 
+				}
+				else
+				{
+					std::cout << "Diğer sayilar için kullanilacak kod bloğu...\n"; 
+				}
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Tam sayilar için kullanilacak kod bloğu...
+					Diğer sayilar için kullanilacak kod bloğu...
+				*/
+
+				func<int>(12);
+				
+				func<float>(1.2f);
+				
+				return 0;
+			}

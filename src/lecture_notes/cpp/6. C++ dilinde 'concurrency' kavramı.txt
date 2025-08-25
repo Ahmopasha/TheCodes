@@ -1,0 +1,1717 @@
+> 'concurrency' : Eğer birden fazla eylem belirli bir zaman dilimi içinde birlikte yürütülüyorsa burada bir 'concurrency'
+söz konusudur. Örneğin, İsmail isimli birisinin bir saat boyunca hem dans ettiğini hem de şarkı söylediğini düşünelim. Bu
+bir saatin sonunda bu kişi hem dans etmiş hem de şarkı söylemiştir, bu kesindir. Fakat detaylarına indiğimiz zaman karşımıza
+iki farklı dal çıkmaktadır. Bunlar;
+	>> Bu kişi bir saat boyunca dans ederken şarkı söylemiştir ki İngilizce dilinde bunun karşılığı 'simultaneously'. Buna
+	'paralelism' de diyebiliriz. Birden fazla işlemci olduğunu veya tek bir işlemcinin birden fazla çekirdeğe sahip olduğunu
+	düşünelim. Modern işletim sistemleri, yürütülmeyi bekleyen işlemleri bu çekirdeklere pay edebilir. Böylelikle gerçekten
+	de 'simultaneously' bir şekilde bu işlemler yürütülmektedir.
+		* Örnek 1,
+			Dancing:DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+			Singing:SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS 
+			        ------------------------------> Time Line
+
+	>> Bu kişi önce bir müddet dans etmiştir. Dans bittikten sonra da bir müddet şarkı söylemiştir. Şarkı bittikten sonra
+	da tekrar dans etmiştir. Bu şekilde bir saati doldurmuştur. Bu durumun da İngilizce dilindeki karşılığı
+	'at the same time'. Tek bir işlemci olduğunu ve bu işlemcinin de tek bir çekirdeğe sahip olduğunu düşünelim. Bu durumda
+	bu işlemci aynı anda bir adet kod bloğunu yürütecektir. Fakat modern işletim sistemleri sayesinde bu tip işlemciler
+	farklı farklı işlemleri kısa süreler için çalıştırabiliyorlar. İngilizce dilinde bu süreye 'time quanta' denmektedir.
+	Aslında iş şu şekilde yürümekte; beş adet işlem yürütülmeyi bekliyor olsun. Bu tip işlemci önce birinci işlemi
+	'time quanta' süresince yürütüyor. Örneğin, 20 veya 60 milisaniye. Sonrasında ikinci işleme geçiyor ve onu da 20 veya
+	60 milisaniye boyunca yürütüyor. Derken sırayla üçüncü, dördüncü ve beşinci işlemleri 20 veya 60 milisaniye	boyunca
+	yürütüyor. Gözlemci olarak dışarıdan baktığımız zaman bizler sanki 'simultaneously' bir şekilde bu beş işlemin aynı anda
+	yürütüldüğünü görüyoruz fakat hakikatte bu işlemler 'at the same time' bir şekilde yürütülmekteler. 
+		* Örnek 1,
+			Dancing: D D D D D D D D D D D D D D D 
+			Singing:S S S S S S S S S S S S S S S S  
+			        ------------------------------> Time Line
+
+Bazı işlemler için, örneğin bir 'thread' için öncelik belirlenmesi konusunda, işletim sisteminin sistem fonksiyonlarını
+çağırmak zorunda kalabiliriz. Yani her şeyi Cpp dilinin standart fonksiyonları ile yapamıyoruz.
+'program', kaynak kodlar için ya da çalıştırılabilir dosyalar için kullanılan bir terimdir. Bir 'program' çalıştırıldığında
+ise artık ona 'process' denmektedir. Prosesler ise işletim sisteminin kontrolündedir. Bu duruma, yani proseslerin işletim
+sistemi tarafından yönetilmesi olayına, da 'process management' denmektedir. İşletim sistemleri proseslerin kullanımı
+açısından kategorize edilebilir; aynı anda tek bir programı çalıştıran işletim sistemlerine
+"tek prosesli (single-processing)" sistemler, aynı anda birden fazla programı çalıştıran işletim sistemlerine
+"çok prosesli (multi-processing)" işletim sistemleri denir. Örneğin, 'DOS' işletim sistemi tek prosesli bir sistemdi. Ancak
+bir program çalıştırıldıktan sonra baska bir program çalıştırılabilirdi. 'Windows', 'UNIX/Linux' ve 'MacOS X' çok prosesli
+işletim sistemleridir. 'process' terimi ile 'task' terimi pek çok bağlamda aynı anlamda kullanılır, istisnai durumlar da söz
+konusudur. Yani 'multi-processing' yerine 'multi-tasking' terimini de kullanabiliriz. Peki tek bir CPU olduğunda,
+'multi-processing' nasıl gerçekleştirilir? Her ne kadar yukarıda ana hatları ile açıklasak da aslında süreç şu şekildedir;
+bu tip senaryolarda programlar aynı anda çalışmamaktadırlar. Çalışma, 'time-sharing' denilen zaman paylaşımlı bir biçimde
+yapılmaktadır. Yani bir 'process' CPU ya atanır. Bir süre bu proses çalıştırılır. Sonra çalışmasına ara verilir. Bu sefer bir
+başka 'process' CPU ya atanır. Yine bir süre çalıştırılır ve sonra çalışmasına ara verilir. Çalışma genel olarak bu şekilde
+devam ettirilir. Her bir 'process', CPU ya atandıktan sonra kaldığı yerden işlemeye devam eder. Dışarıdan bakıldığında ise
+sanki bu bütün prosesler aynı anda çalışıyormuş algısı oluşur. Bir nevi yukarıdaki 'at the same time' senaryosu. İş bu
+çalışma stilinde, her bir prosesin çalışma süresine de 'time-quanta' denmekte olup Windows sistemlerde bu süre 20
+milisaniyeyken, UNIX/Linux sistemlerde 60 milisaniyedir. Tabii işletim sisteminin sürümleri arasında da bu süre farklılık
+gösterebilir. Çünkü burada etken nokta seçilen süre ile çekirdeğin çalışma biçiminin uyumlu olmasıdır. Peki iki 'process'
+arasındaki geçiş sürecine ne ad verilir? 'process-switch' veya 'task-switch' ya da daha genel bağlamda 'context-switch' adı
+verilir. Dolayısıyla prosesler arasındaki geçiş de doğal olarak bir zaman kaybına neden olur. Proseslerin işletilme süresi
+olan 'time-quanta' uzun seçildiğinde birim zamanda yapılan İŞ MİKTARI ARTAR ve interaktivite(latency) AZALIR. 'time-quanta'
+süresinin kısa seçilmesi halinde ise birim zamanda yapılan İŞ MİKTARI AZALACAK, interaktivite(latency) ARTACAKTIR. Bunun da
+yegane sebebi sık sık 'context-switch' boyunca zaman kaybedilmesidir. Windows ve UNIX/Linux kökenli işletim sistemleri
+'preemptive' sistemlerdir. Yani bir prosesin 'time-quanta' dolduğunda, zoraki durdurularak başka bir prosesin devreye
+alınmasıdır. O anda prosesin neresinde olunduğu ÖNEMSİZDİR. Quanta süresi dolduğunda bir başka proses işlemciye atanmaktadır.
+Fakat bu şekilde 'preemptive' OLMAYAN, yani 'non-preemptive' veya 'cooperative multi-tasking' olan sistemler de vardır ki
+Windows 3.1 ve PalmOS bu şekildedir. Bu tip sistemlerde proses kendi isteğiyle akışı bırakır ve prosesler arası geçiş
+gerçekleşir. Fakat bunun dezavantajı ise ilgili prosesin, işletim sistemini tek eli altına almasıdır. Akışı bırakmak
+istemediği durumlarda işletim sisteminin yapacağı bir şey kalmamaktadır. İşletim sistemlerinin hangi prosesin işlemciye ne
+zaman atanacağını belirleyen ve bu işlemi gerçekleştiren alt sistemlerine de 'scheduler' denmektedir. Hangi prosesin ne zaman
+çalıştırılması gerektiğini belirlemede kullanılan algoritmalara da 'scheduler algorithms' denmektedir. Bu algoritmalardan en
+basit ve adil olanı 'round-robin scheduling' isimli olanıdır. Bu algoritmada her proses sırasıyla ve belli bir süre
+çalıştırılır. En sonki prosesten sonra tekrardan ilk proses çalıştırılır. Proseslerin çizelgelenmesi yani işletim sistemi
+tarafından proseslerin işlemcilere atanması, birden fazla işlemci ya da birden fazla çekirdek olması durumunda da benzer bir
+şekilde yapılmaktadır. Bu tip senaryoda ise işletim sistemi şöyle bir şey yapmaktadır; işlemciler ya da çekirdekler için ayrı
+ayrı kuyruklar oluşturulmakta. Yine her işlemci veya çekirdek, tıpkı tek çekirdek gibi, zaman paylaşımlı çalışmaktadır. Bir
+diğer deyişle her çekirdek veya işlemci 'at the same time' yaklaşımı ile çalışırken, bütün çekirdekler incelendiğinde
+'simultaneously' şeklinde bir çalışma görülmektedir. Peki çekirdeklerin birisi işini bitirdiğinde ne oluyor? Diğer
+çekirdeklerdeki prosesler bu boşalan çekirdeğe aktarılmaktadır. Fakat bazı işletim sistemleri ise çok işlemcili ya da çok
+çekirdekli sistemler için global tek bir kuyruk oluşturmaktadır. Her çekirdeğin Quanta süresi dolduğunda, kuyruktaki sırada
+bekleyen proses ona atanmaktadır. Fakat bu yöntem pek de iyi bir yöntem olmayabilir çünkü çekirdeklerin içlerindeki ön
+belleklerden ('cache') maksimum fayda sağlayabilmek için bir prosesin bir önceki Quanta için atanan CPU ya atanması daha
+uygun olabilmektedir. Bir prosesin bir işlem bitene kadar ya da bir işlem gerçekleşene kadar çizelge('scheduling') dışına
+çıkartılarak bekletilmesine, yani aslında o proses hiç yokmuş gibi davranmasına, o prosesin bloke olması('blocking') denir.
+Çünkü zaman zaman bir proses çalışırken dışsal bir olay başlattığında (örneğin disk işlemi, klavyeden okuması, soket okuması
+vs.) işletim sistemi, atanan CPU boş yere beklemesin diye geçici olarak bu prosesi çizelge dışına alır ve o işlemciye başka
+bir proses atar. Dışarı aldığı bu prosesi de ayrıca gözlemler. Dışarı çıkartılan bu prosesin işi bittiğinde tekrar
+çizelgelemeye dahil edilir. Böylelikle CPU boşu boşuna beklememiş olur. Bir çok durumda prosesler arasında haberleşmenin
+sağlanması gerekmektedir. Bu haberleşmeyi sağlayan tipik teknikler Borular('pipes'),
+Paylaşılan Bellek Alanları('Shared Memory'), Mesaj Kuyrukları('Message Queue') şeklindeki tekniklerdir. Boru Haberleşmeleri
+hem Windows hem de UNIX/Linux sistemlerinde kullanılan yaygın bir tekniktir. Senkronize bir haberleşme tekniğidir. UNIX/Linux
+sistemlerinde borular tek kanallıdır. Yani bir taraf yazarken diğer taraf okumaktadır. Fakat Windows sistemlerinde ise
+borular çift kanallıdır. Bir tarafın yazdığını diğer taraf okurken, diğer tarafın yazdığını da karşı taraf okuyabilmektedir.
+Bu mekanizmayı UNIX/Linux sistemlerinde uygulayabilmek için iki adet boru yaratmak gerekmektedir. Paylaşılen Bellek Alanları
+şeklindeki haberleşme tekniğinde bir bellek alanı iki prosesin tarafından da kullanılabilmektedir. Normal şartlar altında her
+prosesin kendine ait ayrı bir bellek alanı mevcuttur. Bu haberleşme tekniği senkronize olmadığından akla şu soruları
+getirmektedir; proseslerden birisi paylaşılan bellek alanına yazdığında diğer proses onu ne zaman okuyacaktır veya diğeri bir
+şey yazdığında eskisi silinecek midir, şeklindeki sorular. Bu sorulara cevap olarak
+Üretici-Tüketici Problemi('Producer-Consumer Problem') diye isimlendirilen bir yöntem kullanılmalıdır ki senkronizasyon
+sağlansın. Bu haberleşme yöntemi hem Windows hem de UNIX/Linux sistemlerinde var olan bir haberleşme yöntemidir.
+Mesaj Kuyrukları haberleşme tekniğinde ise bir mesaj kuyruğu yaratılır ki kuyruklar aslında 'FIFO' biçimindedir. Yani ilk
+girenin ilk çıktığı biçimler. Bir proses kuyruğa yazma yaparken diğeri de okuma yapmaktadır. Bu neden ile Boru Haberleşme
+tekniğine benzemektedir. Fakat Mesaj Kuyruklarında paket tarzı bir aktarım söz konusudur. Bir taraf "mesaj" adı altında bir
+paket gönderir, diğer bunu alır. Fakat alıcı taraf, gönderilen paketin TAMAMINI TEK HAMLEDE ALMAK zorundadır. Mesaj
+kuyrukları Windows işletim sisteminde GUI alt sistemindeki mesajlar yoluyla kullanılabilmektedir.
+'thread' kavramı ise, Türkçe karşılığı 'iplik' olan, proseslerin bir alt kümesidir. Aradaki küçük farklılıkları görmezsek,
+'thread' aslında 'process' demektir. Çok 'thread' li işletim sistemlerinde çizelgelenen varlıklar artık prosesler değil
+'thread' lerdir. Bir proses bir ya da birden fazla 'thread' e sahip olabilir. Bu durumda 'thread' siz sistemler, tek
+'thread' li sistemler olarak düşünülebilir. Çok 'thread' li sistemlerde proses çalışmaya bir 'thread' ile başlar. Buna
+prosesin ana 'thread' i denir. Diğer 'thread' ler ise işletim sisteminin sistem fonksiyonlarıyla oluşturulurlar. Her Quanta
+süresi dolduğunda bir 'thread' in çalışmasına ara verilir, diğer bir 'thread' çalıştırılır. 'thread' ler arka plan olaylarını
+izlemek için iyi bir araç oluşturmaktadırlar. Örneğin, bir yandan klavyeden giriş okurken diğer yandan ekranın sağ üst
+köşesine saatin basılması olayında iki farklı 'thread' ile bu sorunu çözebiliriz. UNUTMAMALIYIZ Kİ BİR PROSES SONLANDIĞINDA
+BÜNYESİNDEKİ BÜTÜN 'thread' LER DE SONLANACAKTIR. Sık yapılan hata şudur; Bir grup 'thread' oluşturulmuştur fakat
+'main-thread' bekletilmemiştir. 'main-thread' işini önce bitirdiğinden proses sonlanmıştır. Dolayısıyla bizim grup
+'thread' de sonlanmış olacaktır. 'thread' lerin 'stack' bölgeleri de farklıdır. Örneğin, dört adet 'thread' oluşturulım ve
+bunların hepsi de aynı fonksiyonu çalıştırsın. İlgili fonksiyonun gövdesindeki otomatik ömürlü değişkenler her bir 'thread'
+için ayrı ayrı olacaktır. Fakat global ve 'static' yerel değişkenler prosese özgü olduklarından, her 'thread' ilgili
+değişkenler için kendi kopyasını OLUŞTURMUYORLAR. Benze kural 'heap' alanındaki değişkenler için de geçerlidir. Statik ve
+dinamik ömürlü değişkenler 'thread' tarafından ortak kullanılır, kendilerine ait kopyası oluşturulmaz. 'thread' arası
+haberleşme için özel bir yönteme gerek yoktur, prosesler arası haberleşmeye nazaran. Zaten dinamik ve statik ömürlü nesneler
+'thread' ler arasında ortak adresi kullandıklarından, bir 'thread' üzerinden yapılan değişikliği diğer 'thread' üzerinden
+görebiliyoruz. Burada önemli olan nokta iki farklı 'thread' in aynı prosese ait olmasıdır. 'thread' oluşturma, 'thread' arası
+haberleşme ve 'thread' arası geçişler proses oluşturma, prosesler arası haberleşme ve prosesler arası geçişe göre daha az
+maliyetlidirler. Fakat 'thread' arası haberleşme/geçiş için senkronizasyon gerektiğinden, 'data-racing' şeklindeki problemler
+ile karşılaşabiliriz. Aşağıda bu konuya ilişkin örnekler verilmiştir:
+    * Örnek 1,
+        //..
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is waiting for a task...
+            */
+            
+            // İlgili 'thread' parçacığına herhangi bir görev ataması yapılmamıştır.
+            std::thread t;
+            
+            // İlgili 'thread' boş ise 'false' değer döndürecektir.
+            std::cout << ( t.joinable() ? " It is occupied... " : "It is waiting for a task..." ) << std::endl;
+        }
+
+    * Örnek 2,
+        //..
+        void foo(void)
+        {
+            std::cout << "void foo(void) was called..." << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds{ 2 });
+            // İlgili 'thread' iki saniye boyunca bloke edilecektir.
+            // Parametre olarak herhangi bir 'duration' geçebiliriz.
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is occupied... 
+                void foo(void) was called...
+                // Aslında bu satırda iki saniyelik bir bekleme gerçekleşmiştir.
+            */
+            
+            std::thread t(foo);
+            // İlgili 'thread' parçacığına herhangi bir görev ataması yapılmıştır. Herhangi bir 'callable' atanabilir. Eğer
+            // fonksiyonumuz geri değer döndürüyorsa, o değeri kullanmak için başka araçlar kullanmalıyız. Aksi halde o
+            // değer 'discard' edilecektir.
+            
+            // İlgili 'thread' boş ise 'false' değer döndürecektir.
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+            
+            t.join(); // İşlevi ilerleyen örneklerde açıklanacaktır.
+        }
+
+    * Örnek 3,
+        //..
+        void foo(void)
+        {
+            // İlgili 'thread' iki saniye boyunca bloke edilecektir.
+            std::this_thread::sleep_for(std::chrono::seconds{ 2 });
+            
+            std::cout << "void foo(void) was called..." << std::endl;
+            // Parametre olarak herhangi bir 'duration' geçebiliriz.
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is occupied... 
+                void foo(void) was called...
+                // Aslında bu satırda iki saniyelik bir bekleme gerçekleşmiştir.
+            */
+            
+            void (*fooPtr)(void) = foo;
+            
+            // İlgili 'thread' parçacığına herhangi bir görev ataması yapılmıştır. Herhangi bir 'callable' atanabilir.
+            std::thread t(fooPtr);
+            
+            // İlgili 'thread' boş ise 'false' değer döndürecektir.
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+            
+            t.join(); // İşlevi ilerleyen örneklerde açıklanacaktır.
+        }
+
+    * Örnek 4,
+        //..
+        struct MyFunctor{
+            void operator()(void)
+            {
+                std::this_thread::sleep_for(std::chrono::seconds{ 2 });
+                // İlgili 'thread' iki saniye boyunca bloke edilecektir.
+                // Parametre olarak herhangi bir 'duration' geçebiliriz.
+                
+                std::cout << "void foo(void) was called..." << std::endl;
+            }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is occupied... 
+                void foo(void) was called...
+                // Aslında bu satırda iki saniyelik bir bekleme gerçekleşmiştir.
+            */
+            
+            // İlgili 'thread' parçacığına herhangi bir görev ataması yapılmıştır. Herhangi bir 'callable' atanabilir.
+            std::thread t( MyFunctor{} );
+            
+            // İlgili 'thread' boş ise 'false' değer döndürecektir.
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+            
+            t.join(); // İşlevi ilerleyen örneklerde açıklanacaktır.
+        }
+
+    * Örnek 5,
+        //..
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is occupied... 
+                void foo(void) was called...
+                // Aslında bu satırda iki saniyelik bir bekleme gerçekleşmiştir.
+            */
+            auto myLambdaExpression = [](void)
+            {
+                // İlgili 'thread' iki saniye boyunca bloke edilecektir.
+                // Parametre olarak herhangi bir 'duration' geçebiliriz.
+                std::this_thread::sleep_for(std::chrono::seconds{ 2 });
+                
+                std::cout << "void foo(void) was called..." << std::endl;
+            };
+            
+            // İlgili 'thread' parçacığına herhangi bir görev ataması yapılmıştır. Herhangi bir 'callable' atanabilir.
+            std::thread t( myLambdaExpression );
+            
+            // İlgili 'thread' boş ise 'false' değer döndürecektir.
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+            
+            t.join(); // İşlevi ilerleyen örneklerde açıklanacaktır.
+        }
+
+    * Örnek 6, Eğer koşturacağımız fonksiyon parametre alıyorsa bu parametreleri 'std::thread' sınıfının kurucu işlevine
+    geçiyoruz. 'Perfect Forwarding' ile bu parametreler iletilmektedirler.
+        //..
+        void foo(int x)
+        {
+            std::cout << "void foo(" << x << ") was called..." << std::endl;
+            for(int i = 0; i < x; ++i)
+            {
+                std::cout << "*" << std::endl;
+            }
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is occupied... 
+                void foo(3) was called...
+                *
+                *
+                *
+            */
+            
+            // İlgili 'thread' parçacığına herhangi bir görev ataması yapılmıştır. Herhangi bir 'callable' atanabilir.
+            std::thread t{ foo, 3 };
+            
+            // Tam olarak bu noktada iki adet 'thread' çalışmaktadır. Bunlardan ilki 'main-thread', ikincisi ise 't'
+            // isimli bizim oluşturduğumuz. 
+
+            // İlgili 'thread' boş ise 'false' değer döndürecektir.
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+            
+            // 't' nesnesinin 'Dtor.' fonksiyonu çağrılmadan evvel ilgili 'thread' nesnesini ya 'join' etmem ya da
+            // 'detach' etmem gerekmektedir.
+            t.join();
+        } 
+
+    * Örnek 7,
+        //..
+        void foo(int x)
+        {
+            std::cout << "void foo(" << x << ") was called..." << std::endl;
+            for(int i = 0; i < x; ++i)
+            {
+                std::cout << "*" << std::endl;
+            }
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is occupied... 
+                void foo(3) was called...
+                *
+                *
+                *
+                It is waiting for a task...
+            */
+            std::thread t{ foo, 3 };
+            
+            // Tam olarak bu noktada iki adet 'thread' çalışmaktadır. Bunlardan ilki 'main-thread',
+            // ikincisi ise 't' isimli bizim oluşturduğumuz. 
+            
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+            
+            t.join();
+            // 't' isimli 'thread' nesnesinin '.join()' isimli fonksiyonu çağrıldığında 'main-thread', bizim 'thread'
+            // nesnesi işini bitirene kadar bloke edilecektir. Yani bizim 'thread' hangi görevi aldıysa ONU TAMAMLA demektir.
+                    
+            // Dolayısıyla programın akışının buraya gelmesi için, 't' isimli 'thread' nesnesinin işini bitirmiş olması
+            // gerekmektedir. Bir diğer deyişle programın akışı buraya geldiyse sadece 'main-thread' çalışıyordur.
+            
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+        }
+
+    * Örnek 8,
+        //..
+        void foo(int x)
+        {
+            std::cout << "void foo(" << x << ") was called..." << std::endl;
+            for(int i = 0; i < x; ++i)
+            {
+                std::cout << "*" << std::endl;
+            }
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                It is occupied... void foo(
+                It is waiting for a task...
+                30) was called...
+                ) was called...
+                *
+                *
+                *
+            */
+            std::thread t{ foo, 30 };
+            
+            // Tam olarak bu noktada iki adet 'thread' çalışmaktadır. Bunlardan ilki 'main-thread',
+            // ikincisi ise 't' isimli bizim oluşturduğumuz. 
+            
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+            
+            t.detach();
+            // İş bu 'thread' nesnesinin 'main-thread' den bağımsız olarak çalışması demektir. Dolayısıyla bu örnek
+            // nezdinde konuşacak olursak, 'main-thread' işini daha önce bitirdiğinden, bizim 'thread' nesnesi işini
+            // tam olarak bitiremedi. Çünkü proses sonlandı.
+            
+            std::cout << ( t.joinable() ? "It is occupied... " : "It is waiting for a task..." ) << std::endl;
+        }
+
+    * Örnek 9,
+        //..
+        void foo(int x)
+        {
+            std::cout << "void foo(" << x << ") was called..." << std::endl;
+            for(int i = 0; i < x; ++i)
+            {
+                std::cout << "*" << std::endl;
+            }
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                main basladi...
+                std::terminate cagrildi....
+                myterminate cagrildi....
+                std::abort() cagrildi
+            */
+            
+            std::set_terminate(my_terminate); // Artık bizim 'std::terminate()' versiyonumuz çağrılacaktır.
+            
+            std::cout << "main basladi..." << std::endl;
+            
+            {
+                std::thread t{ foo, 30 };
+            }
+            // Bu noktada 't' nesnesinin hayatı bitecek fakat 'joinable' durumda. Dolayısıyla 'std::terminate()'
+            // fonksiyonu çağrılacaktır. Çünkü ne '.join()' ne de '.detach()' fonksiyonlarına çağrı yaptık. İşte bu nedenden
+            // dolayı ya 'join' etmeli ya da 'detach' etmeliyiz. Ayrıca koşan fonksiyonun bloğundan bir hata nesnesi
+            // fırlatılsa ve fonksiyon bloğu içerisinde yakalanamaz ise 'std::terminate()' çağrılacaktır.
+            
+            std::cout << "main devam ediyor..." << std::endl;    
+
+            // BURADAN HAREKETLE İLGİLİ 'thread' SINIFINI SARMALAYAN VE RAII deyimini güden bir sınıf yazmamız halinde, 
+            // '.join()' ve ya '.detach()' çağrılarının unutulmasının önüne geçebiliriz. Cpp20 ile bu işi yapan bir sınıf
+            // da dile eklenmiştir.
+        }
+
+    * Örnek 10,
+        //..
+        void foo(int x)
+        {
+            std::cout << "void foo(" << x << ") was called..." << std::endl;
+            for(int i = 0; i < x; ++i)
+            {
+                std::cout << "*" << std::endl;
+            }
+            
+            throw std::runtime_error{"HATA!!!!!!!!!!!!!!!"};
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                main basladi...
+                std::terminate cagrildi....
+                myterminate cagrildi....
+                std::abort() cagrildi
+                void foo(30) was called...
+            */
+            
+            std::set_terminate(my_terminate);
+            
+            std::cout << "main basladi..." << std::endl;
+            
+            {
+                std::thread t{ foo, 30 };
+            }
+            
+            std::cout << "main devam ediyor..." << std::endl;    
+        }
+
+    * Örnek 11,
+        //..
+        void foo(int x)
+        {
+            try
+            {
+                std::cout << "void foo(" << x << ") was called..." << std::endl;
+                for(int i = 0; i < x; ++i)
+                {
+                    std::cout << "*" << std::endl;
+                }
+                
+                throw std::runtime_error{"HATA!!!!!!!!!!!!!!!"};
+            }catch(...)
+            {
+                std::cout << "BİR HATA YAKALANDI..." << std::endl;
+            }
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                main basladi...
+                void foo(30) was called...
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                *
+                BİR HATA YAKALANDI...
+                main devam ediyor...
+            */
+            
+            std::set_terminate(my_terminate);
+            
+            std::cout << "main basladi..." << std::endl;
+            
+            {
+                std::thread t{ foo, 30 };
+                t.join();
+            }
+            
+            std::cout << "main devam ediyor..." << std::endl;    
+        }
+
+    * Örnek 12,
+        //..
+        int main()
+        {
+            /*
+                # OUTPUT #
+                main basladi...
+                I am FREE now...
+                Hata yakalandi... : Invalid argument
+                main devam ediyor...
+            */
+            std::cout << "main basladi..." << std::endl;
+            
+            try{
+                std::thread t;
+                std::cout << ( t.joinable() ? "I am busy now..." : "I FREE now..." ) << std::endl;
+                
+                // 'joinable' olmayan bir nesne için '.join()' veya '.detach()' çağrısı yapmak hata nesnesi gönderilmesine
+                // sebep olur. 
+                t.join();
+            }catch(const std::exception& ex)
+            {
+                std::cout << "Hata yakalandi... : " << ex.what() << std::endl; // Hata nesnesinin türü 'std::system_error'.
+            }
+            
+            std::cout << "main devam ediyor..." << std::endl;    
+        }
+
+    * Örnek 13,
+        //..
+        void foo(){}
+        int main()
+        {
+            /*
+                # OUTPUT #
+                main basladi...
+                I am FREE now...
+                Hata yakalandi... : Invalid argument
+                main devam ediyor...
+            */
+            std::cout << "main basladi..." << std::endl;
+            std::thread t(foo);
+            std::cout << ( t.joinable() ? "I am busy now..." : "I FREE now..." ) << std::endl;
+            t.join();
+            try{
+                
+                // '.join()' veya '.detach()' çağrısı yapılmış bir nesne için '.join()' veya '.detach()' çağrısı yapmak
+                // hata nesnesi gönderilmesine sebep olur. 
+                t.join();
+            }catch(const std::exception& ex)
+            {
+                std::cout << "Hata yakalandi... : " << ex.what() << std::endl;
+            }
+            
+            std::cout << "main devam ediyor..." << std::endl;    
+        }
+
+    * Örnek 14,
+        //..
+        void foo(int a, int b)
+        {
+            std::cout << "void foo(" << a << ", " << b << ") was called." << std::endl;
+        }
+
+        struct MyFunctor{
+            void operator()(int a, int b)
+            {
+                std::cout << "void MyFunctor::operator()(" << a << ", " << b << ") was called." << std::endl;
+            }
+        };
+
+        auto MyLambda = [](int a, int b){
+            std::cout << "MyLambda(" << a << ", " << b << ") was called." << std::endl;
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                main basladi...
+                main devam ediyor...
+            */
+            
+            void (*fooPtr)(int, int) = foo;
+            
+            std::cout << "main basladi..." << std::endl;
+            
+            std::thread tOne{ foo, 1, 2 }; tOne.detach();
+            std::thread tTwo{ fooPtr, 10, 20 }; tTwo.detach();
+            std::thread tThree{ MyFunctor{}, 100, 200 }; tThree.detach();
+            std::thread tFour{ MyLambda, 1000, 2000 }; tFour.detach();
+            
+            std::cout << "main devam ediyor..." << std::endl;    
+            
+            // 'main-thread' ilk önce bittiğinden, diğerlerini de durdurdu.
+        }
+
+    * Örnek 15,
+        //..
+        void foo(int a, int b)
+        {
+            std::cout << "void foo(" << a << ", " << b << ") was called." << std::endl;
+        }
+
+        struct MyFunctor{
+            void operator()(int a, int b)const
+            {
+                std::cout << "void MyFunctor::operator()(" << a << ", " << b << ") was called." << std::endl;
+            }
+        };
+
+        auto MyLambda = [](int a, int b){
+            std::cout << "MyLambda(" << a << ", " << b << ") was called." << std::endl;
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                main basladi...
+                void foo(1, 2) was called.
+                void foo(10, 20) was called.
+                void MyFunctor::operator()(100, 200) was called.
+                MyLambda(1000, 2000) was called.
+                main devam ediyor...
+            */
+            
+            void (*fooPtr)(int, int) = foo;
+            
+            std::cout << "main basladi..." << std::endl;
+            
+            std::thread tOne{ foo, 1, 2 }; tOne.join();
+            std::thread tTwo{ fooPtr, 10, 20 }; tTwo.join();
+            std::thread tThree{ MyFunctor{}, 100, 200 }; tThree.join();
+            std::thread tFour{ MyLambda, 1000, 2000 }; tFour.join();
+            
+            std::cout << "main devam ediyor..." << std::endl;    
+        }
+
+    * Örnek 16,
+        //..
+        class Functor {
+            public:
+                void operator()(int n)const
+                {
+                    for (int i = 10; i < n; ++i)
+                        std::cout << i << " ";
+                    std::cout << std::endl;
+                }
+        };
+
+        class MyClass {
+                public:
+                    static void sprintn(int n)
+                    {
+                        for (int i = 30; i < n; ++i)
+                            std::cout << i << " ";
+                        std::cout << std::endl;
+                    }
+                    
+                    void printn(int n)const
+                    {
+                        for (int i = 40; i < n; ++i)
+                            std::cout << i << " ";
+                        std::cout << std::endl;
+                    }
+        };
+
+        void printn(int n)
+        {
+            for (int i = 0; i < n; ++i)
+                std::cout << i << " ";
+            std::cout << std::endl;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                0 1 2 3 4 5 6 7 8 9 
+                10 11 12 13 14 15 16 17 18 19 
+                20 21 22 23 24 25 26 27 28 29 
+                30 31 32 33 34 35 36 37 38 39 
+                40 41 42 43 44 45 46 47 48 49 
+            */
+            std::thread t1{ printn, 10 };
+            t1.join();
+            
+            std::thread t2{ Functor{}, 20 };
+            t2.join();
+            
+            std::thread t3{ [](int n) {
+                                        for (int i = 20; i < n; ++i)
+                                            std::cout << i << " ";
+                                        std::cout << std::endl;
+                                    },
+                                    30 
+                            };
+            t3.join();
+            
+            std::thread t4{ MyClass::sprintn, 40 };
+            t4.join();
+            
+            MyClass m;
+            std::thread t5{ &MyClass::printn, m, 50 }; // Burada '&' atomunun kullanılması bir zorunluluktur.
+            t5.join();
+        }
+        
+    * Örnek 17, 'thread' tarafından koşulacak fonksiyonun parametresinin sol taraf referans olması durumunda işler değişiyor.
+        //..
+        using namespace std;
+        void func(int& r)
+        {
+            ///
+            r += 29;
+        }
+
+        void foo(string &str)
+        {
+            str += "can";
+        }
+
+        int main()
+        {
+            string name{ "necati" };
+            thread t{ foo, name};
+            t.join();
+            cout << "name = " << name << "\n";
+            
+            int x = 31;
+            thread tt{ func, x };
+            tt.join();
+            cout << "x = " << x << "\n";
+            
+            // Aslında burada gerçekleşen şey şudur: 'thread' nesnesinin kurucu işlevine geçilen argümanlar direkt olarak
+            // koşulacak fonksiyona argüman olarak geçilmiyorlar. Birer kopyası çıkartıldıktan sonra fonksiyonlara argüman
+            // olarak geçiliyorlar. Birer kopyası çıkartıldıkları için ki bu kopyalar da 'R-Value Expression',
+            // 'non-const L-Value Reference' tiplerine BAĞLANAMIYORLAR. Bu durumda 'ReferenceWrapper' sınıfından destek
+            // almamız gerekmektedir eğer değişkenin değerini değiştireceksek. Okuma amacıyla değişkeni kullanacaksak
+            // 'const L-Value Referance' veya 'R-Value Referance' kullanabiliriz.
+        }
+        
+    * Örnek 18,
+        //..
+        using namespace std;
+        void func(int& r)
+        {
+            ///
+            r += 29;
+        }
+
+        void foo(string &str)
+        {
+            str += "can";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                name = necatican
+                x = 60
+            */
+            string name{ "necati" };
+            thread t{ foo, ref(name)};
+            t.join();
+            cout << "name = " << name << "\n";
+            
+            int x = 31;
+            thread tt{ func, ref(x) };
+            tt.join();
+            cout << "x = " << x << "\n";
+        }
+        
+    * Örnek 19,
+        //..
+        using namespace std;
+
+        void func(int&& r)
+        {
+            std::cout << "r : " << r << std::endl;
+        }
+
+        void foo(const string &str)
+        {
+            std::cout << "str : " << str << std::endl;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                t_id : str : necati140528876435200
+
+                tt_id : 140528876435200
+                r : 31
+                
+                ------------------
+                t_id : thread::id of a non-executing thread
+                tt_id : thread::id of a non-executing thread
+            */
+            string name{ "necati" };
+            thread t{ foo, name };
+            std::cout << "t_id : " << t.get_id() << std::endl;
+            t.join();
+            
+            int x = 31;
+            thread tt{ func, x };
+            std::cout << "tt_id : " << tt.get_id() << std::endl;
+            tt.join();
+            
+            std::cout << "\n------------------" << std::endl;
+            std::cout << "t_id : " << t.get_id() << std::endl;
+            std::cout << "tt_id : " << tt.get_id() << std::endl;
+            
+            // '.get_id()' fonksiyonunun geri dönüş değerinin türü 'std::thread::id' sınıf türündendir.
+        }
+        
+    * Örnek 20,
+        //..
+        void func(void)
+        {
+            // İş bu fonksiyon, hangi 'thread' tarafından koşulur ise onun 'ID' bilgisini ekrana yazdıracaktır.
+            std::cout << std::this_thread::get_id() << "\n";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                139931070924608
+                139931070920448
+            */
+            
+            func(); // Şu an 'main-thread' e ait olan ID ekrana yazdıracaktır.
+            
+            std::thread t{ func }; // Şu an 't' isimli 'thread' e ait olan ID ekrana yazdıracaktır.
+            t.join();
+        }
+        
+    * Örnek 21,
+        //..
+        std::thread::id main_thread_id; // 'id' sınıf türünden, 'main_thread_id' isimli global değişken.
+
+        void func()
+        {
+            //func'ın hangi thread'den cagrildigina bagli olarak farkli isler yapiliyor
+            if (std::this_thread::get_id() == main_thread_id) 
+            {
+                std::cout << "cagri main thread'den yapildi\n";
+            }
+            else
+            {
+                std::cout << "cagri ikincil threadlerden yapildi\n";
+            }
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                cagri main thread'den yapildi
+                cagri ikincil threadlerden yapildi
+            */
+            main_thread_id = std::this_thread::get_id(); // 'main-thread' e ait olan ID bilgisi elde edildi.
+            func();
+            std::thread t{ func }; // İkincil bir 'thread' daha oluşturmaktayız.
+            t.join();
+        }
+        
+    * Örnek 22,
+        //..
+        std::mutex cout_mtx; // Ne işe yaradığı sonraki örneklerde açıklanacaktır.
+
+        void func()
+        {
+            // Senkronizasyon sağlamak için fakat daha detaylı açıklaması sonraki örneklerdedir.
+            std::lock_guard<std::mutex> myguard(cout_mtx);
+            
+            std::cout << std::this_thread::get_id() << "\n";
+            // Bizim odaklanmamız gereken nokta burası. Bu fonksiyonu hangi 'thread' çalıştırırsa, onun ID bilgisi
+            // ekrana yazılacaktır.
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                140290892769024
+                140290892769024
+            */
+            std::thread tx{ func };
+            std::cout << tx.get_id() << std::endl;
+            tx.join();
+            
+            // Çıktıta görülen ID numarası, 'tx' isimli 'thread' e aittir.
+        }
+        
+    * Örnek 23,
+        //..
+        void func()
+        {
+            // 'sleep_for()' için bir 'duration' geçmemiz gerekiyor.
+            // std::this_thread::sleep_for( std::chrono::duration<double>{ 2.5 } ); // 2.5 saniye boyunca bloke edilecektir.
+
+            // Bu fonksiyonu koşturan 'thread', beş saniye boyunca bloke edilecektir.
+            std::this_thread::sleep_for(std::chrono::seconds{ 5 });
+            
+            std::cout << "void func() was called..." << std::endl;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                // Aslında burada beş saniyelik bir bekleme söz konusu.
+                void func() was called...
+            */
+            
+            func(); // Bu fonksiyonu koşturan 'thread', 'main-thread'. Beş saniye boyunca bloke edildi.
+        }
+        
+    * Örnek 24,
+        //..
+        // std::chrono::time_point<std::chrono::steady_clock> now() { return std::chrono::steady_clock::now(); }
+        auto now() { return std::chrono::steady_clock::now(); }
+
+        // 2999 milisaniye sonrasına dair bir 'time_point' döndürmektedir.
+        auto awake_time()
+        {
+            using std::chrono::operator""ms;
+            return now() + 2999ms;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Hello, waiter...
+                Waited 2999.08 ms
+            */
+            std::cout << "Hello, waiter...\n" << std::flush;
+            const auto start{ now() }; // 'start' aslında bir 'time-point'. Sürenin başlangıcını tutmaktadır.
+            std::this_thread::sleep_until(awake_time()); // '.sleep_until()' bir 'time-point' istemektedir. 
+
+            std::chrono::duration<double, std::milli> elapsed{ now() - start };
+            // 'start' noktası ile şu an arasındaki geçen süre.
+
+            std::cout << "Waited " << elapsed.count() << " ms\n";
+        }
+        
+    * Örnek 25,
+        //..
+        int main()
+        {
+            /*
+                # OUTPUT #
+                8
+            */
+            
+            std::cout << std::thread::hardware_concurrency() << std::endl;
+            // Bizim sistemimizdeki 'concurrent' olarak çalıştırılabilecek maksimum 'thread' sayısını vermektedir.
+        }
+        
+    * Örnek 26,
+        //..
+        void func(size_t size, char c)
+        {
+            while(size--)
+                std::cout.put(c);
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                bdddbbcccaaaeeefffhhhggg
+            */
+            
+            std::vector<std::thread> tVec;
+            for(size_t i = 0; i < std::thread::hardware_concurrency(); ++i)
+                tVec.emplace_back(func, 3, 'a' + i);
+                
+            //..
+            
+            // 'thread' leri tekrardan 'join' etmeliyiz.
+            for(auto& t : tVec)
+                t.join();
+        }
+        
+    * Örnek 27,
+        //..
+        void printer(const std::vector<int>& iVec)
+        {
+            for(auto i : iVec)
+                std::cout << i << std::endl;
+        }
+
+        void filler(std::vector<int>& myVec, size_t amount)
+        {
+            while(amount--)
+                myVec.push_back(Irand{ 10, 99 }());
+        }
+
+        void stealer(std::vector<int>&& myVec, size_t amount)
+        {
+            while(amount--)
+                myVec.push_back(Irand{ 10, 99 }());
+                
+            printer(myVec);
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                1
+                2
+                3
+                4
+                5
+                ----------
+                1
+                2
+                3
+                4
+                5
+                48
+                81
+                42
+                ----------------
+                1
+                2
+                3
+                4
+                5
+                48
+                81
+                42
+                61
+                23
+                73
+                ----------------
+                [0]
+            */
+
+            std::vector<int> myVec{ 1, 2, 3, 4, 5 }; printer(myVec);
+            
+            std::cout << "----------" << std::endl;
+            
+            std::thread tx{ filler, std::ref(myVec), 3 }; tx.join(); printer(myVec);
+            
+            std::cout << "----------------" << std::endl;
+            
+            std::thread ttx{ stealer, std::move(myVec), 3 }; ttx.join(); printer(myVec);
+            
+            std::cout << "----------------" << std::endl;
+            
+            std::cout << "[" << myVec.size() << "]" << std::endl;
+        }
+        
+    * Örnek 28,
+        //..
+        void fworker(const std::vector<int>* vp)
+        {
+            std::cout << std::accumulate(vp->begin(), vp->end(), 0) << "\n";
+            // 'vp' gösterdiği 'vector' nesnesinin elemanlarının toplamı hesaplanacaktır.
+            // Eğer üçüncü parametreye '100' geçilseydi, çıkan sonuç yüz fazla olacaktı.
+        }
+        
+        void thread_starter()
+        {
+            std::vector<int> ivec(1'00'000, 5); // OTOMATİK ÖMÜRLÜ YEREL NESNE.
+            std::thread t{ fworker, &ivec}; // dikkat yerel nesne adresi
+            t.detach(); // İş bu 'thread', 'main-thread' den bağımsız bir şekilde çalışacaktır. 
+            
+            // 't' isimli 'thread' arka planda bağımsız bir şekilde çalışmaktadır ve 'fworker' isimli fonksiyonu
+            // koşturmaktadır. Dolayısıyla 'vp' isimli gösterici 'dangling-pointer' olabilir çünkü 'ivec' nesnesinin hayatı,
+            // toplama işleminin hesaplanmasından önce sona erebilir.
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                // Herhangi bir çıktı üretilemedi. 
+            */
+            thread_starter();
+            std::this_thread::sleep_for(std::chrono::seconds{ 5 });
+        }
+
+'std::thread' sınıfı KOPYALAMAYA KARŞI KAPATILMIŞ FAKAT TAŞIMAYA KARŞI AÇILMIŞ BİR SINIFTIR. Taşıma yapılması durumunda da
+kaynak olarak kullanılan 'thread' objesi 'joinable' OLMAKTAN ÇIKAR. Bir iş yükü olduğu durumlarda 'joinable' olmaktan
+çıkmaktadır. Aşağdıda bu komuya ilişkin örnekler verilmiştir:
+    * Örnek 1,
+        //..
+        void func() {}
+        int main()
+        {
+            /*
+                # OUTPUT #
+                true
+                false
+            */
+            std::thread tx{ func };
+            std::cout << std::boolalpha << tx.joinable() << "\n";
+            std::thread ty{ move(tx) };
+            std::cout << std::boolalpha << tx.joinable() << "\n";
+            ty.join();
+        }
+        
+    * Örnek 2,
+        //..
+        void func() {}
+        int main()
+        {
+            /*
+                # OUTPUT #
+                1
+                1
+                terminate called without an active exception
+            */
+            
+            std::thread tx{ func };
+            std::thread ty{ func };
+            std::cout << tx.joinable() << "\n";
+            std::cout << ty.joinable() << "\n";
+            ty = move(tx); // Halihazırda 'joinable' olana atama yapıldığında 'std::terminate()' fonksiyonu çağrılır.
+            std::cout << "main devam ediyor\n";
+        }
+        
+    * Örnek 3,
+        //..
+        std::thread make_thread() { return std::thread( [](){std::cout << "Necati Ergin!\n";} ); }
+        std::thread func(std::thread t) { return t; }
+        int main()
+        {
+            std::thread t0{ std::thread{ []{} } }; // Geçici nesne kullandığımız için 'copy-ellision' devreye girmektedir.
+            
+            std::thread t1(make_thread());
+            std::thread t2(std::move(t1));
+            t1 = std::move(t2);
+            t1 = func(std::move(t1));
+            t1.join();
+        }
+
+Aşağıda ise 'std::thread' nesnelerinin otomatik olarak 'join' edilmelerine ilişkin örnek verilmiştir:
+	* Örnek 1,
+		//..
+		int main()
+		{
+			/*
+				# OUTPUT #
+				true
+				terminate called without an active exception
+			*/
+			
+			std::thread tx{ []{} };
+			
+			// 'tx' nesnesi için ne '.join()' ne de '.detach()' fonksiyonları çağrıldı. 
+			// Bu noktada 'tx' hala 'joinable'. Yani bir iş yükü var kendisinde.
+			
+			std::cout << std::boolalpha << tx.joinable() << std::endl;
+			
+			// Fakat bu noktada 'tx' için 'Dtor.' fonksiyonu çağrılacak ama 'tx'
+			// hala 'joinable' olduğundan, 'std::terminate()' çağrılacaktır.
+		}
+		
+	* Örnek 2.1,
+		//..
+		void foo(){}
+
+		void func(){}
+
+		void bar()
+		{
+			std::thread tx{ foo };
+			
+			// 'f' fonksiyonunun bir hata nesnesi gönderme ihtimali olduğunu varsayalım:
+			// Senaryo - I
+			try{
+				f();
+			}
+			catch(...)
+			{
+				// Hata nesnesi yakalanmıştır...
+				//...
+			}
+			
+			tx.join();
+			// Programın akışı buraya geldiğinde ya hata nesnesi gönderilmemiştir ya da gönderilen hata nesnesi
+			// yakalanmış ve ele alınmıştır.
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				//...
+			*/
+			
+			bar();
+			
+			// Yukarıdaki senaryo hem karışık hem de okuma konusunda zor. Çok daha iyi bir yöntem olan
+			// RAII deyimini kullanabiliriz. Fakat bu deyimi güden ve Cpp20 ile dile eklenen 'std::jthread'
+			// sınıfını da kullanabiliriz.
+		}
+		
+	* Örnek 2.2,
+		//..
+		class Jthread {
+			public:
+				Jthread(std::thread &t) : mt{t} {}
+				~Jthread()
+				{
+					if (mt.joinable())
+						mt.join();
+				}
+				Jthread(const Jthread&) = delete;
+				Jthread& operator=(const Jthread&) = delete;
+			private:
+				std::thread& mt;
+		};
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				I am a lambda!
+			*/
+			
+			// Yukarıdaki 'Jthread' sınıfını sadece ve sadece sol taraf değeri ile kullanabiliriz.
+			std::thread tx{ []{ std::cout << "I am a lambda!" << std::endl; } };
+			Jthread jtx{ tx };
+		}
+		
+	* Örnek 2.3,
+		//..
+		class scoped_thread
+		{
+			private:
+				std::thread t;
+			public:
+				// Tek parametreli 'Ctor.' için varsayılan olarak 'explicit' yapmalıyız.
+				explicit scoped_thread(std::thread t_) : t(std::move(t_))
+				{
+					if (!t.joinable())
+						throw std::logic_error("No thread");
+				}
+				
+				~scoped_thread()
+				{
+					t.join();
+				}
+				
+				scoped_thread(scoped_thread const&) = delete;
+				scoped_thread& operator=(scoped_thread const&) = delete;
+		};
+
+		void foo(int x) { std::cout << "x : " << x << std::endl; }
+
+		void f()
+		{
+			int ival{31};
+			scoped_thread t{ std::thread(foo, ival)};
+		}
+
+		int main()
+		{
+			f(); // OUTPUT => x : 31
+		}
+		
+	* Örnek 2.4,
+		//..
+		class joining_thread
+		{
+			private:
+				std::thread t;
+			public:
+				// Default Ctor.
+				joining_thread() noexcept = default;
+				
+				// A Ctor. 'Variadic Template' kullanılmış. 'Callable' ile kastedilen, 'thread' nesnesinin koşturacağı
+				// 'callable'.
+				// Parametre paketi ise koşturulacak şeye geçilecek argümanlar.
+				// Parametre paketi açıldığında aslında 'Ctor.' şöyle olacak;
+				// " ... t( 
+				// 	std::forward<Callable>(func), 
+				// 	std::forward<int>(arg1), 
+				// 	std::forward<double>(arg2), 
+				// 	std::forward<char>(arg3) 
+				// ){} ..."
+				template<typename Callable, typename ... Args>
+				explicit joining_thread(Callable&& func, Args&& ... args) :
+					t(std::forward<Callable>(func), std::forward<Args>(args)...) {}
+				
+				bool joinable() const noexcept
+				{
+					return t.joinable();
+				}
+				
+				void join()
+				{
+					t.join();
+				}
+				
+				// 'Move Ctor.' fonksiyonumuz. Bu bildiirmden dolayı 'Copy Ctor.' fonksiyonu 'delete' EDİLDİ.
+				joining_thread(joining_thread&& other) noexcept : t(std::move(other.t)) {}
+				
+				// 'Move Assignment' fonksiyonumuz. Bu bildiirmden dolayı 'Copy Assignment' fonksiyonu 'delete' EDİLDİ.
+				joining_thread& operator=(joining_thread&& other) noexcept
+				{
+					if (joinable())
+						join();
+					t = std::move(other.t);
+					return *this;
+				}
+				
+				// Argüman olarak geçilen 'thread' nesnesi, veri elemanına taşınacaktır.
+				explicit joining_thread(std::thread t_) noexcept : t(std::move(t_)) {}
+				
+				// Argüman olarak geçilen 'thread' nesnesi, veri elemanına taşınacaktır.
+				joining_thread& operator=(std::thread other) noexcept
+				{
+					if (joinable())
+						join();
+					t = std::move(other);
+					return *this;
+				}
+				
+				// 'Dtor.' fonksiyonumuz.
+				~joining_thread() noexcept
+				{
+					if (joinable())
+						join();
+				}
+				
+				void swap(joining_thread& other) noexcept
+				{ 
+					t.swap(other.t);
+				}
+				
+				std::thread::id get_id() const noexcept
+				{
+					return t.get_id();
+				}
+				
+				void detach()
+				{
+					t.detach();
+				}
+				
+				// A 'getter' for 'non-const joining_thread' objects. 
+				std::thread& as_thread() noexcept
+				{
+					return t;
+				}
+				
+				// A 'getter' for 'const joining_thread' objects.
+				const std::thread& as_thread() const noexcept
+				{
+					return t;
+				}
+		};
+
+		int main()
+		{
+			joining_thread tx{ 
+				[](char c, int i, double d){ std::cout << c << i << d << std::endl; }, 
+				'a', 29, 13.31 
+			}; // OUTPUT => a2913.31
+		}
+
+	* Örnek 3,
+		//..
+		uint64_t sum_even = 0;
+		uint64_t sum_odd = 0;
+
+		constexpr uint64_t n = 10'000'000'000;
+
+		void get_sum_even()
+		{
+			for(uint64_t i = 0; i < n; i +=2)
+				sum_even += i;
+		}
+
+		void get_sum_odd()
+		{
+			for(uint64_t i = 1; i < n; i +=2)
+				sum_odd += i;
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				Time Passed: 19.8453
+				Sum of Even Numbers : 6553255921290448384
+				Sum of Odd  Numbers : 6553255926290448384
+			*/
+			auto start = std::chrono::steady_clock::now();
+			get_sum_even();
+			get_sum_odd();
+			auto end = std::chrono::steady_clock::now();
+			
+			std::cout << "Time Passed: " << std::chrono::duration<double>{ end - start }.count() << std::endl;
+			std::cout << "Sum of Even Numbers : " << sum_even << std::endl;
+			std::cout << "Sum of Odd  Numbers : " << sum_odd << std::endl;
+		}
+		
+	* Örnek 4,
+		//..
+		uint64_t sum_even = 0;
+		uint64_t sum_odd = 0;
+
+		constexpr uint64_t n = 10'000'000'000;
+
+		void get_sum_even()
+		{
+			for(uint64_t i = 0; i < n; i +=2)
+				sum_even += i;
+		}
+
+		void get_sum_odd()
+		{
+			for(uint64_t i = 1; i < n; i +=2)
+				sum_odd += i;
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				Time Passed: 16.3162
+				Sum of Even Numbers : 6553255921290448384
+				Sum of Odd  Numbers : 6553255926290448384
+			*/
+			auto start = std::chrono::steady_clock::now();
+			std::thread tx{ get_sum_even };
+			std::thread ty{ get_sum_odd };
+			
+			tx.join();
+			ty.join();
+			auto end = std::chrono::steady_clock::now();
+			
+			std::cout << "Time Passed: " << std::chrono::duration<double>{ end - start }.count() << std::endl;
+			std::cout << "Sum of Even Numbers : " << sum_even << std::endl;
+			std::cout << "Sum of Odd  Numbers : " << sum_odd << std::endl;
+		}
+
+Şu ana kadar nesnelerimiz "automatic storage", "static storage" ve "dynamic storage" şeklindeydi.
+Cpp11 ile dile artık "Thread-Local Storage" şeklinde yeni bir ömür kategorisi daha eklendi. Bu ömür kategorisinde değişkenler
+hayata getirmek için 'thread_local' anahtar sözcüğünü kullanıyoruz. Statik ömürlü ama bildiğimiz şekliyle değil; 'thread'
+nesnesi hayata geldiğinde hayata gelmektedir. Dolayısıyla 'thread' e özgüdür.
+	* Örnek 1,
+		//..
+		std::mutex mtx; // Detayları ilerleyen derslerde açıklanacaktır.
+
+		thread_local int tg = 0; // Bir nevi statik ömürlü ama her 'thrad' kendi kopyasını oluşturmakta.
+
+		void func()
+		{
+			++tg;
+			
+			std::lock_guard<std::mutex> guard(mtx); // Detayları ilerleyen derslerde açıklanacaktır.
+			std::cout << "tg : " << tg << std::endl;
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				tg : 1
+				tg : 1
+				tg : 1
+				tg : 1
+			*/
+			
+			++tg;
+			
+			std::cout << "tg : " << tg << std::endl;
+			
+			std::thread tx{ func };
+			std::thread ty{ func };
+			std::thread tz{ func };
+			
+			tx.join();
+			ty.join();
+			tz.join();
+			
+			// Çıktıdan da görüldüğü üzere 'th' değişkeni her 'thrad' için ayrıdır.
+		}
+		
+	* Örnek 2,
+		//..
+		std::mutex mtx;
+
+		void func(int id)
+		{
+			int x{}; // Otomatik ömürlü.
+			static int y{}; // Statik ömürlü.
+			thread_local int z{}; // Ömrü, 'thread' e bağlı.
+			
+			// Otomatik ömürlü ve 'thread_local' ömür kategorisinde olan değişkenler
+			// her 'thrad' için ayrı olacağından, 'data-racing' söz konusu değildir.
+			// Her 'thread' için bir kopya oluşturulur. 
+			++x;
+			++z;
+			
+			// Fakat statik ömürlü değişkenler için böyle bir şey söz konusu olmadığından
+			// 'data-racing' e karşı bir koruma yapmamız gerekmektedir. Bütün 'thread'
+			// nesneleri bu değişkeni paylaşmaktadır.
+			std::lock_guard guard{ mtx }; // Bir 'thread' bu kodu yürüttünde, diğerleri bloke olmak zorundadır.
+			++y;
+			
+			std::cout << "[" << id << "]" << std::endl;
+			std::cout << "(auto         storage), x : " << x << std::endl;
+			std::cout << "(static       storage), y : " << y << std::endl;
+			std::cout << "(thread_local storage), z : " << z << std::endl << std::endl;
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				[0]
+				(auto         storage), x : 1
+				(static       storage), y : 1
+				(thread_local storage), z : 1
+				
+				[2]
+				(auto         storage), x : 1
+				(static       storage), y : 2
+				(thread_local storage), z : 1
+				
+				[1]
+				(auto         storage), x : 1
+				(static       storage), y : 3
+				(thread_local storage), z : 1
+				
+				[3]
+				(auto         storage), x : 1
+				(static       storage), y : 4
+				(thread_local storage), z : 1
+			*/
+			
+			std::thread a{ func, 0 };
+			std::thread b{ func, 1 };
+			std::thread c{ func, 2 };
+			std::thread d{ func, 3 };
+			
+			a.join();
+			b.join();
+			c.join();
+			d.join();
+		}
+		
+	* Örnek 3,
+		//..
+		std::mutex mtx;
+
+		void func(int id)
+		{
+			int x{}; // Otomatik ömürlü.
+			static int y{}; // Statik ömürlü.
+			thread_local int z{}; // Ömrü, 'thread' e bağlı.
+			
+			// Otomatik ömürlü ve 'thread_local' ömür kategorisinde olan değişkenler
+			// her 'thrad' için ayrı olacağından, 'data-racing' söz konusu değildir.
+			// Her 'thread' için bir kopya oluşturulur. 
+			++x;
+			++z;
+			
+			// Fakat statik ömürlü değişkenler için böyle bir şey söz konusu olmadığından
+			// 'data-racing' e karşı bir koruma yapmamız gerekmektedir. Bütün 'thread'
+			// nesneleri bu değişkeni paylaşmaktadır.
+			std::lock_guard guard{ mtx }; // Bir 'thread' bu kodu yürüttünde, diğerleri bloke olmak zorundadır.
+			++y;
+			
+			std::cout << "[" << id << "]" << std::endl;
+			std::cout << "(auto         storage), x : " << x << std::endl;
+			std::cout << "(static       storage), y : " << y << std::endl;
+			std::cout << "(thread_local storage), z : " << z << std::endl << std::endl;
+		}
+
+		void foo(int id)
+		{
+			func(id); func(id); func(id); func(id);
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				[1]
+				(auto         storage), x : 1
+				(static       storage), y : 1
+				(thread_local storage), z : 1
+				
+				[1]
+				(auto         storage), x : 1
+				(static       storage), y : 2
+				(thread_local storage), z : 2
+				
+				[1]
+				(auto         storage), x : 1
+				(static       storage), y : 3
+				(thread_local storage), z : 3
+				
+				[1]
+				(auto         storage), x : 1
+				(static       storage), y : 4
+				(thread_local storage), z : 4
+				
+				[2]
+				(auto         storage), x : 1
+				(static       storage), y : 5
+				(thread_local storage), z : 1
+				
+				[2]
+				(auto         storage), x : 1
+				(static       storage), y : 6
+				(thread_local storage), z : 2
+				
+				[2]
+				(auto         storage), x : 1
+				(static       storage), y : 7
+				(thread_local storage), z : 3
+				
+				[2]
+				(auto         storage), x : 1
+				(static       storage), y : 8
+				(thread_local storage), z : 4
+				
+				[0]
+				(auto         storage), x : 1
+				(static       storage), y : 9
+				(thread_local storage), z : 1
+				
+				[0]
+				(auto         storage), x : 1
+				(static       storage), y : 10
+				(thread_local storage), z : 2
+				
+				[0]
+				(auto         storage), x : 1
+				(static       storage), y : 11
+				(thread_local storage), z : 3
+				
+				[0]
+				(auto         storage), x : 1
+				(static       storage), y : 12
+				(thread_local storage), z : 4
+				
+				[3]
+				(auto         storage), x : 1
+				(static       storage), y : 13
+				(thread_local storage), z : 1
+				
+				[3]
+				(auto         storage), x : 1
+				(static       storage), y : 14
+				(thread_local storage), z : 2
+				
+				[3]
+				(auto         storage), x : 1
+				(static       storage), y : 15
+				(thread_local storage), z : 3
+				
+				[3]
+				(auto         storage), x : 1
+				(static       storage), y : 16
+				(thread_local storage), z : 4
+			*/
+			
+			std::thread a{ foo, 0 };
+			std::thread b{ foo, 1 };
+			std::thread c{ foo, 2 };
+			std::thread d{ foo, 3 };
+			
+			a.join();
+			b.join();
+			c.join();
+			d.join();
+		}
+		
+	* Örnek 4,
+		//..
+		class Functor{
+			public:
+				void operator()() { std::cout << "void Functor::operator()()" << std::endl; }
+		};
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+			*/
+			
+			// Most Vexing Parse
+			std::thread t(Functor()); 
+			// std::thread t(Functor(*)());
+			
+			t.join(); // Sentaks Hatası    
+		}

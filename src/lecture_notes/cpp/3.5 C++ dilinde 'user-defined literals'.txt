@@ -1,0 +1,413 @@
+>  'User-Defined Literals' : 'UDL' şeklinde kısaltılır. Kendi özel sabitlerimizi oluşturmamıza olanak verir.
+	>> Arka planda yine bir fonksiyon çağrısı yapılmaktadır. Geri dönüş değerini kullanıyoruz. 'Literal Operator Functions'
+	denmektedir iş bu fonksiyonlara. 
+		* Örnek 1,
+			//..
+			int main()
+			{
+				auto name{ "Mehmet" }; // 'name' is 'const char*'
+				auto surname{ "Aksu"s }; // 'surname' is 'std::string'
+
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+				*/
+				
+				using namespace std::chrono;
+				auto duration{ 3h }; // Bir fonksiyon çağrısının geri dönüş değerini kullanıyoruz.
+				return 0;
+			}
+	
+	>> Kendi sabitlerimiz için '_' atomunu eklemek zorundayız ve bu '_' atomundan öncekileri bir yazı biçiminde gönderiyorsak
+	'uncooked', bir sayı bütünü olarak gönderiyorsak da 'cooked' versiyonu kullanıyoruz demektir.
+	
+	>> Bahsi geçen operatör fonksiyonunun geri dönüş değeri bizim insifiyetimizde. Fakat ismi 'operator""_' ile başlamak
+	zorunda. Devamında da parametre parantezi ve alacağı argümanlar yazılmakta ki bunlar da bizim İNSİFİYATİMİZDE DEĞİLDİR.
+	Tam sayılar için 'long double', gerçek sayılar için 'long long' olmalı vs. Son olarak iş bu fonksiyonları 'constexpr'
+	olarak nitelemek	avantajımıza olabilir.
+	
+	>> Pekiştirici örnekler,
+		* Örnek 1,
+			//..
+			// Ana birim 'm' olarak seçildi. 
+			constexpr double operator""_m(long double val)
+			{
+				return static_cast<double>(val);
+			}
+
+			// Dolayısıyla aşağıdakiler de 'm' cinsindendir.
+			// 'km' olarak geldi, 'm' olarak çıktı. 'cooked' versiyon. Çünkü alacağı argümanları bir
+			// rakam olarak gönderiyoruz.
+			constexpr double operator""_km(long double val)
+			{
+				return static_cast<double>(val * 1000);
+			}
+
+			constexpr double operator""_dm(long double val) // 'dm' olarak geldi, 'm' olarak çıktı.
+			{
+				return static_cast<double>(val / 10);
+			}
+
+			constexpr double operator""_cm(long double val) // 'cm' olarak geldi, 'm' olarak çıktı.
+			{
+				return static_cast<double>(val / 100);
+			}
+
+			constexpr double operator""_mm(long double val) // 'mm' olarak geldi, 'm' olarak çıktı.
+			{
+				return static_cast<double>(val / 1000);
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Length : 7891.52
+				*/
+				
+				constexpr double totalLength{ 2.3_km + 34.98_m + 54321.0_dm + 12345.6_cm + 987.654_mm };
+				// constexpr double totalLength{ 
+				// 	operator""_km(2.3) + 
+				// 	operator""_m(34.98) + 
+				// 	operator""_dm(54321.) + 
+				// 	operator""_cm(12345.6)  + 
+				// 	operator""_mm(987.654)
+				// };
+   
+				std::cout << "Length : " << totalLength << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			constexpr double operator""_FAG(long double degree)
+			{
+				return static_cast<double>( (degree - 32) / 1.8 );    
+			}
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					1.59444
+				*/
+				
+				constexpr double santiGrad{ 34.87_FAG }; // 'cooked'
+				
+				std::cout << santiGrad << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 3,
+			//..
+			// 'uncooked'
+			unsigned int operator""_Bnry(const char* other)
+			{
+				unsigned uval{ 0 };
+
+				while( *other )
+				{
+					std::cout << "\n--------------------------\n";
+					
+					char digit{ *other };
+				
+					std::cout << "_digit_ => " << digit << "\n";
+					
+					if( digit != '1' && digit != '0' )
+						throw std::runtime_error("0 yada 1 olmayan bir karakter!!!");
+					
+					uval = uval * 2 + ( digit - '0');
+					// " 'digit' - '0' " yaparak karakterimizin tam sayı değerini elde etmiş oluyoruz. 
+					// '0' karakterinin tam sayı karşılığı 65 varsayarsak, rakamların da ardışık sıralandığını düşünürsek,
+					// '1' karakterinin tam sayı karşılığı 66 olmuş olacaktır.
+					// " '1' - '0' " yaparak da aslında karakterimizin tam sayı değerini elde ediyoruz.
+					
+					std::cout << "_uval_ => " << uval << "\n";
+					++other;
+					
+					std::cout << "\n--------------------------\n";
+				}
+				
+				return uval;
+			}
+
+			// 'Function-try' block
+			int main() try
+			{
+				/*
+					# STDOUT #
+							
+					--------------------------
+					_digit_ => 1
+					_uval_ => 1
+					
+					--------------------------
+					
+					--------------------------
+					_digit_ => 1
+					_uval_ => 3
+					
+					--------------------------
+					
+					--------------------------
+					_digit_ => 0
+					_uval_ => 6
+					
+					--------------------------
+					uvalOne : 6
+					
+					--------------------------
+					_digit_ => 1
+					_uval_ => 1
+					
+					--------------------------
+					
+					--------------------------
+					_digit_ => 2
+				*/
+				
+				unsigned uvalOne{ 110_Bnry }; std::cout << "uvalOne : " << uvalOne << "\n";
+				
+				/* 
+					# STDERR #
+					Hata yakalandi... 0 yada 1 olmayan bir karakter!!!
+				*/
+				unsigned uvalTwo{ 123_Bnry }; std::cout << "uvalTwo : " << uvalTwo << "\n";
+				
+				return 0;
+			}
+			catch(const std::exception& ex)
+			{
+				std::cerr << "Hata yakalandi... " << ex.what() << "\n";
+			}
+			
+		* Örnek 4,
+			//..
+			// 'uncooked'
+			unsigned int operator""_Octl(const char* other)
+			{
+				unsigned uval{ 0 };
+
+				while( *other )
+				{
+					std::cout << "\n--------------------------\n";
+					
+					char digit{ *other };
+				
+					std::cout << "_digit_ => " << digit << "\n";
+					
+					if( !( digit >= '0' && digit < '8' ) )
+						throw std::runtime_error("Octal olmayan bir karakter!!!");
+					
+					uval = uval * 8 + ( digit - '0');
+					
+					std::cout << "_uval_ => " << uval << "\n";
+					++other;
+					
+					std::cout << "\n--------------------------\n";
+				}
+				
+				return uval;
+			}
+
+			// 'Function-try' block
+			int main() try
+			{
+				/*
+					# STDOUT #
+							
+					--------------------------
+					_digit_ => 1
+					_uval_ => 1
+					
+					--------------------------
+					
+					--------------------------
+					_digit_ => 2
+					_uval_ => 10
+					
+					--------------------------
+					
+					--------------------------
+					_digit_ => 1
+					_uval_ => 81
+					
+					--------------------------
+					uvalOne : 81
+					
+					--------------------------
+					_digit_ => 7
+					_uval_ => 7
+					
+					--------------------------
+					
+					--------------------------
+					_digit_ => 8
+				*/
+				
+				unsigned uvalOne{ 121_Octl }; std::cout << "uvalOne : " << uvalOne << "\n";
+				
+				/* 
+					# STDERR #
+					Hata yakalandi... Octal olmayan bir karakter!!!
+				*/
+				unsigned uvalTwo{ 789_Octl }; std::cout << "uvalTwo : " << uvalTwo << "\n";
+				
+				return 0;
+			}
+			catch(const std::exception& ex)
+			{
+				std::cerr << "Hata yakalandi... " << ex.what() << "\n";
+			}
+			
+		* Örnek 5, Yazı olarak girilen rakamları tam sayıya çevirme:
+			//..
+			void strToDecimal(const std::string& other)
+			{
+				int ival{};
+				
+				for(size_t index{}; index < other.size(); ++index)
+				{
+					ival = ival * 10 + other.at(index) - '0';
+				}
+				
+				std::cout << "Result : " << ival << "\n";
+			}
+
+			void strToBinary(const std::string& other)
+			{
+				int ival{};
+				
+				for(size_t index{}; index < other.size(); ++index)
+				{
+					ival = ival * 2 + other.at(index) - '0';
+				}
+				
+				std::cout << "Result : " << ival << "\n";
+			}
+
+			void strToOctal(const std::string& other)
+			{
+				int ival{};
+				
+				for(size_t index{}; index < other.size(); ++index)
+				{
+					ival = ival * 8 + other.at(index) - '0';
+				}
+				
+				std::cout << std::showbase << "Result : " << ival << "\n";
+			}
+
+			void strToHexa(const std::string& other)
+			{
+				int ival{};
+				
+				for(size_t index{}; index < other.size(); ++index)
+				{
+					ival = ival * 16 + other.at(index) - '0';
+				}
+				
+				std::cout << std::showbase << "Result : " << ival << "\n";
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					Enter numbers to be converted to Decimal : 123
+					Result : 123
+					Enter numbers to be converted to Binary : 101
+					Result : 5
+					Enter numbers to be converted to Octal : 123
+					Result : 83
+					Enter numbers to be converted to Hexa : 123
+					Result : 291
+				*/
+				
+				std::string sval{};   
+				
+				std::cout << "Enter numbers to be converted to Decimal : ";
+				std::cin >> sval;
+				strToDecimal(sval);
+				
+				std::cout << "Enter numbers to be converted to Binary : ";
+				std::cin >> sval; 
+				strToBinary(sval);
+				
+				std::cout << "Enter numbers to be converted to Octal : ";
+				std::cin >> sval; 
+				strToOctal(sval);
+				
+				std::cout << "Enter numbers to be converted to Hexa : ";
+				std::cin >> sval; 
+				strToHexa(sval);
+				
+				return 0;
+			}
+			
+		* Örnek 6,
+			//..
+			// 'cooked' / 'uncooked' ayrımını sağlamak için argümanların bu şekilde olması zorunlu.
+			Date operator""_Date(const char* p, size_t)
+			{
+				return Date{ p };
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					05 Haziran 2022 Pazar
+				*/
+				
+				auto myDate{ "05-06-2022"_Date };
+				std::cout << myDate << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 7,
+			//..
+			// 'User Defined Literals' genellikle bir isim alanı içerisine konulurlar.
+			namespace Storage{
+				// Parametrenin 'unsigned long long' olması mecburidir.
+				constexpr size_t operator""_KB(unsigned long long size)
+				{
+					return static_cast<size_t>( size * 1024 );
+				}
+				
+				constexpr size_t operator""_MB(unsigned long long size)
+				{
+					return static_cast<size_t>( size * 1024 * 1024 );
+				}
+			}
+
+			int main() 
+			{
+				/*
+					# OUTPUT #
+					size : 8
+					size : 16384
+					size : 1048576
+				*/
+				
+				using namespace Storage;
+				auto bufferZero{ 1_KB }; std::cout << "size : " << sizeof(bufferZero) << "\n";
+				
+				using byte = unsigned char;
+				auto bufferOne{ std::array<byte, 16_KB>{} }; 
+				std::cout << "size : " << sizeof(bufferOne) << "\n"; // 16 * 1024
+
+				auto bufferTwo{ std::array<byte, 1_MB>{} }; 
+				std::cout << "size : " << sizeof(bufferTwo) << "\n"; // 1 * 1024 * 1024
+				
+				return 0;
+			}

@@ -1,0 +1,3422 @@
+> Dinamik Ömürlü Nesnelere Giriş : 'dynamic' ÖMÜRLÜ NESNELERİN HAYATA GETİRİLMESİ 'operator' SEVİYESİNDE BİR İŞLEMDİR. BU
+İŞLEMLERİ GERÇEKLEŞTİREN 'expression' LARA İSE 'new expressions' DENİR. 'garbage-collection' OLMADIĞI İÇİN BU TİP NESNELERİN
+HAYATINI BİZ PROGRAMCILAR BİTİRMELİ. BUNU YAPAN OPERATÖRLERE DE 'delete operators' DENMEKTEDİR. Diğer yandan ömür
+kategorileri dört şekildir. Otomatik ömürlü değişkenler, 'static' ömürlü değişkenler, dinamik ömürlü değişkenler ve
+'thread-local' ömürlü değişkenler şeklindedir. Dinamik ömürlü nesneler ile Dinamik Bellek Yönetimi birbirinin eşleniği
+DEĞİLDİR. Sadece aralarında bir ilişki vardır. Burada,
+	>> Dinamik Ömürlü Nesneden kastedilen, ilgili nesnenin hayatının sadece ve sadece PROGRAMCI OLARAK BİZLERE BAĞLI olduğu
+	olmasıdır. Velevki böyle bir nesneyi hayata getirdik. Eğer programcı olarak bizler, ilgili nesnenin hayatını
+	sonlandırmayı unutursak, 'memory leak' meydana gelir. 'resource leak' ile karıştırmamalıyız.
+		>>> 'Memory Leak' : 'malloc()' gibi Dinamik Bellek Yönetiminden sorumlu bir fonksiyon ile aldığımız yerin, işimiz
+		bittikten sonra, tekrar iade edilmemesi durumudur. Bu durumda çalışma zamanında o alan artık 'locked' olacaktır. Eğer
+		bizler bu alma-geri vermeme işlemini sürekli olarak tekrar ettirsek bir zaman sonra 'malloc()' fonksiyonu bize yeni
+		yerler tahsis EDEMEZ HALE GELECEKTİR.
+
+		>>> 'Resource Leak' : 'malloc()' gibi Dinamik Bellek Yönetiminden sorumlu bir fonksiyon ile bir yer tahsis edelim ve
+		orasını da 'Student' sınıf türünden bir nesne için kullanalım. İş bu sınıf nesnesi de hayata gelirken 'data members'
+		için bir 'database' bağlantısına, ilave bir bellek alanına VEYA bir dosyanın açılmasına ihtiyaç duysun. Bu nesne ile
+		işimiz bittiğinde eğer 'data members' için kullanılan 'database' bağlantılarını sonlandırmazsak veya alınan o ilave
+		bellek alanlarını tekrar geri vermezsek yada açılan o dosyayı kapatmazsak 'Resource Leak' meydana gelir. İlgili sınıf
+		nesnesi için alınan bellek alanının geri verilmemesi de bu konuya dahildir fakat bu daha genel bir sızıntıdır. O
+		sınıf nesnesi hayata gelirken aldığı/kullandığı kaynakların geri verilmemesinden BAHSETMEKTEDİR.
+
+		>>> C dilinde bu süreç şu şekildedir; 
+			>>>> İlk önce sınıf nesnemizin oluşturulacağı bellek alanını 'malloc()' çağrısı ile elde et. Elde edilememesi
+			durumunda duruma müdahale et(Hata Yönetimi).
+			>>>> Hayata getirilecek nesne kaynaklara ihtiyaç duyuyorsa, o kaynakları da edin. Örneğin, bir dosyanın açılması
+			gerekiyorsa dosyayı aç veya bir 'database' bağlantısına ihtiyaç var ise o bağlantıyı sağla veya ekstra bir bellek
+			alanlarına ihtiyaç duyuyorsa o bellek alanlarını tahsis et.
+			>>>> Hayata başarılı bir şekilde gelmiş olan bu nesneyi kullan.
+			>>>> O nesnenin hayatını bitirmeden evvel açmış olduğun dosyaları/sağlamış olduğun 'database'
+			bağlantılarını/almış olduğun ekstra bellek alanlarını geri ver.
+			>>>> Nesnemizin kendisinin kullandığı bellek alanını sisteme geri ver.
+
+	>> Dinamik ömürlü nesnelerin bellek alanları Dinamik Bellek Yönetimi ile elde edilir.
+
+	>> C++ dilinde Dinamik Ömürlü Nesne oluşturulması 'operator' seviyesinde işlemlerdir. İsimlerinin içinde 'new' kelimesi
+	geçen operatörler, Dinamik Ömürlü Nesne oluşturan operatörlerdir. Örneğin,
+		'new', 'new []','placement new', 'nothrow new'.
+	Bu nesnelerin hayatını bitiren operatörlere ise 'delete' operatörleri denmektedir.
+		* Örnek 1,
+			//..
+			new int; // 'int' türden dinamik bir nesne hayata getirmiş olduk.
+			new Student; // 'Student' türden dinamik bir nesne hayata getirmiş olduk.
+			new vector<int>; // 'vector<int>' türden dinamik bir nesne hayata getirmiş olduk.
+	
+	Şimdi de bu operatörleri sırayla inceleyelim:
+		>>> 'new' operatörleri, başarılı olduklarında, o türden birer adres döndürmektedir. Dolayısıyla bizlerin de o türden
+		bir 'gösterici' lere ihtiyacımız vardır.
+			* Örnek 1,
+				//..
+
+				Fighter* p1 = new Fighter;
+				Fighter* p2(new Fighter);
+				Fighter* p3{new Fighter};
+
+				auto p4 = new Fighter; // Tür çıkarımı 'Fighter*' şeklinde.
+				auto p5(new Fighter);
+				auto p6{new Fighter};
+				auto* p7{new Fighter}; // Tür çıkarımı 'Fighter' şeklinde.
+				
+				auto& p8 = *new Fighter; // Pek rast gelinmeyen bir yaklaşım.
+
+		Öte yandan 'new' operatörleri arka planda 'operator new()' isimli bir fonksiyona çağrı yapmaktadır ki bu fonksiyon
+		da C dilindeki 'malloc()' ile aynı parametrik yapıdadır( Bkz. "void* malloc(size_t n)"). Arka plandaki bu operatör
+		fonksiyonu işini yapamadığında 'bad_alloc' sınıf türünden 'exception throw' etmekte. Fakat 'malloc()' ise aynı
+		durumda 'nullptr' döndürmekte. Peki hangi sıraya göre işlemler yapılmakta?
+			>>>> sizeof(T) türü kadarlık bellek alanı ayrılıyor. Örneğin,
+				"...operator new(sizeof(Fighter))..."
+
+			>>>> Daha sonrasında da geri dönüş değerini ilgili türe 'cast' etmekte. Örneğin,
+				"...static_cast<Fighter*>(operator new(sizeof(Fighter)))..."
+
+			>>>> Son olarak da o sınıf türünden nesne için 'ctor' çağrısı yapmakta. Örneğin,
+				"(static_cast<Fighter*>(operator new(sizeof(Fighter))))->Fighter();" // 'Default Ctor' çağrılacak.
+																   "...->Fighter(1,2);" // 'Paramereli Ctor' çağrılacak.
+																   "...->Fighter(anotherFighter);" // 'Copy Ctor' çağrılacak.
+																																		  
+			>>>> Bizler 'new' operatörlerinin davranışını değiştiremeyiz, bu operatörü 'overload' EDEMEYİZ. Sadece arka
+			plandaki 'operator new()' fonksiyonunu 'overload' edebiliriz. Bu durumda 'new' operatörü ile bizim
+			özelleştirdiğimiz fonksiyon çağrılacak. Aksi durumda standart olan 'operator new()' fonksiyonu çağrılacak.
+
+		Öte yandan 'new' operatörleri ile dinamik ömürlü nesne hayata getirmenin tehlikeli yanları da vardır. Şöyleki;
+			>>>> İş bu operatörler ile ayrılan bellek alanlarını 'delete' operatörleri ile geri verilmesinin unutulması.
+			Örneğin, birden fazla gösterici bizim nesnemizi gösterir olsun. İşlemler yapılırken de nesnemizin adresi
+			fonksiyondan fonksiyona geçer olsun. Bu durumda gerçekten fonksiyonu yazan kişi 'delete' operatörlerini çağırmayı
+			unutur ya da bu işi diğer fonksiyonların yapmasını ister. Diğer fonksiyonlar da başka fonksiyonların 'delete'
+			etmesini ister. Günün sonunda bizim nesnemiz ortada kalır ve 'delete' edilmemiş olur. Kod karmaşık hale geldikçe,
+			kodda çalışan kişi sayısı arttıkça, bu işlemin unutulma ihtimali de bir hayli yüksek ki takip edilmesi de pek
+			mümkün değil.
+
+			>>>> İş bu operatörler ile ayrılan bellek bloğunu birden fazla gösterici gösteriyor olabilir. Bu göstericilerden
+			bir tanesinin bu nesneyi 'delete' etmesi durumunda, diğer göstericiler 'dangling pointer' statüsüne geçeceklerdir.
+			İş bu göstericileri kullanan programcılar da bunun farkına varamayabilirler. Bu göstericileri tekrar 'delete'
+			etmek istediklerinde hem hayatı bitmiş bir nesne için 'Dtor' çağrılacak hem de 'dangling pointer' için
+			'operator delete()' fonksiyonu çağrılacak. ALIN SİZE FELAKET, 'Tanımsız Davranış'.
+
+			>>>> İş bu operatörler ile ayrılan bellek bloğunu birden fazla gösterici gösteriyor olabilir. Bu göstericilerden
+			bir tanesinin bu nesneyi 'delete' etmesi durumunda, diğer göstericiler 'dangling pointer' statüsüne geçeceklerdir.
+			Programcı olarak bizler bunun farkında olmayabiliriz ve ilgili göstericiyi kullanmaya devam edebiliriz ki
+			'dangling pointer' statüsünde olan göstericilerin kullanılması da 'Tanımsız Davranış'.
+
+		İşte yukarıdaki nedenlerden ötürü bizler 'smart pointer' sınıflarını kullanmalıyız.
+			* Örnek 1, 'unique_ptr'
+				//.. 
+				#include <iostream>
+				#include <memory>
+
+				void* operator new(size_t n)
+				{
+					std::cout << "operator new(" << n << ") was called.\n";
+					void* vp = std::malloc(n);
+					std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+					if(!vp)
+						throw std::bad_alloc{};
+
+					return vp;
+				}
+
+				void operator delete(void* vp)
+				{
+					std::cout << "operator delete() was called.\n";
+					std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+					if(vp)
+						free(vp);
+				}
+
+				class Myclass
+				{
+					public:
+						Myclass() : m_ptr{new char}
+						{
+							std::cout << "An object has been created at the address of     : " << this << "\n";
+						}
+						
+						~Myclass()
+						{
+							std::cout << "An object has been destroyed at the address of   : " << this << "\n";
+							
+							delete m_ptr;
+						}
+						
+					private:
+						char* m_ptr;
+				};
+
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						main() was started.
+						operator new(8) was called.
+
+						// Sınıf nesnemizin kendisi için.
+						A memory block has been occupied starting from   : 0x55d68d9792c0
+						
+						operator new(1) was called.
+						
+						// Sınıf nesnemizin içerisindeki 'raw-pointer' için.
+						A memory block has been occupied starting from   : 0x55d68d9792e0
+						
+						// Sınıf nesnemiz hayata geldi.
+						An object has been created at the address of     : 0x55d68d9792c0
+						
+						// Sınıf nesnemizin hayatı sona erdi.
+						An object has been destroyed at the address of   : 0x55d68d9792c0
+						
+						operator delete() was called.
+						
+						// Sınıf nesnemizin içerisindeki 'raw-pointer' için.
+						A memory block will be given back, starting from : 0x55d68d9792e0
+						
+						operator delete() was called.
+						
+						// Sınıf nesnemizin kendi adresi.
+						A memory block will be given back, starting from : 0x55d68d9792c0
+						
+						main() was ended.
+					*/
+					std::cout << "main() was started.\n";
+					{
+						auto p = std::make_unique<Myclass>();
+					}
+					std::cout << "main() was ended.\n";
+				}
+
+				// 'p' isimli sınıf nesnemizin ömrü otomatik ömürlü. Dolayısıyla içerisdeki bloğun sonunda hayatı
+				// sonra erecek. Diğer taraftan sınıfımız için bir bellek bloğu ayrıldı. Sonrasında sınıfımızın
+				// içerisindeki 'raw-pointer' için dinamik bir bellek bloğu daha ayrıldı.Daha sonra nesnemiz hayata geldi.
+				// 'p' isimli sınıf nesnesinin hayatı sona erdiğinden, dinamik ömürlü sınıf nesnemizin de hayatı sona
+				// erecek. Bunun için de dinamik ömürlü sınıf nesnesi için 'Dtor' çağrıldı. Daha sonra dinamik ömürlü
+				// sınıf nesnemizin elemanı olan 'raw-pointer' ın gösterdiği bellek alanı geri verildi. Son olarak
+				// dinamik ömürlü sınıf nesnemizin hayatı sona erdi.
+
+		Aşağıda ise 'new' operatörleri ile hayata nesne getirme yollarına ilişkin bir örnek verilmiştir:
+			* Örnek 1,
+				//
+				class Myclass{
+					public: 
+						Myclass()
+						{
+
+						}
+
+						Myclass(int, int)
+						{
+
+						}
+				};
+
+				int main()
+				{
+					// 'Default Ctor' çağrılacaktır, (default initialize).
+					Myclass* p1 = new Myclass;
+
+					// Önce 'zero-initialize' ediliyor, sonra 'Default Ctor' çağrılacaktır, (value initialize since C++11).
+					Myclass* p2 = new Myclass{};
+					
+					// Önce 'zero-initialize' ediliyor, sonra 'Default Ctor' çağrılacaktır, (value initialize).
+					Myclass* p3 = new Myclass();
+
+					// 'Parametreli Ctor' çağrılacaktır, (direct initialize).
+					Myclass* p4 = new Myclass(12,56);
+					
+					// 'Parametreli Ctor' çağrılacaktır, (direct-list initialize).
+					Myclass* p5 = new Myclass{12,56};
+
+					// 'pp' değişkeninin türü 'int*' ve Garbage-Value ile hayata geldi çünkü 'default initialize' edildi.
+					...*pp...; // 'Tanımsız Davranış'
+					auto pp = new int;
+
+					// 'ppp' değişkeni 'value-initalize' edildi. Fakat kural gereği önce 'zero-initalize' edilecek,
+					// sonra 'default initialize'.
+					...*ppp...; // '0' değerinde.
+					auto ppp = new int();
+
+					// 'pppp' değişkeni 'value-initalize' edildi. Fakat kural gereği önce 'zero-initalize' edilecek,
+					// sonra 'default initialize'.
+					...*pppp...; // '0' değerinde.
+					auto pppp = new int{};
+
+					// Yukarıdaki '()' ve '{}' içerisinde rakam yazabiliriz. Böylece o değer ile hayata gelirler.
+
+					// 'q' nesnesinin türü 'const int*'. 'const' özelliği düşmedi çünkü göstericinin kendisi 'const' değil.
+					auto q = const new int{253};
+
+					// Yine 'qq' nesnesi de 'const Myclass*' şeklinde.
+					auto qq = const new Myclass;
+				}
+
+		>>> 'delete' operatörünün operandı kullanılarak, ilgili sınıf nesnesinin 'Dtor' u çağrılıyor. Daha sonra
+		'operator new()' fonksiyonu ile elde edilen bellek bloğunu da 'operator delete()' fonksiyonunu çağırarak geri veriyor.
+		Yine çağrılan bu fonksiyona da OPERAND olan gösterici argüman olarak geçiliyor. C dilindeki 'free()' fonksiyonu ile
+		benzer parametrik yapıdadır (Bkz. "void free(void* )"). Eğer 'delete' operatörüne çağrı yapılmazsa yada unutulursa
+		'Dtor' çağrılmayacağı için 'Resource Leak' meydana gelebilir eğer o sınıf hayata gelirken bir kaynak kullanmış ise.
+		Ayrılan bellek bloğu da geri verilmeyeceği için 'Memory Leak' meydana gelir.
+		
+		Yukarıdakileri özetlemek gerekirse;
+			>>>> 'new' operatörü arka planda 'operator new()' fonksiyonuna çağrı yapmaktadır. Bu 'new' operatörünü 'overload'
+			edemeyiz, dilin kuralları izin vermiyor. Sadece arka plandaki 'operator new()' fonksiyonunu 'overload'
+			edebiliriz. İş bu arka plandaki operatör fonksiyon, aslındaki C dilindeki 'malloc()' ile aynı parametrik
+			yapıdadır. Bkz;
+			//        				    	In C		      ||			   In C++
+			// İmzaları 	  => void* malloc(size_t size);  	  void* operator new(size_t size);	
+			// Hata Durumları => 'NULL' döndürür. 				  'bad_alloc' sınıf türünden 'exception throw' eder.
+			
+			>>>> 'delete' operatörü arka planda 'operator delete()' fonksiyonuna çağrı yapmaktadır. Bu 'delete' operatörünü
+			'overload' edemeyiz, dilin kuralları izin vermiyor. Sadece arka plandaki 'operator delete()' fonksiyonunu
+			'overload' edebiliriz. İş bu arka plandaki operatör fonksiyon, aslındaki C dilindeki 'free()' ile aynı parametrik
+			yapıdadır. Bkz;
+			//        				    	In C		      ||			   In C++
+			// İmzaları 	  => void free(void* ptr);  	  void operator delete(void* ptr);
+
+		Şimdi de bu operatörlerin kullanımına ilişkin bir örnekler görelim:
+			* Örnek 1, RAII idiom: 'Ctor' kaynaklar edinirken, 'Dtor' kaynakları geri verir.
+				//..
+				
+				#include <iostream>
+				class ResourceUser{
+					public:
+						ResourceUser()
+						{
+							std::cout << this << " : adresindeki nesne için kaynaklar edinildi.\n";
+						}
+						
+						~ResourceUser()
+						{
+							std::cout << this << " : adresindeki nesne için kaynaklar geri verildi.\n";
+						}
+				};
+				
+				ResourceUser rss; // 'Ctor' çağrılacak ve bir takım kaynaklar edinilecek.
+				
+				int main()
+				{
+					// 'rss' nesnemiz STATİK ÖMÜRLÜ olduğundan dolayı hala hayatta.
+					{
+						ResourceUser rs;
+						// 'Ctor' çağrılacak ve bir takım kaynaklar edinilecek.
+						// Birazdan da 'Dtor' çağrılacak ve az evvel temin edilen kaynaklar tekrar geri verilecek.
+						// Çünkü 'rs' isimli nesnemiz OTOMATİK ÖMÜRLÜ.
+					}
+					
+					ResourceUser* p;
+					p = new ResourceUser;
+					// 'operator new()' fonksiyonu ile bir bellek bloğu ayrılacak ve 'Ctor' çağrılacak ve bir takım kaynaklar
+					// edinilecek. Eğer biz bu fonksiyonu 'overload' edersek bizimki, etmezsek de standart olanınki çağrılacak.
+					
+					// 'p' adresindeki nesne için 'delete' operatörü henüz kullanılmadığından, kaynaklar ve bellek bloğu geri
+					// verilmedi. ÇÜNKÜ NESNEMİZ DİNAMİK ÖMÜRLÜ.
+					
+					delete p;
+					// Artık 'p' tarafından gösterilen nesnenin 'Dtor' u çağrıldı, temin ettiği kaynaklar geri verildi.
+					// Sonrasında da 'new' operatörü ile elde edilen bellek alanı 'operator delete()' fonksiyonu ile geri
+					// verildi. Eğer bu fonksiyonu 'overload' edersek bizimki, etmezsek standart olan çağrılacak.
+				
+					// 'rss' nesnemiz STATİK ÖMÜRLÜ olduğundan dolayı hala hayatta.
+				}
+				
+				// 'rss' nesnemizin için 'Dtor' çağrılacak ve az evvel temin edilen kaynaklar tekrar geri verilecek.
+				
+			* Örnek 2, 'operator new()' ve 'operator delete()' fonksiyonlarının 'overload' edilmeleri
+				//..
+				#include <iostream>
+
+				void* operator new(size_t n)
+				{
+					std::cout << "operator new(" << n << ") was called.\n";
+					void* vp = std::malloc(n);
+					std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+					if(!vp)
+						throw std::bad_alloc{};
+
+					return vp;
+				}
+
+				void operator delete(void* vp)
+				{
+					std::cout << "operator delete() was called.\n";
+					std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+					if(vp)
+						free(vp);
+				}
+
+				class Myclass
+				{
+					public:
+						Myclass()
+						{
+							std::cout << "An object has been created at the address of     : " << this << "\n";
+						}
+						
+						~Myclass()
+						{
+							std::cout << "An object has been destroyed at the address of   : " << this << "\n";
+						}
+				};
+
+				int main()
+				{
+					/* 
+						# OUTPUT # 
+						operator new(1) was called.
+						A memory block has been occupied starting from   : 0x55b50c5272c0
+						An object has been created at the address of     : 0x55b50c5272c0
+						An object has been destroyed at the address of   : 0x55b50c5272c0
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x55b50c5272c0
+					*/
+					Myclass* p = new Myclass; 
+					
+					delete p;
+					// Yukarıdaki 'delete' çağrısı yapılmasaydı eğer
+					// i. 'Dtor' çağrılmayacaktı. Bu da 'Resource Leak' e neden olabilir. Eğer ilgili sınıf içerisinde dinamik
+					// ömürlü bir 'data member' varsa onun da hayatı sona ermeyeceğinden, 'Memory Leak' oluşacaktı. Buradan
+					// hareketle 'Resource Leak' kendi içinde 'Memory Leak' de barındırabilir.
+					// ii. 'p' göstericisi tarafından gösterilen adres alanı tekrar sisteme geri verilmediğinden 'Memory Leak'
+					// meydana gelecektir.
+				}
+
+				// Her 'new' operatörü kullanımından ve 'delete' operatörü kullanımından sonra yukarıdaki fonksiyonlar
+				// çağrılacaktır.
+
+				* Örnek 2.2,
+					//..
+					#include <iostream>
+
+					void* operator new(size_t n)
+					{
+						std::cout << "operator new(" << n << ") was called.\n";
+						void* vp = std::malloc(n);
+						std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+						if(!vp)
+							throw std::bad_alloc{};
+
+						return vp;
+					}
+
+					void operator delete(void* vp)
+					{
+						std::cout << "operator delete() was called.\n";
+						std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+						if(vp)
+							free(vp);
+					}
+
+					class Myclass
+					{
+						public:
+							Myclass()
+							{
+								std::cout << "An object has been created at the address of     : " << this << "\n";
+							}
+							
+							~Myclass()
+							{
+								std::cout << "An object has been destroyed at the address of   : " << this << "\n";
+							}
+							
+						private:
+							char myArray[4096]{};
+					};
+
+					int main()
+					{
+						/* 
+							# OUTPUT # 
+							operator new(4096) was called.
+							A memory block has been occupied starting from   : 0x55ef5a36f2c0
+							An object has been created at the address of     : 0x55ef5a36f2c0
+							An object has been destroyed at the address of   : 0x55ef5a36f2c0
+							operator delete() was called.
+							A memory block will be given back, starting from : 0x55ef5a36f2c0
+						*/
+						Myclass* p = new Myclass; 
+						
+						delete p;
+					}
+
+					// Örnek 2.1'de 1 byte'lık alan allocate edildi fakat bu örnekte 4096 byte'lık alan allocate edildi.
+
+				* Örnek 2.3, 
+					//..
+					#include <iostream>
+
+					void* operator new(size_t n)
+					{
+						std::cout << "operator new(" << n << ") was called.\n";
+						void* vp = std::malloc(n);
+						std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+						if(!vp)
+							throw std::bad_alloc{};
+
+						return vp;
+					}
+
+					void operator delete(void* vp)
+					{
+						std::cout << "operator delete() was called.\n";
+						std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+						if(vp)
+							free(vp);
+					}
+
+					class Myclass
+					{
+						public:
+							Myclass() : m_ptr{new char}
+							{
+								std::cout << "An object has been created at the address of     : " << this << "\n";
+							}
+							
+							~Myclass()
+							{
+								std::cout << "An object has been destroyed at the address of   : " << this << "\n";
+								
+								delete m_ptr;
+							}
+							
+						private:
+							char* m_ptr;
+					};
+
+					int main()
+					{
+						/* 
+							# OUTPUT # 
+							operator new(8) was called.
+							A memory block has been occupied starting from   : 0x561e77cc22c0
+							operator new(1) was called.
+							A memory block has been occupied starting from   : 0x561e77cc22e0
+							An object has been created at the address of     : 0x561e77cc22c0
+							An object has been destroyed at the address of   : 0x561e77cc22c0
+							operator delete() was called.
+							A memory block will be given back, starting from : 0x561e77cc22e0
+							operator delete() was called.
+							A memory block will be given back, starting from : 0x561e77cc22c0
+						*/
+						Myclass* p = new Myclass; 
+						
+						delete p;
+					} 
+
+					// Yukarıdaki örnekte hem 'data member' olan için hem de sınıf nesnesinin kendisi için dinamik ömürlü
+					// nesneler hayata getirildi.
+
+		>>> Temel İlkelerimiz: 
+			>>>> 'new' operatörlerini kullanmaktan kaçının. Bunların yerine 'smart pointer' sınıf türünden nesneler
+			kullanmaya çalışın. Dolayısıyla bu sınıf türünden nesne döndüren 'make_unique' ve 'make_shared' fonksiyonlarını
+			da bu 'smart pointer' sınıf türünden nesneler ile birlikte kullanmalıyız.
+
+Anımsanacağı üzere 'new', 'new[]', 'nothrow new' ve 'placement new' operatörleri kullanılarak Dinamik Ömürlü Nesne elde
+edebiliyoruz. Bunlardan 'new' operatörü ile bir adet nesne, 'new[]' ile ardışık birden fazla öğeye sahip olabiliyoruz. Yine
+bu gruptaki 'nothrow new' ise 'new' operatörünün 'exception throw' ETMEYEN HALİYKEN, 'placement new' ise BİZİM İSTEDİĞİMİZ
+ALANDA yeni bir öğe meydana getiren operatördür. İlgili dinamik ömürlü değişkenimizi/nesnemizin hayatını sonlandırmak için
+de 'delete', 'delete[]' gibi operatörler kullanılmaktadır. Bu operatörlerden,
+	>> 'new' operatörü: Velevki bizler bir sınıf nesnesi hayata getirmek isteyelim yada 'primitive' türden bir değişken. İlk
+	önce 'operator new()' fonksiyonu çağrılmaktadır. Eğer iş bu operatör istenilen büyüklükte bellek alanı elde edemezse
+	'exception throw' etmektedir. İlgili bellek alanının elde edilmesi durumunda ise, sınıf türleri için, 'Ctor.'
+	fonksiyonuna çağrıda bulunulmaktadır. Bizler kullanıcı olarak bu 'operator new()' fonksiyonunu 'overlaod' edebiliriz.
+	İlk yöntem global bir 'operator new()' fonksiyonu tanımlamak ki bu durumda bizimki çağrılacaktır. Burada
+	'operator delete' yazmazsak, standart olan çağrılacaktır. Eğer yazarsak bizimkisi çağrılacaktır. İkinci yöntem ise
+	sınıfımıza 'static' bir 'operator new()' fonksiyonu yazmaktır. Böylelikle o sınıfımız türünden dinamik bir nesne hayata
+	getirdiğimiz zaman, bizim yazdığımız çağrılacaktır. Fakat burada bizler 'operator delete' DE YAZMAK ZORUNDAYIZ. 
+	
+	>> 'delete' operatörü: Bu ise ilk önce sınıf türünden bir nesne için onun 'Dtor.' fonksiyonunu çağırmaktadır.
+	Sonrasında da 'operator delete()' fonksiyonu çağrılmaktadır.
+
+	>> 'new[]' operatörü : Ardışık şekilde bellekte yer ayırmak için kullanılır. 
+		* Örnek 1,
+			//..
+			class Data{
+				public:
+					Data() { std::cout << "Address : " << this << "\n"; }
+					~Data() { std::cout << "Address : " << this << "\n"; }
+			};
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Size : 5
+					Address : 0x56270b3046d8
+					Address : 0x56270b3046d9
+					Address : 0x56270b3046da
+					Address : 0x56270b3046db
+					Address : 0x56270b3046dc
+				*/
+				
+				size_t size{};
+				std::cout << "Size : "; std::cin >> size;
+				auto objOne = new Data[size]; // Görüldüğü gibi sabit bir sayı gerekmemektedir.
+				
+				return 0;
+			}
+			
+		* Örnek 2,
+			//..
+			class Data{
+				public:
+					Data() { std::cout << "Address : " << this << "\n"; }
+					~Data() { std::cout << "Address : " << this << "\n"; }
+					
+				private:
+					char buffer[16]{};
+			};
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Size : 5
+					Address : 0x55bd4f4ca6d8
+					Address : 0x55bd4f4ca6e8
+					Address : 0x55bd4f4ca6f8
+					Address : 0x55bd4f4ca708
+					Address : 0x55bd4f4ca718
+				*/
+				
+				size_t size{};
+				std::cout << "Size : "; std::cin >> size;
+				auto objOne = new Data[size];
+				
+				return 0;
+			}
+			
+		* Örnek 3,
+			//..
+			class Data{
+				public:
+					Data() { std::cout << "Address : " << this << "\n"; }
+					~Data() { std::cout << "Address : " << this << "\n"; }
+					
+				private:
+					char buffer[16]{};
+			};
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Size : 3
+					Address : 0x55fd410326d8
+					Address : 0x55fd410326e8
+					Address : 0x55fd410326f8
+					Address : 0x55fd410326f8
+					Address : 0x55fd410326e8
+					Address : 0x55fd410326d8
+				*/
+				
+				size_t size{};
+				std::cout << "Size : "; std::cin >> size;
+				auto objOne = new Data[size];
+				delete[] objOne; 
+				// delete ObjOne; // 'Tanımsız Davranış'
+				
+				return 0;
+			}
+			
+
+Aşağıda bu konuya ilişkin örnekler verilmiştir:
+	* Örnek 1, Global 'operator new()' fonksiyonu:
+		//..
+		void* operator new(size_t size)
+		{
+			std::cout << "The specializated operator new(" << size << ") was called.\n";	
+			if(void * vp{ std::malloc(size) }; vp)
+			{
+				std::cout << "Address of allocated block of memory : " << vp << "\n"; 
+				return vp;
+			}
+			else
+			{
+				std::cout << "Not enough block of memory exists.\n";
+				throw std::bad_alloc{};
+			}
+		}
+		
+		void operator delete(void* vp)
+		{
+			std::cout << "Address of allocated block of memory : " << vp << "\n"; 
+			if(vp)
+				std::free(vp);
+		}
+		
+	* Örnek 2, Aşağıdaki örnekleri sırasıyla inceleyelim.
+		//..
+		struct Data{
+			char buffer[1024*1024]{};
+		};
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				hata => bad allocation
+				size : 1898
+			*/
+			
+			std::vector<Data*> vec;
+			
+			try{
+				for(;;)
+				{
+					vec.push_back(new Data); // std::cout << ".";
+				}
+			}
+			catch(const std::exception& ex)
+			{
+				std::cout << "hata => " << ex.what() << "\n";
+			}
+			
+			std::cout << "size : " << vec.size() << "\n";
+			
+			// Çıktıda da görüldüğü üzere belli bir noktada yeterli alan ayrılamadığı için hata gönderildi.
+			// Peki arka planda esas dönen şey nedir? 
+			
+			return 0;
+		}
+		
+	* Örnek 3,
+		//..
+		struct Data {
+			char buffer[1024 * 1024]{};
+		};
+
+		void myHiddenFunc()
+		{
+			static int counter{};
+
+			std::cout << "myHiddenFunc was called " << ++counter << " times.\n";
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				myHiddenFunc was called 1 times.
+
+				myHiddenFunc was called 2 times.
+
+				myHiddenFunc was called 3 times.
+
+				//...
+			*/
+
+			std::vector<Data*> vec;
+
+			std::set_new_handler(&myHiddenFunc);
+			// Bu fonksiyon çağrısı ile yeterli boyut olmadığında, benim fonksiyonum çağrılacaktır.
+
+			try {
+				for (;;)
+				{
+					vec.push_back(new Data); // std::cout << ".";
+				}
+			}
+			catch (const std::exception& ex)
+			{
+				std::cout << "hata => " << ex.what() << "\n";
+			}
+
+			std::cout << "size : " << vec.size() << "\n";
+			
+			// Yeterli alan tahsis edilemeyeği için artık benim atamış olduğum fonksiyon sonsuz kere çağrılacaktır.
+
+			return 0;
+		}
+		
+	* Örnek 4,
+		//..
+		char* myBigBuffer = new char[100'000'000];
+
+		struct Data {
+			char buffer[1024 * 1024]{};
+		};
+
+		void myHiddenFunc()
+		{
+			static int counter{};
+
+			std::cout << "myHiddenFunc was called " << ++counter << " times.\n"; (void)getchar();
+
+			if (counter == 5)
+				delete[] myBigBuffer;
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				.....................................................................................................
+
+				myHiddenFunc was called 1 times.
+
+				myHiddenFunc was called 2 times.
+
+				myHiddenFunc was called 3 times.
+
+				myHiddenFunc was called 4 times.
+
+				myHiddenFunc was called 5 times.
+
+				.....................................................................myHiddenFunc was called 6 times.
+
+				myHiddenFunc was called 7 times.
+
+				//...
+			*/
+
+			std::vector<Data*> vec;
+
+			std::set_new_handler(&myHiddenFunc);
+
+			try {
+				for (;;)
+				{
+					vec.push_back(new Data); std::cout << ".";
+				}
+			}
+			catch (const std::exception& ex)
+			{
+				std::cout << "hata => " << ex.what() << "\n";
+			}
+
+			std::cout << "size : " << vec.size() << "\n";
+
+			// İşte benim atamış olduğum bu fonksiyon, başka bir göstericinin kullandığı bellek alanını geri
+			// verdiği için, 'main()' içerisindeki '.push_back()' için yer açmış oldu. 
+			
+			// Benim atamış olduğum bu fonksiyon işini yapamazsa başka bir fonksiyonu da bu iş için göreve
+			// çağırabilir.
+
+			return 0;
+		}
+		
+	* Örnek 5,
+		//..
+		struct Data {
+			char buffer[1024 * 1024]{};
+		};
+
+		void myHelperHiddenFunc()
+		{
+			static int counter{};
+
+			std::cout << "myHelperHiddenFunc was called " << ++counter << " times.\n"; (void)getchar();
+
+		}
+
+		void myHiddenFunc()
+		{
+			static int counter{};
+
+			std::cout << "myHiddenFunc was called " << ++counter << " times.\n"; (void)getchar();
+
+			if (counter == 5)
+				std::set_new_handler(&myHelperHiddenFunc);
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				....................................................................................................
+				myHiddenFunc was called 1 times.
+
+				myHiddenFunc was called 2 times.
+
+				myHiddenFunc was called 3 times.
+
+				myHiddenFunc was called 4 times.
+
+				myHiddenFunc was called 5 times.
+
+				myHelperHiddenFunc was called 1 times.
+
+				myHelperHiddenFunc was called 2 times.
+
+				myHelperHiddenFunc was called 3 times.
+
+				myHelperHiddenFunc was called 4 times.
+
+				myHelperHiddenFunc was called 5 times.
+
+				myHelperHiddenFunc was called 6 times.
+			*/
+
+			std::vector<Data*> vec;
+
+			std::set_new_handler(&myHiddenFunc);
+
+			try {
+				for (;;)
+				{
+					vec.push_back(new Data); std::cout << ".";
+				}
+			}
+			catch (const std::exception& ex)
+			{
+				std::cout << "hata => " << ex.what() << "\n";
+			}
+
+			std::cout << "size : " << vec.size() << "\n";
+
+			return 0;
+		}
+		
+	* Örnek 6,
+		//..
+		struct Data {
+			char buffer[1024 * 1024]{};
+		};
+
+		void myHiddenFunc()
+		{
+			static int counter{};
+
+			std::cout << "myHiddenFunc was called " << ++counter << " times.\n"; (void)getchar();
+
+			if (counter == 5)
+			{
+				// throw std::bad_alloc{};
+				std::set_new_handler(nullptr);
+			}
+		}
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				...................................................................................................
+				myHiddenFunc was called 1 times.
+
+				myHiddenFunc was called 2 times.
+
+				myHiddenFunc was called 3 times.
+
+				myHiddenFunc was called 4 times.
+
+				myHiddenFunc was called 5 times.
+
+				hata => bad allocation
+				size : 1899
+			*/
+
+			std::vector<Data*> vec;
+
+			std::set_new_handler(&myHiddenFunc);
+
+			try {
+				for (;;)
+				{
+					vec.push_back(new Data); std::cout << ".";
+				}
+			}
+			catch (const std::exception& ex)
+			{
+				std::cout << "hata => " << ex.what() << "\n";
+			}
+
+			std::cout << "size : " << vec.size() << "\n";
+			
+			// Bir diğer yöntemi ise ya 'exception throw' etmek ya da 'std::set_new_handler()' fonksiyonuna 'nullptr'
+			// geçmek ki bu da yine 'std::bad_alloc' türünden bir hata nesnesi fırlatacaktır.
+
+			return 0;
+		}
+		
+Bu altı örnekten de anlaşılacağı üzere yeterli bellek alanı yoksa ve 'std::set_new_handler()' fonksiyonunu çağırarak arka
+plandaki 'handler' vazifeli gösterici 'set' EDİLMEMİŞSE 'std::bad_alloc' türünden bir hata nesnesi gönderilecektir. Eğer
+bizler arka plandaki bu 'handler' vazifeli göstericiye kendi şahsımıza ait bir fonksiyon atarsak, devreye bu fonksiyon
+girecektir. Artık yeterli bellek alanının tahsisi ile artık bizim fonksiyonumuz ilgilenecektir. Bu durumda bizim
+fonksiyonumuz 'std::bad_alloc' sınıf türünden bir hata nesnesi fırlatabilir, bir başka kendi fonksiyonumuzu arka plandaki
+'handler' göstericiye atayarak bellek tahsisi görevini ona devredebilir veya 'std::set_new_handler()' fonksiyonuna 'nullptr'
+değeri geçerek 'std::bad_alloc' sınıf türünden bir hata gönderilmesini sağlatabilir. Bütün bunlara ek olarak arka plandaki
+'handler' vazifeli göstericinin gösterdiği fonksiyonu da 'std::get_new_handler()' isimli fonksiyon ile elde edebiliriz.
+Şimdi de diğer örnekleri irdelemeye devam edelim:
+	* Örnek 1, Sınıfın üye fonksiyonu olacak şekilde 'operator new()' fonksiyonunun yazılması: 'operator new()' ve
+	'operator delete()' fonksiyonu 'static' bir ÜYE FONKSİYONDUR HER NE KADAR İMZASINDA 'static' YAZMASAK BİLE.
+		//..
+		class Myclass{
+			public:
+				Myclass()=default;
+				
+				/* static */ void* operator new(size_t size)
+				{
+					if(auto* voidPtr = std::malloc(size); voidPtr != nullptr)
+					{
+						std::cout << voidPtr << " operator new(" << size << ") was called.\n";
+						return voidPtr;
+					}
+					else
+					{
+						throw std::bad_alloc{};
+					}
+				}
+				
+				/* static */ void operator delete(void* voidPtr)
+				{
+					std::cout << "void operator delete(" << voidPtr << ") was called.\n";
+					if(voidPtr)
+					{
+						std::free(voidPtr); voidPtr = nullptr;
+					}
+				}
+			
+			private:
+				char buffer[1024];
+		};
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				Name : Ahmet
+				0x559ea9f3f2f0 operator new(1024) was called.
+				void operator delete(0x559ea9f3f2f0) was called.
+			*/
+			{
+				auto newName = new std::string("Ahmet");
+				std::cout << "Name : " << *newName << "\n";
+			}
+			
+			{
+				auto newName = new Myclass;
+				delete newName;
+			}
+			
+			// Çıktıda da görüldüğü üzere sadece 'Myclass' sınıfı için bizim yazdığımız 'operator new()' ve
+			// 'operator delete()' fonksiyonları çağrıldı.
+			
+			return 0;
+		}
+		
+Öte yandan Dinamik ömürlü nesneler, dilin araçları kullanıldığında standart olarak 'heap' alanında hayata gelirler.
+Fakat bizler 'operator new()' ve 'operator delete()' fonksiyonlarını özelleştirirsek 'heap' yerine başka alanın
+kullanılmasını sağlayabiliriz.
+	* Örnek 1,
+		//..
+		// Myclass.h
+			class Myclass
+			{
+				public:
+					void* operator new(size_t size);
+					void  operator delete(void* voidPtr);
+					static constexpr size_t maxObj = 100;
+					// Maksimum 100 eleman tutulacak şekilde aşağıdaki 'buffer' ve 'flags' dizileri
+					// ayarlanacaktır.
+				private:
+					// 'Myclass' sınıf türünden nesneler bu bellek alanında hayatagelecekler. Bildirim yaptığımız
+					// için dizinin boyutunu belirtmedik.
+					static unsigned char buffer[];
+					
+					static bool flags[]; // 'buffer' bellek alanındaki boş alanların bilgisini tutulacaktır.
+
+					// Her bir 'Myclass' sınıf türünden nesnenin bünyesinde barındıracağı mesaj.
+					char message[256]{};
+			};  
+			
+		// Myclass.cpp
+			//..
+			unsigned char Myclass::buffer[Myclass::maxObj * sizeof(Myclass)]{};
+
+			bool Myclass::flags[Myclass::maxObj]{};
+
+			void* Myclass::operator new(size_t size)
+			{
+				if(auto iter = std::find(std::begin(flags), std::end(flags), false); iter == std::end(flags))
+				{
+					std::cerr << "Yeterli bellek alanı mevcut değildir. Hata nesnesi gönderiliyor..."; 
+					throw std::bad_alloc{};
+				}
+				else
+				{
+					auto location = std::distance(std::begin(flags), iter);
+					flags[location] = true;
+					return buffer + location * sizeof(Myclass);
+					// 'flags' dizisindeki boş indisi elde ettikten sonra, gösterici aritmetiği ile 'buffer'
+					// dizisinde aynı lokasyonu döndürüyoruz.
+				}
+			}
+
+			void Myclass::operator delete(void* voidPtr)
+			{
+				if(!voidPtr) return;
+				
+				// 'static_cast' yerine 'reinterpret_cast' de kullanabiliriz. Çünkü 'void*' için iki
+				// dönüşüm de legal.
+				auto location = (static_cast<unsigned char*>(voidPtr) - buffer) / sizeof(Myclass);
+				
+				flags[location] = false;
+			}
+			
+		// main.cpp
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Yeterli bellek alanı mevcut değildir. Hata nesnesi gönderiliyor...
+					Hata yakalandi... => std::bad_alloc
+				*/
+				
+				std::vector<Myclass*> myVec;
+				for(size_t i{}; i < Myclass::maxObj; ++i)
+				{
+					myVec.push_back(new Myclass);    
+				}
+				
+				try
+				{
+					auto newObj = new Myclass;
+					// myVec.push_back(newObj);
+					
+					auto newObjTwo = ::new Myclass;
+					// Artık standart kütüphanedeki 'operator new()' çağrılacaktır.
+				}
+				catch(const std::bad_alloc& ex)
+				{
+					std::cout << "Hata yakalandi... => " << ex.what() << "\n";
+				}
+				
+				return 0;
+			}
+			
+Diğer yandan Dinamik Ömürlü Nesneler konusunda şu kavramları da irdelememiz gerekmektedir. Bunlar,
+	>> 'placement new' : Nesnemizi bizim belirlediğimiz alanda hayata getirmek için kullanacağız.
+		* Örnek 1,
+			//..
+			class Data{
+				public:
+					Data() { std::cout << "Address : " << this << "\n"; }
+					~Data() { std::cout << "Address : " << this << "\n"; }
+					
+				private:
+					char buffer[16]{};
+			};
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Address : 0x7fff2be19290
+					Address : 0x7fff2be19290
+					Address : 0x7fff2be19290
+				*/
+				
+				char buffer[sizeof(Data)]; std::cout << "Address : " << static_cast<void*>(buffer) << "\n";
+				
+				// Artık yukarıdaki 'buffer' isimli bellek alanında nesne oluşturulacaktır.
+				Data* objPtr = new(buffer)Data;
+				
+				// delete objPtr; // 'run-time error : double free or corruption (out)'
+				
+				// delete[] objPtr // 'run-time error'
+				
+				// İlgili bellek alanını geri vermek için gereken tek yol, 'Dtor.' fonksiyonunu çağırmaktır.
+				objPtr->~Data(); // 'Dtor.' fonksiyonunun doğrudan çağrılmasını gerektiren senaryodur.
+				
+				return 0;
+			}
+			
+	>> 'nothrow new' : Hata göndermeyen 'operator new' fonksiyonudur.
+		* Örnek 1,
+			//..
+			class Data{
+				public:
+					Data() { std::cout << "Address : " << this << "\n"; }
+					~Data() { std::cout << "Address : " << this << "\n"; }
+					
+				private:
+					char buffer[1024*1024]{};
+			};
+
+			int main()
+			{
+				/*
+					# OUTPUT #
+					//...
+					Bellek yetersiz.
+					main devam ediyor.
+				*/
+				int counter{};
+				for(;;)
+				{
+					// 'nothrow', 'nothrow_t' türünden bir 'constexpr' nesnenin ismidir.
+					auto objPtr = new(std::nothrow)Data;
+				
+					std::cout << ++counter << "\n";
+					
+					if(objPtr == nullptr)
+					{
+						std::cout << "Bellek yetersiz.\n"; break;
+					}
+				}
+				
+				std::cout << "main devam ediyor.\n";
+				return 0;
+			}
+
+Bu vesile ile 'STL' içerisindeki Akıllı Göstericiler hususuna da giriş yapalım; Gerçekte 'pointer' olmayan fakat
+'pointer-like' gibi davranan sınıflar için kullanılmaktadır. Aslında temel seviye göstericilerin kullanımları şu problemleri
+de beraberinde getirmektedir; ilgili gösterici otomatik ömürlü bir nesneyi mi göstermekte yoksa 'static' ömürlü bir nesneyi
+mi veya daha öncesinde 'delete' edilmiş mi edilmemiş mi ve edilmiş ise başka kodların aynı nesneyi kullanıp kullanmadığından
+ne kadar eminiz vs. İşte bu sorunların çözümü Akıllı Gösterici sınıf şablonudur. Her ne kadar 'iterators' da 'pointer-like'
+gibi davransalar da onlar 'smart-pointer' değildirler. Akıllı Göstericiler bünyesinde iki adet temel gösterici, bir tane de
+yardımcı gösterici barındırmaktadır. Bunlar,
+	'std::unique_ptr', 'std::shared_ptr' ve 'std::weak_ptr'
+isimli sınıf şablonlarıdır. Şimdi de bunları sırası ile irdeleyelim:
+	>>  'std::unique_ptr<>()' : Aşağıdaki temsili implementasyonu inceleyelim. Özünde 'raw-pointer' sarmalayan bir sınıftır.
+		* Örnek 1,
+			//..
+			// İkinci şablon argümanı aslında bir 'deleter'. Standart olankinde 'std::default_delete' sınıf şablonu
+			// kullanılmakta. // Eğer amacımız sadece 'delete' etmek ise bu standar sınıf şablonu işimizi görecektir.
+			// Aksi halde kendi 'deleter' sınıfımızı argüman olarak geçmeliyiz.
+			template<typename T, typename D = DefaultDelete<T>>
+			class UniquePtr{
+				public:
+					//..
+					UniquePtr(T* ptr) : mp{ptr} {}
+					UniquePtr(const UniquePtr& other) = delete;
+					UniquePtr& operator=(const UniquePtr& other) = delete;
+					UniquePtr(UniquePtr&& other)
+					{
+						//..
+					}
+					UniquePtr& operator=(UniquePtr&& other)
+					{
+						//..
+					}
+					
+					~UniquePtr()
+					{
+						if(mp)
+							D{}(mp);
+					}
+					
+				private:
+					T* mp;
+			};
+			
+			template<typename T>
+			class DefaultDelete{
+				public:
+					void operator()(T* ptr)
+					{
+						delete ptr;
+					}
+			};
+			
+			int main()
+			{
+				UniquePtr<std::string> uptr;
+				
+				//...
+			}
+		
+		* Örnek 2,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					sizeof(int*) / sizeof(std::unique_ptr<int>) => 8 / 8
+				*/
+				
+				std::cout << "sizeof(int*) / sizeof(std::unique_ptr<int>) => " 
+					<< sizeof(int*) << " / " << sizeof(std::unique_ptr<int>) << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 3,
+			//..
+			class Triple{
+				public:
+					Triple(int a = 0, int b = 0, int c = 0) : m_a{a}, m_b{b}, m_c{c} { 
+						std::cout << this << " adresinde yeni bir nesne hayata geldi.\n"; 
+					}
+
+					~Triple() { 
+						std::cout << this << " adresindeki nesnenin hayatı sona erdi.\n"; 
+					}
+
+					void set(int a = 1, int b = 1, int c = 1) { m_a = a; m_b = b; m_c = c; }
+					friend std::ostream& operator<<(std::ostream& os, const Triple& other) { 
+						return os << "(" << other.m_a << ", " << other.m_b << ", " << other.m_c << ")\n"; 
+					}
+				private:
+					int m_a, m_b, m_c;    
+			};
+			int main()
+			{
+				/*
+					# OUTPUT #
+					main basladi...
+					0x55b410ee52c0 adresinde yeni bir nesne hayata geldi.
+					0x55b410ee52c0 adresindeki nesnenin hayatı sona erdi.
+					main devam ediyor...
+				*/
+				std::cout << "main basladi...\n";
+				if(1)
+				{
+					// std::unique_ptr<Triple> uPtr = new Triple(17, 9, 1993); 
+					// 'unique_ptr' sınıfının bu parametreli 'Ctor.' fonksiyonu 'explicit' olduğundan SENTAKS HATASI.
+				
+					std::unique_ptr<Triple> uPtr{new Triple(17, 9, 1993)};
+				}   
+				std::cout << "main devam ediyor...\n";
+				return 0;
+			}
+			
+		* Örnek 4,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					Ben bosum...
+					0x55fe8f0c72c0 adresinde yeni bir nesne hayata geldi.
+					Ben bos değilim...
+					0x55fe8f0c72c0 adresindeki nesnenin hayatı sona erdi.
+				*/
+				
+				std::unique_ptr<Triple> uPtr;
+				// if(!uPtr.operator bool())
+				// if(uPtr == nullptr)
+				if(!uPtr) 
+					std::cout << "Ben bosum...\n";
+				else
+					std::cout << "Ben bos değilim...\n";
+					
+				std::unique_ptr<Triple> uPtrTwo{ new Triple };
+				if(!uPtrTwo)
+					std::cout << "Ben bosum...\n";
+				else
+					std::cout << "Ben bos değilim...\n";    
+				return 0;
+			}
+			
+		* Örnek 5,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					
+				*/
+				
+				std::unique_ptr<Triple> uPtr;
+				
+				try
+				{
+					// İlgili 'uPtr' nesnesi boş olduğunda 'dereference' edilmesi 'Tanımsız Davranış' meydana getirir.
+					std::cout << *uPtr << "\n";
+				}
+				catch(const std::exception& ex)
+				{
+					std::cout << ex.what() << "\n"; // Çıktıdan da görüldüğü üzere herhangi bir hata fırlatmaz.
+				}
+				
+				return 0;
+			}
+			
+		* Örnek 6,
+			//..
+			template<typename T, typename...Args>
+			std::unique_ptr<T> MakeUnique(Args&&...args)
+			{
+				return std::unique_ptr<T>{ new T(std::forward<Args>(args)...) };
+			}
+							
+			int main()
+			{
+				/*
+					# OUTPUT #
+					0x55ac10bd2eb0 adresinde yeni bir nesne hayata geldi.
+					(1, 2, 3)
+					
+					0x55ac10bd2eb0 adresindeki nesnenin hayatı sona erdi.
+				*/
+				
+				auto uPtr = MakeUnique<Triple>(1, 2, 3);
+				
+				std::cout << *uPtr << "\n";
+				
+				return 0;
+			}
+			
+		* Örnek 7,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					0x55a34eac7eb0 adresinde yeni bir nesne hayata geldi.
+				*/
+				
+				auto uPtr = std::make_unique<Triple>(1, 2, 3);
+				
+				auto rawPtr = uPtr.release();
+				
+				// Artık 'uPtr' isimli gösterici BOŞ DURUMDADIR. Mülkiyet ilgili 'rawPtr' isimli göstericiye geçmiştir.
+				
+				// delete rawPtr; // Bu çağrıyı yapmak zorundayız. Aksi halde 'delete' işlemi gerçekleşmeyecektir.
+				
+				return 0;
+			}
+			
+		* Örnek 8,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					0x557007708eb0 adresinde yeni bir nesne hayata geldi.
+					0x557007708eb0 adresindeki nesnenin hayatı sona erdi.
+					0x557007708eb0 adresindeki nesnenin hayatı sona erdi.
+					free(): double free detected in tcache 2
+				*/
+				
+				auto uPtr = std::make_unique<Triple>(1, 2, 3);
+				
+				auto rawPtr = uPtr.get();
+				
+				delete rawPtr; // 'uPtr' isimli nesne boşaltılmadığı için ilgili kaynak 'uPtr' üzerinden geri verildi. 
+								// İşte bu sebepten dolayı => free(): double free detected in tcache 2
+				
+				return 0;
+			}
+			
+		* Örnek 9,
+			//..
+			int main()
+			{
+				/*
+					# OUTPUT #
+					0x556c928fdeb0 adresinde yeni bir nesne hayata geldi.
+					(1, 2, 3)
+					0x556c928fe2e0 adresinde yeni bir nesne hayata geldi.
+					0x556c928fdeb0 adresindeki nesnenin hayatı sona erdi.
+					(10, 20, 30)
+					0x556c928fe2e0 adresindeki nesnenin hayatı sona erdi.
+				*/
+				
+				auto uPtr = std::make_unique<Triple>(1, 2, 3);
+				
+				std::cout << *uPtr;
+				
+				uPtr.reset(new Triple(10, 20, 30));
+				
+				std::cout << *uPtr;
+				
+				uPtr.reset();
+				// Mülkiyet hakkı olduğu ilgili nesnenin hayatı sona erdi fakat 'uPtr' nesnesinin hayatı devam etmekte.
+				// uPtr.reset(nullptr);
+				// uPtr = nullptr;
+				
+				return 0;
+			}
+
+	Bu sınıfın özellikleri şunlardır:
+		>>> Bu sınıfı kullanırken aynı kaynağın iki farklı akıllı gösterici tarafından gösterilmediğinden emin olmalıyız.
+		Örneğin,
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55eb84757eb0 adresinde yeni bir nesne hayata geldi.
+						(9, 8, 7)
+						
+						0x55eb84757eb0 adresindeki nesnenin hayatı sona erdi.
+						0x55eb84757eb0 adresindeki nesnenin hayatı sona erdi.
+						free(): double free detected in tcache 2
+					*/
+					
+					auto ptr{ new Triple{1, 2, 3} };
+					std::unique_ptr<Triple> upx{ ptr };
+					std::unique_ptr<Triple> upy{ ptr };
+					
+					upx->set(9, 8, 7);
+					
+					std::cout << *upy << "\n";
+					
+					// Çıktıda da görüldüğü üzere iki defa 'Dtor.' fonksiyonu çağrıldı. 
+					
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x564f09901eb0 adresinde yeni bir nesne hayata geldi.
+						0x564f09901eb0 adresindeki nesnenin hayatı sona erdi.
+						0x564f09901eb0 adresindeki nesnenin hayatı sona erdi.
+						free(): double free detected in tcache 2
+					*/
+					
+					Triple* ptr = new Triple{ 1, 2, 3 };
+					{
+						std::unique_ptr<Triple> upx{ ptr };
+					}
+					std::unique_ptr<Triple> upy{ ptr }; // 'ptr' is a dangling-pointer now.
+
+					return 0;
+				}
+				
+			* Örnek 3,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55c1e26b3eb0 adresinde yeni bir nesne hayata geldi.
+						0x55c1e26b3eb0 adresindeki nesnenin hayatı sona erdi.
+						0x55c1e26b3eb0 adresindeki nesnenin hayatı sona erdi.
+						free(): double free detected in tcache 2
+					*/
+					
+					auto upx { std::make_unique<Triple>(1, 2, 3) };
+					Triple* ptr{ upx.get() };
+					
+					std::unique_ptr<Triple> upy{ ptr };
+					// Aynı kaynak iki farklı gösterici tarafından paylaşılmıştır. 'Tanımsız Davranış'.
+					
+					return 0;
+				}
+		
+		>>> Diğer yandan dinamik ömürlü olmayan bir nesne adresini akıllı göstericilerde kullanmayınız. Örneğin,
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x7ffd906e2c8c adresinde yeni bir nesne hayata geldi.
+						0x7ffd906e2c8c adresindeki nesnenin hayatı sona erdi.
+						free(): invalid pointer
+					*/
+					
+					Triple t{ 1, 2, 3 };
+					std::unique_ptr<Triple> upx{ &t };
+					
+					// Çıktıda görüldüğü üzere 'Run Time' hatası alıyoruz.
+
+					return 0;
+				}
+
+		>>> Öte yandan '.release()' fonksiyonu ile ilgili adresi başka bir 'raw-pointer' a aktardığımız zaman 'delete'
+		işlemini yapmalıyız.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x557d50b50eb0 adresinde yeni bir nesne hayata geldi.
+						upx is occupied
+						upx is empty
+						ptr => (1, 2, 3)
+					*/
+					
+					auto upx{ std::make_unique<Triple>(1, 2, 3) };
+					
+					std::cout << "upx is " << (upx ? "occupied" : "empty") << "\n";
+					
+					auto ptr = upx.release();
+					
+					std::cout << "upx is " << (upx ? "occupied" : "empty") << "\n";
+					
+					std::cout << "ptr => " << *ptr << "\n";
+					
+					std::cout << "upx => " << *upx << "\n"; // 'Tanımsız Davranış'
+					
+					// Çıktıdan da görüldüğü üzere ilgili adresler geri verilmed.
+					// delete ptr; // Bunu yazmak zorundayız.
+					
+					return 0;
+				}
+
+		>>> Ayrıca Kendi 'custom-deleter' fonksiyonu yazarak, nesnenin hayatını o fonksiyon ile bitirtebiliriz.
+			* Örnek 1,
+				//..
+				struct CustomDeleter{
+					public:
+						void operator()(Triple* other) {
+							std::cout << "My custom-deleter function was called. " << *other << " will be deleted.\n";
+							delete other;
+						}
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55c677477eb0 adresinde yeni bir nesne hayata geldi.
+						My custom-deleter function was called. (1, 2, 3) will be deleted.
+						0x55c677477eb0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::unique_ptr<Triple, CustomDeleter> upx{ new Triple{1, 2, 3} };
+					
+					return 0;
+				}
+			
+			* Örnek 2,
+				//..
+				void CustomDeleterFunc(Triple* other)
+				{
+					std::cout << "My custom-deleter function was called. " << *other << " will be deleted.\n";
+					delete other;  
+				}
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x5567dee02eb0 adresinde yeni bir nesne hayata geldi.
+						My custom-deleter function was called. (1, 2, 3) will be deleted.
+						0x5567dee02eb0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::unique_ptr<Triple, decltype(&CustomDeleterFunc)> upx{ new Triple{1, 2, 3}, CustomDeleterFunc };
+					
+					return 0;
+				}
+				
+			* Örnek 3,
+				//..
+				auto CustomDeleterLambda = [](Triple* other)
+				{ 
+					std::cout << "My custom-deleter function was called. " << *other << " will be deleted.\n";
+					delete other;
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x555cf0bfceb0 adresinde yeni bir nesne hayata geldi.
+						My custom-deleter function was called. (1, 2, 3) will be deleted.
+						0x555cf0bfceb0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::unique_ptr<Triple, decltype(CustomDeleterLambda)> upx{ new Triple{1, 2, 3}, CustomDeleterLambda };
+					
+					return 0;
+				}
+				
+			* Örnek 4,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						// Yeni bir dosya oluşturuldu...
+					*/
+					
+					auto f = [](FILE* other){
+						std::cout << "Dosya kapatiliyor...\n"; fclose(other);
+					};
+					
+					std::unique_ptr<FILE, decltype(f)> upx{ fopen("deneme.txt", "w"), f};
+					
+					// Eğer yukarıdaki gibi bir 'lambda-expression' kullanmasaydık, dosya kapatılmadan evvel 'delete'
+					// operatörü çağrılacaktı.
+					
+					return 0;
+				}
+				
+			* Örnek 5,
+				//..
+				struct Deck{
+					//..
+				};
+
+				Deck* createDeck(){ std::cout << "A deck has been created.\n"; return new Deck; }
+				void closeDeck(Deck* other) { std::cout << "A deck has been destroyed.\n"; delete other; }
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						A deck has been created.
+						A deck has been destroyed.
+					*/
+					
+					// Senaryo - I
+					auto f = [](Deck* other){ closeDeck(other); };
+					std::unique_ptr<Deck, decltype(f)> upx{ createDeck(), f };
+					
+					//...
+					
+					// Yukarıdaki kod bölümünde herhangi bir hata fırlatıldığında, 'stack-unwinding' gereği, 'Dtor.'
+					// fonksiyonları çağrılacaktır. Bu fonksiyon da bizim 'custom-deleter' fonksiyonumuzu çağıracaktır.
+					
+					
+					// Senaryo - II
+					auto p = createDeck();
+					//...
+					closeDeck(p);
+					
+					// Yukarıdaki kod bölümünde herhangi bir hata fırlatıldığında programın akışı 'closeDeck()' satırına
+					// gelmeyeceği için duruma göre 'resource leak', duruma göre 'memory leak' oluşacaktı.
+					
+					return 0;
+				}
+				
+			* Örnek 6,
+				//..
+				struct Deck{
+					//..
+				};
+
+				Deck* createDeck(){ std::cout << "A deck has been created.\n"; return new Deck; }
+				void closeDeck(Deck* other) { std::cout << "A deck has been destroyed.\n"; delete other; }
+
+				struct DeckCleaner{
+					void operator()(Deck* other)
+					{
+						closeDeck(other);
+					}
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						A deck has been created.
+						A deck has been destroyed.
+					*/
+					
+					std::unique_ptr<Deck, DeckCleaner> upx{ createDeck() };
+					
+					return 0;
+				}
+
+		>>> 'std::make_unique<>()' fonksiyonunu da sarmalayabiliriz.
+			* Örnek 1,
+				//..
+				std::unique_ptr<Triple> createDeck(int a, int b, int c)
+				{
+					std::cout << "A deck has been created.\n"; return std::make_unique<Triple>(a, b, c);
+				}
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						A deck has been created.
+						0x5587c64ae2c0 adresinde yeni bir nesne hayata geldi.
+						A deck has been created.
+						0x5587c64ae2e0 adresinde yeni bir nesne hayata geldi.
+						(1, 2, 3)
+						
+						(3, 2, 1)
+						
+						0x5587c64ae2e0 adresindeki nesnenin hayatı sona erdi.
+						0x5587c64ae2c0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					auto deckOne = createDeck(1, 2, 3);
+					
+					auto deckTwo = createDeck(3, 2, 1);
+					
+					std::cout << *deckOne << "\n" << *deckTwo << "\n";
+					
+					return 0;
+				}
+
+		>>> 'Run-time Polymorphism' için de kullanılabilir.
+			* Örnek 1,
+				//..
+				std::unique_ptr<Car> CreateRandomCar()
+				{
+					static std::mt19937 eng{ std::random_device{}() };
+					static std::uniform_int_distribution<int> dist{ 0, 3 };
+					
+					switch(dist(eng))
+					{
+						case 0: return std::make_unique<Mercedes>();
+						case 1: return std::make_unique<Mercedes_S500>();
+						case 2: return std::make_unique<Audi>();
+						case 3: return std::make_unique<Tesla>();
+					}
+					
+					return nullptr;
+				}
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						The Mercedes just started.
+						The Mercedes just started running.
+						The Mercedes just stopped.
+						The Tesla just started.
+						The Tesla just started running.
+						The Tesla just stopped.
+						The Audi just started.
+						The Audi just started running.
+						The Audi just stopped.
+						The Mercedes_S500 just started.
+						The Mercedes_S500 just started running.
+						The Mercedes_S500 just stopped.
+						The Audi just started.
+						The Audi just started running.
+						The Audi just stopped.
+					*/
+					for(size_t i{}; i < 5 ; ++i)
+					{
+						auto myCar = CreateRandomCar();
+						myCar->start();
+						myCar->run();
+						myCar->stop();
+					}
+					
+					return 0;
+				}
+		
+				>>> Bir kap içerisinde de akıllı göstericilerimizi tutabiliriz.
+			
+			* Örnek 2,
+				//..
+				template<typename T> 
+				struct CustomDeleter{
+					void operator()(T* other)
+					{
+						std::cout << "Deleting...\n";
+						delete other;
+					}
+				};
+
+				template<typename T>
+				using MyCustomUPtr = std::unique_ptr<T, CustomDeleter<T>>;
+
+				template<typename T>
+				using MyCustomUPtrVector = std::vector<MyCustomUPtr<T>>;
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55fe4c4e5eb0 adresinde yeni bir nesne hayata geldi.
+						0x55fe4c4e6300 adresinde yeni bir nesne hayata geldi.
+						0x55fe4c4e62e0 adresinde yeni bir nesne hayata geldi.
+						(1, 2, 3)
+						
+						(4, 5, 6)
+						
+						(7, 8, 9)
+						
+						Deleting...
+						0x55fe4c4e5eb0 adresindeki nesnenin hayatı sona erdi.
+						Deleting...
+						0x55fe4c4e6300 adresindeki nesnenin hayatı sona erdi.
+						Deleting...
+						0x55fe4c4e62e0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					MyCustomUPtr<Triple> myPtr{ new Triple{ 1, 2, 3 } };
+					
+					MyCustomUPtrVector<Triple> myPtrVector;
+					
+					myPtrVector.push_back(std::move(myPtr));
+					
+					myPtrVector.push_back(MyCustomUPtr<Triple>{ new Triple{ 4, 5, 6 } });
+					
+					myPtrVector.emplace_back( new Triple{ 7, 8, 9 } );
+					
+					for(const auto& index : myPtrVector )
+						std::cout << *index << "\n";
+					
+					return 0;
+				}
+				
+			* Örnek 3,
+				//..
+				template<typename T> 
+				struct CustomDeleter{
+					void operator()(T* other)
+					{
+						std::cout << "Deleting...\n";
+						delete other;
+					}
+				};
+
+				template<typename T>
+				using MyCustomUPtr = std::unique_ptr<T, CustomDeleter<T>>;
+
+				template<typename T>
+				using MyCustomUPtrVector = std::vector<MyCustomUPtr<T>>;
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55612eb18eb0 adresinde yeni bir nesne hayata geldi.
+						0x55612eb19300 adresinde yeni bir nesne hayata geldi.
+						0x55612eb192e0 adresinde yeni bir nesne hayata geldi.
+						size : 3;
+						(1, 2, 3)
+						 (4, 5, 6)
+						 (7, 8, 9)
+						 Deleting...
+						0x55612eb18eb0 adresindeki nesnenin hayatı sona erdi.
+						size : 2;
+						(4, 5, 6)
+						 (7, 8, 9)
+						 Deleting...
+						0x55612eb19300 adresindeki nesnenin hayatı sona erdi.
+						Deleting...
+						0x55612eb192e0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					MyCustomUPtr<Triple> myPtr{ new Triple{ 1, 2, 3 } };
+					
+					MyCustomUPtrVector<Triple> myPtrVector;
+					
+					myPtrVector.push_back(std::move(myPtr));
+					
+					myPtrVector.push_back(MyCustomUPtr<Triple>{ new Triple{ 4, 5, 6 } });
+					
+					myPtrVector.emplace_back( new Triple{ 7, 8, 9 } );
+					
+					std::cout << "size : " << myPtrVector.size() << ";\n";
+					for(const auto& index : myPtrVector )
+						std::cout << *index << " ";
+						
+					myPtrVector.erase(myPtrVector.begin());
+					
+					std::cout << "size : " << myPtrVector.size() << ";\n";
+					for(const auto& index : myPtrVector )
+						std::cout << *index << " ";
+					
+					return 0;
+				}
+				
+			* Örnek 4,
+				//..
+				template<typename T> 
+				struct CustomDeleter{
+					void operator()(T* other)
+					{
+						std::cout << "Deleting...\n";
+						delete other;
+					}
+				};
+
+				template<typename T>
+				using MyCustomUPtr = std::unique_ptr<T, CustomDeleter<T>>;
+
+				template<typename T>
+				using MyCustomUPtrVector = std::vector<MyCustomUPtr<T>>;
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x559c50d84eb0 adresinde yeni bir nesne hayata geldi.
+						0x559c50d85300 adresinde yeni bir nesne hayata geldi.
+						0x559c50d852e0 adresinde yeni bir nesne hayata geldi.
+						size : 3;
+						(1, 2, 3)
+						 (4, 5, 6)
+						 (7, 8, 9)
+						 Deleting...
+						0x559c50d84eb0 adresindeki nesnenin hayatı sona erdi.
+						Deleting...
+						0x559c50d85300 adresindeki nesnenin hayatı sona erdi.
+						Deleting...
+						0x559c50d852e0 adresindeki nesnenin hayatı sona erdi.
+						size : 0;
+					*/
+					
+					MyCustomUPtr<Triple> myPtr{ new Triple{ 1, 2, 3 } };
+					
+					MyCustomUPtrVector<Triple> myPtrVector;
+					
+					myPtrVector.push_back(std::move(myPtr));
+					
+					myPtrVector.push_back(MyCustomUPtr<Triple>{ new Triple{ 4, 5, 6 } });
+					
+					myPtrVector.emplace_back( new Triple{ 7, 8, 9 } );
+					
+					std::cout << "size : " << myPtrVector.size() << ";\n";
+					for(const auto& index : myPtrVector )
+						std::cout << *index << " ";
+						
+					myPtrVector.clear();
+					
+					std::cout << "size : " << myPtrVector.size() << ";\n";
+					for(const auto& index : myPtrVector )
+						std::cout << *index << " ";
+					
+					return 0;
+				}
+				
+			* Örnek 5,
+				//..
+				template<typename T> 
+				struct CustomDeleter{
+					void operator()(T* other)
+					{
+						std::cout << "Deleting...\n";
+						delete other;
+					}
+				};
+
+				template<typename T>
+				using MyCustomUPtr = std::unique_ptr<T, CustomDeleter<T>>;
+
+				template<typename T>
+				using MyCustomUPtrVector = std::vector<MyCustomUPtr<T>>;
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x555ef035ceb0 adresinde yeni bir nesne hayata geldi.
+						0x555ef035d300 adresinde yeni bir nesne hayata geldi.
+						0x555ef035d2e0 adresinde yeni bir nesne hayata geldi.
+						size : 3;
+						(1, 2, 3)
+						 (4, 5, 6)
+						 (7, 8, 9)
+						 Deleting...
+						0x555ef035d2e0 adresindeki nesnenin hayatı sona erdi.
+						size : 3;
+						(1, 2, 3)
+						 (4, 5, 6)
+					*/
+					
+					MyCustomUPtr<Triple> myPtr{ new Triple{ 1, 2, 3 } };
+					
+					MyCustomUPtrVector<Triple> myPtrVector;
+					
+					myPtrVector.push_back(std::move(myPtr));
+					
+					myPtrVector.push_back(MyCustomUPtr<Triple>{ new Triple{ 4, 5, 6 } });
+					
+					myPtrVector.emplace_back( new Triple{ 7, 8, 9 } );
+					
+					std::cout << "size : " << myPtrVector.size() << ";\n";
+					for(const auto& index : myPtrVector )
+						std::cout << *index << " ";
+						
+					myPtrVector.at(2).reset();
+					
+					std::cout << "size : " << myPtrVector.size() << ";\n";
+					for(const auto& index : myPtrVector )
+					{
+						//if(index)
+							std::cout << *index << " ";
+					}
+						
+					// Kapta tutulan akıllı göstericilerin boş olup olmadığına bakılmaksızın 'dereference' edildiğinden,
+					// yukarıdaki çıktı elde edildi. 
+					
+					return 0;
+				}
+				
+		>>> Üç farklı yapıda fabrika fonksiyonu olarak kullanılabilir.
+			>>>> Geri dönüş değeri olmayan ve parametre olarak 'std::unique_ptr' alan bir fonksiyon, ki bu fonksiyon bir nevi
+			'sink' usülü çalışmaktadır. Böylelikle kendisine argüman olarak geçilen akıllı göstericilerin hayatını
+			sonlandırmaktadır.
+			
+			>>>> Geri dönüş değeri akıllı gösterici olan ve parametre almayan bir fonksiyon, ki bu fonksiyonlar vesilesi ile
+			kullanıcı dinamik ömürlü nesneler oluşturmaktadır. 
+			
+			>>>> Hem geri dönüş değeri hem de parametresi akıllı gösterici olan fonksiyon, ki bu fonksiyonlar ise argüman
+			olarak aldıkları göstericiyi işlemekte ve geri döndürmektedirler.
+		
+		Aşağıda bu hususa ilişkin bir örnek verilmiştir: 
+			* Örnek 1,
+				//..
+				// Referans yolu ile argüman almadık çünkü argümanımızın hayatını sonlandıracağız.
+				void sink(std::unique_ptr<Triple> other)
+				{
+					std::cout << "The " << *other << " will be destroyed.\n";
+				}
+
+				// Referans yolu ile dönmedik çünkü 'copy-ellision' oluştu.
+				// Geri dönüş değerini 'shared_ptr' da saklayabilirdik.
+				std::unique_ptr<Triple> create(int a, int b, int c)
+				{
+					return std::make_unique<Triple>(a, b, c);
+				}
+
+				std::unique_ptr<Triple> handle(std::unique_ptr<Triple> other)
+				{
+					other->set(4, 5, 6);
+					
+					// return other;
+					return std::move(other);
+				}
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x5649b027aeb0 adresinde yeni bir nesne hayata geldi.
+						The (4, 5, 6)
+						 will be destroyed.
+						0x5649b027aeb0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::unique_ptr<Triple> uPtr{ create(1, 2, 3) };
+					
+					std::unique_ptr<Triple> uPtrTwo{ handle(std::move(uPtr)) };
+					
+					sink(std::move(uPtrTwo));
+					
+					return 0;
+				}
+				
+		>>> Akıllı göstericinin sarmaladığı nesnenin adresini ekrana yazdırmak için direkt olarak sınıf nesnesini
+		kullanabiliriz.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x5637f28ddeb0 adresinde yeni bir nesne hayata geldi.
+						&uPtr      => 0x7ffc2ec7b100
+						uPtr.get() => 0x5637f28ddeb0
+						0x5637f28ddeb0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					auto uPtr = std::make_unique<Triple>( 1, 2, 3 );
+					
+					std::cout << "&uPtr      => " << &uPtr << "\n";
+					std::cout << "uPtr.get() => " << uPtr.get() << "\n";
+					
+					return 0;
+				}
+				
+		>>> Akıllı göstericilerin 'array' formu: Normal versiyonundan farklı bir arayüze sahiptir. Normal versiyonları 'T'
+		şeklinde açılımı yaparken, 'array' formu için 'T[]' için 'partial specialization' açılımı kullanılmaktadır.
+			* Örnek 1,
+				//..
+				template<typename T>
+				struct CustomDeleter{
+					void operator()(T* other){ std::cout << "CustomDeleter<T> was called...\n"; delete other; }
+				};
+
+				template<typename T>
+				struct CustomDeleter<T[]>{
+					void operator()(T* other){ std::cout << "CustomDeleter<T[]> was called...\n"; delete[] other; };
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						main basladi...
+						0x5623af0262c8 adresinde yeni bir nesne hayata geldi.
+						0x5623af0262d4 adresinde yeni bir nesne hayata geldi.
+						0x5623af0262e0 adresinde yeni bir nesne hayata geldi.
+						CustomDeleter<T[]> was called...
+						0x5623af0262e0 adresindeki nesnenin hayatı sona erdi.
+						0x5623af0262d4 adresindeki nesnenin hayatı sona erdi.
+						0x5623af0262c8 adresindeki nesnenin hayatı sona erdi.
+						main devam ediyor...
+					*/
+					std::cout << "main basladi...\n";
+					
+					{
+						auto p = new Triple[3]{ {1,1,1}, {2,2,2}, {3,3,3} };
+						std::unique_ptr<Triple[], CustomDeleter<Triple[]>> uPtr{p};
+					}
+					
+					std::cout << "main devam ediyor...\n";
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						main basladi...
+						0x559477cc92c8 adresinde yeni bir nesne hayata geldi.
+						0x559477cc92d4 adresinde yeni bir nesne hayata geldi.
+						0x559477cc92e0 adresinde yeni bir nesne hayata geldi.
+						MyCustomDeleter was called...
+						0x559477cc92e0 adresindeki nesnenin hayatı sona erdi.
+						0x559477cc92d4 adresindeki nesnenin hayatı sona erdi.
+						0x559477cc92c8 adresindeki nesnenin hayatı sona erdi.
+						main devam ediyor...
+					*/
+					std::cout << "main basladi...\n";
+					
+					{
+						auto p = new Triple[3]{ {1,1,1}, {2,2,2}, {3,3,3} };
+						auto f = [](Triple* other){ std::cout << "MyCustomDeleter was called...\n"; delete[] other; };
+						
+						std::unique_ptr<Triple, decltype(f)> uPtr{ p, f};
+					}
+					
+					std::cout << "main devam ediyor...\n";
+					return 0;
+				}
+
+	>> 'std::shared_ptr<>()' : Bu sınıf şablonu da tıpkı 'unique_ptr' sınıf şablonu gibi '.operator bool()' fonksiyonu
+	içermektedir. Bu sınıfın özellikleri ise şunlardır:
+		>>> 'shared_ptr' sınıf şablonu kopyalamaya karşı açık bir sınıf şablonudur. Bünyesinde 'reference-counter' işlevi
+		gören bir fonksiyon barındırmaktadır. Bu fonksiyonun geri dönüş değeri bir olduğunda, sarmalanan dinamik ömürlü
+		nesnenin de hayatı sona erecektir.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55b43fb7aeb0 adresinde yeni bir nesne hayata geldi.
+						Reference Counter for spx => 1
+						Reference Counter for spx => 2
+						Reference Counter for spy => 2
+						Reference Counter for spx => 3
+						Reference Counter for spx => 3
+						Reference Counter for spz => 3
+						Reference Counter for spx => 2
+						Reference Counter for spy => 2
+						Reference Counter for spx => 1
+						0x55b43fb7aeb0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::shared_ptr<Triple> spx{ new Triple{1,1,1} };
+					std::cout << "Reference Counter for spx => " << spx.use_count() << "\n";
+					{
+						auto spy{spx};
+						std::cout << "Reference Counter for spx => " << spx.use_count() << "\n";
+						std::cout << "Reference Counter for spy => " << spy.use_count() << "\n";
+						{
+							auto spz{spy};
+							std::cout << "Reference Counter for spx => " << spx.use_count() << "\n";
+							std::cout << "Reference Counter for spx => " << spx.use_count() << "\n";
+							std::cout << "Reference Counter for spz => " << spz.use_count() << "\n";
+						}
+						std::cout << "Reference Counter for spx => " << spx.use_count() << "\n";
+						std::cout << "Reference Counter for spy => " << spy.use_count() << "\n";
+					}
+					std::cout << "Reference Counter for spx => " << spx.use_count() << "\n";
+					
+					return 0;
+				}
+				
+		>>> 'shared_ptr' sınıf şablonu, 'unique_ptr' sınıf şablonuna nazaran bünyesinde iki adet gösterici barındırmaktadır.
+		Bunlardan bir ilki dinamik ömürlü nesnemizin adresini gösterirken, diğer ikincisi ise 'control-block' diye
+		adlandırılan bloğun adresini tutmaktadır. Buradan hareketle ilgili 'shared_ptr' sınıf nesnemizi '->' operatörünün
+		operandı yaptığımız zaman ilk göstericinin gösterdiği dinamik ömürlü nesneye erişirken, '.' operatörünün operandı
+		yaptığımız zaman ise ikinci göstericinin gösterdiği 'control-block' ğuna erişmekteyiz. Son olarak unutmamalıyız ki
+		ilk gösterici tarafından gösterilen dinamik ömürlü nesnemizin adresi aynı zamanda ikinci gösterici tarafından
+		gösterilen 'control-block' içerisinde de tutulmaktadır. Yine bizler ilk olarak dinamik ömürlü bir nesne hayata
+		getirsek, sonrasında da bu nesneyi kullanarak 'shared_ptr' sınıf türünden bir nesne hayata getirsek/atama yapsak,
+		elimizde iki farklı adres bilgisi olacaktır. İlk adres bilgisi dinamik ömürlü nesnemizinki, ikinci adres bilgisi ise
+		yukarıda bahsi geçen 'control-block' una ait adres bilgisidir. Fakat 'make_shared' fonksiyon şablonunu kullanarak
+		'shared_ptr' sınıf türünden bir nesne hayata getirirsek/atama yaparsak elimizde sadece ve sadece tek bir adet adres
+		bilgisi olacaktır. Bu adres bilgisini kullanarak hem ilgili dinamik ömürlü nesneye hem de ilgili 'control-block' una
+		ulaşabileceğiz. Buradan hareketle diyebiliriz ki 'shared_ptr' sınıf türünden nesne hayata getirirken 'make_shared'
+		fonksiyon şablonunu kullanmamız bir takım maliyetlerden kurtulmamıza olanak sağlamaktadır.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						size of Triple* => 8
+						size of std::unique_ptr<Triple>() => 8
+						size of std::shared_ptr<Triple>() => 16
+					*/
+					
+					std::cout << "size of Triple* => " << sizeof(Triple*) << "\n";
+					std::cout << "size of std::unique_ptr<Triple>() => " << sizeof(std::unique_ptr<Triple>) << "\n";
+					std::cout << "size of std::shared_ptr<Triple>() => " << sizeof(std::shared_ptr<Triple>) << "\n";
+					
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				void* operator new(size_t n)
+				{
+					std::cout << "operator new(" << n << ") was called.\n";
+					void* vp = std::malloc(n);
+					std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+					if(!vp)
+						throw std::bad_alloc{};
+
+					return vp;
+				}
+
+				void operator delete(void* vp)
+				{
+					std::cout << "operator delete() was called.\n";
+					std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+					if(vp)
+						free(vp);
+				}
+							
+				int main()
+				{
+					/*
+						# OUTPUT #
+						operator new(12) was called.
+						A memory block has been occupied starting from   : 0x564a906222c0
+						0x564a906222c0 adresinde yeni bir nesne hayata geldi.
+						operator new(24) was called.
+						A memory block has been occupied starting from   : 0x564a906222e0
+						operator new(32) was called.
+						A memory block has been occupied starting from   : 0x564a90622300
+						0x564a90622310 adresinde yeni bir nesne hayata geldi.
+						0x564a90622310 adresindeki nesnenin hayatı sona erdi.
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x564a90622300
+						0x564a906222c0 adresindeki nesnenin hayatı sona erdi.
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x564a906222c0
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x564a906222e0
+					*/
+					
+					auto ptrOne{ new Triple{1,1,1} };
+					std::shared_ptr<Triple> ptrTwo{ ptrOne };
+					std::shared_ptr<Triple> ptrThree{ std::make_shared<Triple>(2,2,2) };
+					
+					// 'ptrThree' için tek bir allocation yapıldı. 
+					
+					return 0;
+				}
+				
+			* Örnek 3,
+				//..
+				void* operator new(size_t n)
+				{
+					std::cout << "operator new(" << n << ") was called.\n";
+					void* vp = std::malloc(n);
+					std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+					if(!vp)
+						throw std::bad_alloc{};
+
+					return vp;
+				}
+
+				void operator delete(void* vp)
+				{
+					std::cout << "operator delete() was called.\n";
+					std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+					if(vp)
+						free(vp);
+				}
+								
+				int main()
+				{
+					/*
+						# OUTPUT #
+						operator new(12) was called.
+						A memory block has been occupied starting from   : 0x56262e8772c0
+						0x56262e8772c0 adresinde yeni bir nesne hayata geldi.
+						operator new(24) was called.
+						A memory block has been occupied starting from   : 0x56262e8772e0
+						0x56262e8772c0 adresindeki nesnenin hayatı sona erdi.
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x56262e8772c0
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x56262e8772e0
+					*/
+					
+					std::shared_ptr<Triple> spx{ new Triple };
+					
+					// İki kez allocation yapıldı. Bir tanesi kontrol bloğu için diğeri de dinamik ömürlü nesne için.
+					
+					return 0;
+				}
+				
+			* Örnek 4,
+				//..
+				void* operator new(size_t n)
+				{
+					std::cout << "operator new(" << n << ") was called.\n";
+					void* vp = std::malloc(n);
+					std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+					if(!vp)
+						throw std::bad_alloc{};
+
+					return vp;
+				}
+
+				void operator delete(void* vp)
+				{
+					std::cout << "operator delete() was called.\n";
+					std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+					if(vp)
+						free(vp);
+				}
+								
+				int main()
+				{
+					/*
+						# OUTPUT #
+						operator new(32) was called.
+						A memory block has been occupied starting from   : 0x5556bd48f2c0
+						0x5556bd48f2d0 adresinde yeni bir nesne hayata geldi.
+						0x5556bd48f2d0 adresindeki nesnenin hayatı sona erdi.
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x5556bd48f2c0
+					*/
+					
+					std::shared_ptr<Triple> spx{ std::make_shared<Triple>() };
+					
+					// Sadece bir kez allocation yapıldı. Gerek dinamik ömürlü nesne gerek kontrol bloğu aynı adreste. 
+					
+					return 0;
+				}
+				
+			* Örnek 5,
+				//..
+				void* operator new(size_t n)
+				{
+					std::cout << "operator new(" << n << ") was called.\n";
+					void* vp = std::malloc(n);
+					std::cout << "A memory block has been occupied starting from   : " << vp << "\n";
+					if(!vp)
+						throw std::bad_alloc{};
+
+					return vp;
+				}
+
+				void operator delete(void* vp)
+				{
+					std::cout << "operator delete() was called.\n";
+					std::cout << "A memory block will be given back, starting from : " << vp << "\n";
+					if(vp)
+						free(vp);
+				}
+								
+				int main()
+				{
+					/*
+						# OUTPUT #
+						operator new(12) was called.
+						A memory block has been occupied starting from   : 0x55fa924512c0
+						0x55fa924512c0 adresinde yeni bir nesne hayata geldi.
+						operator new(24) was called.
+						A memory block has been occupied starting from   : 0x55fa924512e0
+						0x55fa924512c0 adresindeki nesnenin hayatı sona erdi.
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x55fa924512c0
+						operator delete() was called.
+						A memory block will be given back, starting from : 0x55fa924512e0
+					*/
+					
+					auto upx{ std::make_unique<Triple>(0,0,0) };
+					std::shared_ptr<Triple> spx{ std::move(upx) };
+					
+					
+					return 0;
+				}
+				
+		>>> 'shared_ptr' sınıf şablonu için 'custom-deleter' kullanmak istediğimiz zaman bunu şablon parametresi olarak DEĞİL, 
+		'Ctor.' fonksiyonuna bir argüman olarak geçmeliyiz.
+			* Örnek 1,
+				//..
+				struct CustomDeleter{
+				public:
+					void operator()(Triple* other) {
+						std::cout << "My custom-deleter function was called. " << *other << " will be deleted.\n";
+						delete other;
+					}
+				};
+							
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55cff590beb0 adresinde yeni bir nesne hayata geldi.
+						My custom-deleter function was called. (1, 1, 1)
+						 will be deleted.
+						0x55cff590beb0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::shared_ptr<Triple> spx{ new Triple{1,1,1}, CustomDeleter{} };
+					
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						main basladi...
+						0x5634ede612c0 adresinde yeni bir nesne hayata geldi.
+						(0, 0, 0)
+						 will be deleted...
+						0x5634ede612c0 adresindeki nesnenin hayatı sona erdi.
+						main devam ediyor...
+					*/
+					
+					std::cout << "main basladi...\n";
+					{
+						std::shared_ptr<Triple> spx{ 
+							new Triple{0,0,0}, 
+							[](Triple* other){ std::cout << *other << " will be deleted...\n"; delete other; }
+						};
+					}
+					std::cout << "main devam ediyor...\n";
+					return 0;
+				}
+				
+		>>> Bir 'unique_ptr' sınıfını 'shared_ptr' sınıfına taşıyabiliyoruz. Böylelikle 'unique_ptr' döndüren fabrika
+		fonksiyonlarının geri dönüş değerini de 'shared_ptr' sınıfından bir nesnede tutabiliriz de.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						15 Mayis 2022 Pazar
+						15 Mayis 2022 Pazar
+					*/
+					
+					auto upx{ std::make_unique<Date>(15,5,2022) };
+					std::cout << *upx << "\n";
+					
+					std::shared_ptr spx{ std::move(upx) };
+					std::cout << *spx << "\n";
+					
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				std::unique_ptr<Date>
+				createDate(int day, int month, int year)
+				{
+					return std::make_unique<Date>(day, month, year);
+				}
+							
+				int main()
+				{
+					/*
+						# OUTPUT #
+						15 Mayis 2022 Pazar
+						17 Eylul 1993 Cuma
+					*/
+					
+					std::unique_ptr<Date> upx{ createDate(15, 5, 2022) }; std::cout << *upx << "\n";
+					std::shared_ptr<Date> spx{ createDate(17, 9, 1993) }; std::cout << *spx << "\n";
+					
+					return 0;
+				}
+				
+		>>> İki adet 'shared_ptr' sınıf türünden nesneyi birbirine atadığımız zaman bir tanesinin referans sayacı bir
+		azalırken, diğerininki bir artacaktır.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x5648a6e07ec0 adresinde yeni bir nesne hayata geldi.
+						Ref. Counter : 1
+						0x5648a6e08300 adresinde yeni bir nesne hayata geldi.
+						Ref. Counter : 1
+						0x5648a6e07ec0 adresindeki nesnenin hayatı sona erdi.
+						Ref. Counter : 2
+						Ref. Counter : 2
+						0x5648a6e08300 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::shared_ptr<Triple> ptrOne{ std::make_shared<Triple>(1,1,1) }; 
+					std::cout << "Ref. Counter : " << ptrOne.use_count() << "\n";
+
+					std::shared_ptr<Triple> ptrTwo{ std::make_shared<Triple>(2,2,2) }; 
+					std::cout << "Ref. Counter : " << ptrTwo.use_count() << "\n";
+					
+					ptrOne = ptrTwo;
+					
+					std::cout << "Ref. Counter : " << ptrOne.use_count() << "\n";
+					std::cout << "Ref. Counter : " << ptrTwo.use_count() << "\n";
+					
+					return 0;
+				}
+				
+		>>> 'shared_ptr' sınıf şablonu her ne kadar paylaşım ilkesini bünyesinde barındırsa da aynı adres bloğu için iki
+		farklı kontrol bloğu oluşturulduğunda 'Tanımsız Davranış' meydana gelecektir.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x56512eba9eb0 adresinde yeni bir nesne hayata geldi.
+						0x56512eba9eb0 adresindeki nesnenin hayatı sona erdi.
+						0x56512eba9eb0 adresindeki nesnenin hayatı sona erdi.
+						free(): double free detected in tcache 2
+					*/
+					
+					auto ptr = new Triple{0,0,0};
+					
+					std::shared_ptr<Triple> spx{ ptr };
+					
+					std::shared_ptr<Triple> spy{ ptr }; 
+					
+					// Yukarıda her ne kadar aynı adres kullanılsada farklı kontrol blokları oluşturulmuştur. 
+					// Bu nedenden ötürü 'Tanımsız Davranış' meydana gelecektir.
+					// PAYLAŞIMLILIK İLKESİNDEN KASTEDİLEN BU DEĞİLDİR.
+					
+					return 0;
+				}
+				
+		>>> 'shared_ptr' sınıfından nesneler bir kap içerisinde de tutulabilir.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x557fd9301eb0 adresinde yeni bir nesne hayata geldi.
+						0x557fd9302330 adresinde yeni bir nesne hayata geldi.
+						0x557fd93023a0 adresinde yeni bir nesne hayata geldi.
+						0x557fd9302410 adresinde yeni bir nesne hayata geldi.
+						0x557fd9302480 adresinde yeni bir nesne hayata geldi.
+						0x557fd93024f0 adresinde yeni bir nesne hayata geldi.
+						0x557fd9302560 adresinde yeni bir nesne hayata geldi.
+						0x557fd93025e0 adresinde yeni bir nesne hayata geldi.
+						[8] => (0, 0, 0)
+						 | (0, 0, 1)
+						 | (0, 1, 0)
+						 | (1, 0, 0)
+						 | (1, 0, 1)
+						 | (1, 1, 0)
+						 | (1, 1, 1)
+						 | (-1, -1, -1)
+						 | 
+						
+						[8] => (1, 1, 1)
+						 | (2, 1, 1)
+						 | (3, 1, 1)
+						 | (4, 1, 1)
+						 | (5, 1, 1)
+						 | (6, 1, 1)
+						 | (7, 1, 1)
+						 | (8, 1, 1)
+						 | 0x557fd9301eb0 adresindeki nesnenin hayatı sona erdi.
+						0x557fd9302330 adresindeki nesnenin hayatı sona erdi.
+						0x557fd93023a0 adresindeki nesnenin hayatı sona erdi.
+						0x557fd9302410 adresindeki nesnenin hayatı sona erdi.
+						0x557fd9302480 adresindeki nesnenin hayatı sona erdi.
+						0x557fd93024f0 adresindeki nesnenin hayatı sona erdi.
+						0x557fd9302560 adresindeki nesnenin hayatı sona erdi.
+						0x557fd93025e0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					std::list<std::shared_ptr<Triple>> myList;
+					
+					myList.emplace_back( new Triple{0,0,0} );
+					myList.emplace_back( new Triple{0,0,1} );
+					myList.emplace_back( new Triple{0,1,0} );
+					myList.emplace_back( new Triple{1,0,0} );
+					myList.emplace_back( new Triple{1,0,1} );
+					myList.emplace_back( new Triple{1,1,0} );
+					myList.emplace_back( new Triple{1,1,1} );
+					myList.push_back( std::make_shared<Triple>(-1, -1, -1) );
+					
+					std::cout << "[" << myList.size() << "] => ";
+					for(const auto& index : myList)
+						std::cout << *index << " | ";
+						
+					{
+						std::vector<std::shared_ptr<Triple>> myVec( myList.begin(), myList.end() );
+						for(auto& index : myVec)
+						{
+							static int counter{};
+							index->set(++counter);
+						}
+					}
+					
+					std::cout << "\n\n";
+					
+					std::cout << "[" << myList.size() << "] => ";
+					for(const auto& index : myList)
+						std::cout << *index << " | ";
+
+					
+					// Aynı nesne hem 'list' içerisinde hem de 'vektör' içerisinde saklanmıştır.
+					
+					return 0;
+				}
+				
+		>>> 'Owner' isimli bir sınıfımız ve bu sınıfımız da 'Member' sınıf türünden bir veri elemanımıza sahip olsa. 'Owner'
+		sınıf türünden sınıf nesnesi tutan bir 'shared_ptr' ve 'Owner' içerisindeki 'Member' türündeki veri elemanını tutan
+		başka bir 'shared_ptr' akıllı göstericisi olsa. Bu durumda 'Owner' tutan 'shared_ptr' sınıfının ömrü bittiğinde
+		ilgili 'Owner' sınıfı da yok edilecektir. Bu durumda 'Owner' içerisindeki 'Member' ı gösteren akıllı gösterici
+		'dangling-pointer' haline gelecektir. Bu duruma önlem amaçlı 'shared_ptr' sınıfı 'Alias Ctor.' fonksiyonu vardır.
+			* Örnek 1,
+				//..
+				class Member{
+					public:
+						Member() { std::cout << "Member::Member() was called...\n"; }
+						~Member() { std::cout << "Member::~Member() was called...\n"; }
+				};
+
+				class Owner{
+					public:
+						Owner() { std::cout << "Owner::Owner() was called...\n"; }
+						~Owner() { std::cout << "Owner::~Owner() was called...\n"; }
+						
+					public:
+						Member mx;
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						Member::Member() was called...
+						Owner::Owner() was called...
+						Ref. Counter : 2
+						Ref. Counter : 2
+						Owner::~Owner() was called...
+						Member::~Member() was called...
+					*/
+					
+					auto ownerPtr{ std::make_shared<Owner>() };
+					auto memberOfOwnerPtr{ std::shared_ptr<Member>(ownerPtr, &ownerPtr->mx) };
+					
+					std::cout << "Ref. Counter : " << ownerPtr.use_count() << "\n";
+					std::cout << "Ref. Counter : " << memberOfOwnerPtr.use_count() << "\n";
+					
+					/*
+						# OUTPUT #
+						Member::Member() was called...
+						Owner::Owner() was called...
+						Ref. Counter : 1
+						Ref. Counter : 1
+						Member::~Member() was called...
+						double free or corruption (out)
+					*/
+					
+					auto ownerPtr{ std::make_shared<Owner>() };
+					auto memberOfOwnerPtr{ std::shared_ptr<Member>(&ownerPtr->mx) }; // 'dangling-pointer'
+					
+					std::cout << "Ref. Counter : " << ownerPtr.use_count() << "\n";
+					std::cout << "Ref. Counter : " << memberOfOwnerPtr.use_count() << "\n";
+					
+					// Her iki çıktıda da görüldüğü üzere;
+					// İkinci senaryoda 'dangling-pointer' vardır.
+					
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				class Member{
+					public:
+						Member() { std::cout << "Member::Member() was called...\n"; }
+						~Member() { std::cout << "Member::~Member() was called...\n"; }
+				};
+
+				class Owner{
+					public:
+						Owner() { std::cout << "Owner::Owner() was called...\n"; }
+						~Owner() { std::cout << "Owner::~Owner() was called...\n"; }
+						
+					public:
+						Member mx;
+				};
+
+				using Ovec = std::vector<Owner>;
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						Ref. Count : 1
+						Member::Member() was called...
+						Owner::Owner() was called...
+						Owner::~Owner() was called...
+						Member::~Member() was called...
+						Ref. Count : 1
+						Member::Member() was called...
+						Owner::Owner() was called...
+						Owner::~Owner() was called...
+						Member::~Member() was called...
+						Owner::~Owner() was called...
+						Member::~Member() was called...
+						Ref. Count : 1
+						Ref. Count : 2
+						Ref. Count : 2
+						Ref. Count : 3
+						Ref. Count : 3
+						Ref. Count : 3
+						Ref. Count : 4
+						Ref. Count : 4
+						Ref. Count : 4
+						Ref. Count : 4
+						Ref. Count : 0
+						Ref. Count : 3
+						Ref. Count : 3
+						Ref. Count : 3
+						Owner::~Owner() was called...
+						Member::~Member() was called...
+						Owner::~Owner() was called...
+						Member::~Member() was called...
+					*/
+					
+					// Vektörü gösteren akıllı gösterici.
+					std::shared_ptr<Ovec> os{ new Ovec }; 
+					std::cout << "Ref. Count : " << os.use_count() << "\n";
+					
+					// İlgili vektöre yeni bir akıllı gösterici eklendi.
+					os->push_back(Owner{});
+					std::cout << "Ref. Count : " << os.use_count() << "\n";
+					
+					// İlgili vektöre yeni bir akıllı gösterici eklendi.
+					os->push_back(Owner{});
+					std::cout << "Ref. Count : " << os.use_count() << "\n";
+					
+					// Yeni bir akıllı gösterici oluşturuldu ki bu ilgili vektörün ilk elemanındaki
+					// sınıf nesnesini göstermektedir.
+					std::shared_ptr<Owner> ownerOne{ os, &os->at(0) }; 
+					std::cout << "Ref. Count : " << os.use_count() << "\n";
+					std::cout << "Ref. Count : " << ownerOne.use_count() << "\n";
+					
+					// Yeni bir akıllı gösterici oluşturuldu ki bu da ilgili vektörün ikinci
+					// elemanındaki sınıf nesnesini göstermektedir.
+					std::shared_ptr<Owner> ownerTwo{ os, &os->at(1) };
+					std::cout << "Ref. Count : " << os.use_count() << "\n";
+					std::cout << "Ref. Count : " << ownerOne.use_count() << "\n";
+					std::cout << "Ref. Count : " << ownerTwo.use_count() << "\n";
+					
+					// Yeni bir akıllı gösterici oluşturuldu ki bu ilgili vektörün ikinci
+					// elemanının içerisindeki 'Member' sınıf türünden veri elemanını
+					// göstermektedir.
+					std::shared_ptr<Member> memberOne{ os, &os->at(1).mx };
+					std::cout << "Ref. Count : " << os.use_count() << "\n";
+					std::cout << "Ref. Count : " << ownerOne.use_count() << "\n";
+					std::cout << "Ref. Count : " << ownerTwo.use_count() << "\n";
+					std::cout << "Ref. Count : " << memberOne.use_count() << "\n";
+					
+					// İlgili vektörümüzü gösteren akıllı gösterici boşa alındı.
+					os.reset();
+					std::cout << "Ref. Count : " << os.use_count() << "\n";
+					std::cout << "Ref. Count : " << ownerOne.use_count() << "\n";
+					std::cout << "Ref. Count : " << ownerTwo.use_count() << "\n";
+					std::cout << "Ref. Count : " << memberOne.use_count() << "\n";
+					
+					return 0;
+				}
+
+		>>> Bir 'shared_ptr' tarafından gösterilen dinamik ömürlü sınıf nesnesinin üye fonksiyonu içerisinde, kendisini
+		gösteren ilgili 'shared_ptr' nin bir kopyasını nasıl çıkartabiliriz?
+			* Örnek 1,
+				//..
+				class MyclassTwo{
+					public: 
+						void func()
+						{
+							// 'main' içerisindeki 'sp' isimli akıllı göstericinin bir kopyasını burada oluşturmak
+							// istiyorum. Referans sayacı da artacak şekilde.
+							std::shared_ptr<MyclassTwo> spx{this};
+							// Bu şekilde ilgili akıllı göstericinin bir kopyasını oluşturmamış,
+							// sadece aynı kaynağı paylaşan iki adet gösterici oluşturmuş oluruz.
+																 
+							std::cout << "spx.use_count() : " << spx.use_count() << "\n";
+						}
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						sp.use_count() : 1
+						spx.use_count() : 1
+						double free or corruption (out)
+					*/
+					
+					auto sp{ std::make_shared<MyclassTwo>() };
+					std::cout << "sp.use_count() : " << sp.use_count() << "\n";
+					
+					sp->func();
+					
+					std::cout << "sp.use_count() : " << sp.use_count() << "\n";
+					
+					return 0;
+				}
+	
+	>> 'std::weak_ptr<>()' : sınıf şablonu ayrı bir akıllı gösterici DEĞİL, yardımcı bir akıllı göstericidir. Bir
+	'shared_ptr' nesnesinden 'weak_ptr' nesnesi oluşturabiliyoruz. 'weak_ptr' sınıfının '.operator*()' ve '.operator->()'
+	fonksiyonları mevcut değildir. Bu sınıfın özellikleri ise şunlardır:
+		>>> 'shared_ptr' ile bir 'weak_ptr' hayata getirmem, 'shared_ptr' içerisindeki 'reference-counter' değişkenini
+		DEĞİŞTİRMEMEKTEDİR. Dolayısla bu sayaç bire düştüğünde ilgili nesnemizin hayatı da sona erecektir.
+		
+		>>> 'weak_ptr' sınıf şablonunun üye fonksiyonu olan '.expired()' kullanarak, 'weak_ptr' nesnesini hayata getiren
+		'shared_ptr' sınıf nesnesinin hayat bilgisini sorgulayabiliyoruz.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x5557cc2a2ec0 adresinde yeni bir nesne hayata geldi.
+						sharedPtr.use_count() : 1
+						weakPtr.use_count()   : 1
+						it is alive...
+						0x5557cc2a2ec0 adresindeki nesnenin hayatı sona erdi.
+						sharedPtr.use_count() : 0
+						weakPtr.use_count()   : 0
+						it has been destroyed...
+					*/
+					
+					auto sharedPtr{ std::make_shared<Triple>(1, 2, 3) };
+					
+					std::weak_ptr weakPtr{ sharedPtr };
+					
+					std::cout << "sharedPtr.use_count() : " << sharedPtr.use_count() << "\n";
+					std::cout << "weakPtr.use_count()   : " << weakPtr.use_count() << "\n";
+					
+					if( !weakPtr.expired() )
+						std::cout << "it is alive...\n";
+					else
+						std::cout << "it has been destroyed...\n";
+						
+					sharedPtr.reset();
+					
+					std::cout << "sharedPtr.use_count() : " << sharedPtr.use_count() << "\n";
+					std::cout << "weakPtr.use_count()   : " << weakPtr.use_count() << "\n";
+					
+					if( !weakPtr.expired() )
+						std::cout << "it is alive...\n";
+					else
+						std::cout << "it has been destroyed...\n";
+						
+					return 0;
+				}
+				
+		>>> 'weak_ptr' sınıfının bir başka üye fonksiyonu olan '.lock()' fonksiyonu bir 'shared_ptr' döndürmektedir göstermiş
+		olduğu kaynağın boş veya dolu olmasına göre. Yani bu fonksiyonu kullanarak aynı kaynağı paylaşan bir başka
+		'shared_ptr' elde edebiliriz.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55913594dec0 adresinde yeni bir nesne hayata geldi.
+						sharedPtr.use_count() : 1
+						weakPtr.use_count()   : 1
+						it is alive...
+						sharedPtr.use_count() : 2
+						weakPtr.use_count()   : 2
+						tempPtr.use_count()   : 2
+						sharedPtr.use_count() : 1
+						weakPtr.use_count()   : 1
+						0x55913594dec0 adresindeki nesnenin hayatı sona erdi.
+						it has been destroyed...
+					*/
+					
+					auto sharedPtr{ std::make_shared<Triple>(1, 2, 3) };
+					
+					std::weak_ptr weakPtr{ sharedPtr };
+					
+					std::cout << "sharedPtr.use_count() : " << sharedPtr.use_count() << "\n";
+					std::cout << "weakPtr.use_count()   : " << weakPtr.use_count() << "\n";
+					
+					if( auto tempPtr = weakPtr.lock() ) // Hayatta olan 'sharedPtr' nin bir kopyası çıkartıldı.
+					{
+						std::cout << "it is alive...\n"; 
+						std::cout << "sharedPtr.use_count() : " << sharedPtr.use_count() << "\n";
+						std::cout << "weakPtr.use_count()   : " << weakPtr.use_count() << "\n";
+						std::cout << "tempPtr.use_count()   : " << tempPtr.use_count() << "\n";
+					}
+					else
+						std::cout << "it has already been destroyed...\n";
+					
+					std::cout << "sharedPtr.use_count() : " << sharedPtr.use_count() << "\n";
+					std::cout << "weakPtr.use_count()   : " << weakPtr.use_count() << "\n";
+					
+					sharedPtr.reset();
+					
+					if( auto tempPtr = weakPtr.lock() )
+						std::cout << "it is alive...\n";
+					else
+						std::cout << "it has been destroyed...\n";
+						
+					return 0;
+				}
+				
+			* Örnek 2, Aynı işlemi 'shared_ptr' sınıfının 'Ctor.' fonksiyonunu kullanarak da yapabiliriz. Fakat kaynak boş
+			ise bir hata fırlatılacaktır.
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55e3cbf3cec0 adresinde yeni bir nesne hayata geldi.
+						sptr.use_count() : 1
+						wptr.use_count() : 1
+						sptrTwo.use_count() : 2
+						sptrTwo.use_count() : 0
+						0x55e3cbf3cec0 adresindeki nesnenin hayatı sona erdi.
+						sptr.use_count() : 0
+						Hata yakalandi... bad_weak_ptr
+					*/
+					
+					auto sptr{ std::make_shared<Triple>(1, 2, 3) };
+					
+					std::cout << "sptr.use_count() : " << sptr.use_count() << "\n"; 
+					
+					std::weak_ptr<Triple> wptr{ sptr };
+					
+					std::cout << "wptr.use_count() : " << wptr.use_count() << "\n"; 
+					
+					std::shared_ptr<Triple> sptrTwo{ wptr };
+					
+					std::cout << "sptrTwo.use_count() : " << sptrTwo.use_count() << "\n"; 
+					
+					sptrTwo.reset();
+					
+					std::cout << "sptrTwo.use_count() : " << sptrTwo.use_count() << "\n"; 
+					
+					sptr.reset();
+					
+					std::cout << "sptr.use_count() : " << sptr.use_count() << "\n"; 
+					
+					try{
+						std::shared_ptr sptrThree{ wptr };
+					}
+					catch(const std::exception& ex)
+					{
+						std::cout << "Hata yakalandi... " << ex.what() << "\n";
+					}
+						
+					return 0;
+				}
+				
+		>>> 'weak_ptr' sınıf şablonunun en çok işlevli olduğu nokta iki 'shared_ptr' sınıfının birbirine bağlı olması
+		durumunda ortaya çıkan 'cycling-reference' problemini ortadan kaldırmaktır.
+			* Örnek 1,
+				//..
+				int main()
+				{
+					/*
+						# OUTPUT #
+						0x55a7e38d2ec0 adresinde yeni bir nesne hayata geldi.
+						sptr.use_count() : 1
+						wp.use_count() : 0
+						it has been destroyed...
+						0x55a7e38d2ec0 adresindeki nesnenin hayatı sona erdi.
+					*/
+					
+					auto sptr{ std::make_shared<Triple>(12, 5, 1987) };
+					std::weak_ptr<Triple> wptr{ sptr };
+					
+					std::cout << "sptr.use_count() : " << sptr.use_count() << "\n";
+					
+					wptr.reset();
+					
+					std::cout << "wp.use_count() : " << wptr.use_count() << "\n";
+					
+					if(!wptr.expired())
+					{
+						std::cout << "it is alive...\n";
+						std::shared_ptr<Triple> sptrTwo{ wptr };
+						std::cout << *sptrTwo << "\n";
+					}
+					else
+					{
+						std::cout << "it has been destroyed...\n";
+					}
+					
+					return 0;
+				}
+				
+			* Örnek 2,
+				//..
+				struct B;
+
+				struct A{
+					std::shared_ptr<B> bptr;
+					//std::weak_ptr<B> bptr;
+					~A(){ std::cout << "A Dtor.\n"; }
+				};
+
+				struct B{
+					std::shared_ptr<A> aptr;
+					~B(){ std::cout << "B Dtor.\n"; }
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						spa.use_count() : 1
+						spb.use_count() : 1
+						spb.use_count() : 2
+						spa.use_count() : 2
+					*/
+					
+					std::shared_ptr<A> spa{ new A };
+					std::cout << "spa.use_count() : " << spa.use_count() << "\n";
+					
+					std::shared_ptr<B> spb{ new B };
+					std::cout << "spb.use_count() : " << spb.use_count() << "\n";
+					
+					spa->bptr = spb;
+					std::cout << "spb.use_count() : " << spb.use_count() << "\n";
+					
+					spb->aptr = spa;
+					std::cout << "spa.use_count() : " << spa.use_count() << "\n";
+					
+					// Çıktıda da görüldüğü gibi sınıf nesnelerimiz 'destroy' edilmediler. 
+					
+					return 0;
+				}
+				
+			* Örnek 3,
+				//..
+				struct B;
+
+				struct A{
+					//std::shared_ptr<B> bptr;
+					std::weak_ptr<B> bptr;
+					// 'derefence' edilemezler. Bunu kullanarak yeni bir 'shared_ptr' hayata getirip, onun vesilesi ile
+					// 'dereference' yapabiliriz.
+					
+					~A(){ std::cout << "A Dtor.\n"; }
+				};
+
+				struct B{
+					std::shared_ptr<A> aptr;
+					~B(){ std::cout << "B Dtor.\n"; }
+				};
+
+				int main()
+				{
+					/*
+						# OUTPUT #
+						spa.use_count() : 1
+						spb.use_count() : 1
+						spb.use_count() : 2
+						spa.use_count() : 2
+						B Dtor.
+						A Dtor.
+					*/
+					
+					std::shared_ptr<A> spa{ new A };
+					std::cout << "spa.use_count() : " << spa.use_count() << "\n";
+					
+					std::shared_ptr<B> spb{ new B };
+					std::cout << "spb.use_count() : " << spb.use_count() << "\n";
+					
+					spa->bptr = spb;
+					std::cout << "spb.use_count() : " << spb.use_count() << "\n";
+					
+					spb->aptr = spa;
+					std::cout << "spa.use_count() : " << spa.use_count() << "\n";
+					
+					return 0;
+				}
+				
+			* Örnek 4,
+				//Dog.h
+					//..
+					class Dog{
+						public:
+							Dog(const std::string& name) : m_name{name}
+							{
+								std::cout << "dog-" << m_name << " oluşturuldu...\n";
+							}
+							
+							~Dog()
+							{
+								std::cout << "dog-" << m_name << " oyundan çıkıyor...\n";
+							}
+							
+							void bark(){ std::cout << "dog-" << m_name << " havliyor...\n"; }
+							void make_friend(std::shared_ptr<Dog> otherDog)
+							{
+								mp_friend = otherDog;
+								std::cout << "dog-" << m_name << ", dog-" << otherDog->m_name << " ile arkadaş oldu...\n";
+							}
+							void show_friend()const
+							{
+								if(!mp_friend.expired())
+									std::cout << "Benim arkadaşım : dog-" << mp_friend.lock()->m_name << "...\n";
+								else
+									std::cout << "Bir arkadaşım yok...\n";
+							}
+							
+						private:
+							std::weak_ptr<Dog> mp_friend;
+							std::string m_name;
+					};
+					
+				// main.cpp
+					//..
+					int main()
+					{
+						/*
+							# OUTPUT #
+							dog-shiva oluşturuldu...
+							dog-peggy oluşturuldu...
+							dog-shiva, dog-peggy ile arkadaş oldu...
+							dog-peggy, dog-shiva ile arkadaş oldu...
+							Benim arkadaşım : dog-peggy...
+							dog-peggy oyundan çıkıyor...
+							Bir arkadaşım yok...
+							dog-shiva oyundan çıkıyor...
+						*/
+						
+						std::shared_ptr<Dog> sp1{ std::make_shared<Dog>("shiva") };
+						std::shared_ptr<Dog> sp2{ std::make_shared<Dog>("peggy") };
+						
+						sp1->make_friend(sp2);
+						sp2->make_friend(sp1);
+						
+						sp1->show_friend();
+						
+						sp2 = nullptr;
+						
+						sp1->show_friend();
+						
+						return 0;
+					}
+
+Şimdi de 'CRTP' ve 'enabled_shared_from_this' konularına örnekler üzerinden değinelim:
+	* Örnek 1,
+		//.. 
+		template<typename T>
+		class Base{
+			public:
+				void func()
+				{
+					(static_cast<T*>(this))->foo(); //(I)
+					
+					this->foo();
+				}
+				
+				void foo() { std::cout << "Base::foo()\n"; }
+		};
+
+		class Der : public Base<Der>{ // (II)
+			public:
+				void foo() { std::cout << "Der::foo()\n"; }
+		};
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				Der::foo()
+				Base::foo()
+			*/
+			
+			Der myDer; myDer.func();
+			
+			// 'Der' sınıfı, 'Base' sınıfının 'Der' açılımından türetilmiştir. Yani 'II' numaralı türetiliş.
+			// Buna güvenilerek 'I' numaralı kod parçacığı yazılmıştır.
+			
+			// Dolayısıyla 'Der' sınıfının içerisinde 'Base' sınıfının 'Der' açılımı bulunmaktadır.
+			
+			// Peki biz bu özelliği nerede kullanabiliriz? El-cevap : İkinci ve üçüncü örneği inceleyelim.
+			
+			return 0;
+		}
+		
+	* Örnek 2, Zaman zaman 'Run-time Polymorphism' mekanizmasının maliyetinden kurtulmak isteriz. İşte o tip
+	durumlarda bu mekanizma kullanılabilir. Böylelikle derleme zamanında hangi fonksiyonun çağrılacağı belirlenmiş
+	olmaktadır. Bu örnekte 'Run-time Polymorphism' kullanılmıştır.
+		//..
+		class Pet{
+			public:
+				void makeSound() { std::cout << get_sound() << "\n"; }
+				
+			private:
+				virtual std::string get_sound() const = 0;
+		};
+
+		class Bat : public Pet{
+			public:
+				virtual std::string get_sound() const override { return {"....."}; }
+		};
+
+		class Cat : public Pet{
+			public:
+				virtual std::string get_sound() const override { return { "miyav" }; }
+		};
+
+		void petGame(Pet& pet) { pet.makeSound(); }
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				miyav
+				.....
+			*/
+			
+			Cat myCat; petGame(myCat);
+			
+			Bat myBat; petGame(myBat);
+			
+			return 0;
+		}
+		
+	* Örnek 3, 'CRTP' ile yukarudaki 'Run-time Polymorphism' mekanizmasını 'Static Polymorphism' mekanizmasına
+	dönüştürüyoruz.
+		//..
+		template<typename T>
+		class Pet{
+			public:
+				void makeSound() { std::cout << thisObject().get_sound() << "\n"; }
+				
+			private:
+				const T& thisObject() { return *static_cast<const T*>(this); }
+				// i. Sanal bir fonksiyon bildirilmemiştir.
+				// ii. Bu sınıf şablonu 'T' türüne ilişkin 'std::string T::get_sound() const' imzalı 
+				// bir fonksiyon bulunacağına göre yazılmaktadır.
+		};
+
+		class Bat : public Pet<Bat>{ // Şablon argüman türüne dikkat ediniz! 
+			public:
+				std::string get_sound() const { return {"....."}; }
+				// 'Pet' sınıfının 'private' kısmındaki 'thisObject' isimli fonksiyon içerisindeki kod, 
+				// aslında yukarıdaki 'get_sound()' fonksiyonunun yazılmış olacağı düşünülerek yazıldı.
+		};
+
+		class Cat : public Pet<Cat>{ // Şablon argüman türüne dikkat ediniz! 
+			public:
+				std::string get_sound() const { return {"miyav"}; }
+				// 'Pet' sınıfının 'private' kısmındaki 'thisObject' isimli fonksiyon içerisindeki kod, 
+				// aslında yukarıdaki 'get_sound()' fonksiyonunun yazılmış olacağı düşünülerek yazıldı.
+		};
+
+		template<typename T>
+		void petGame(Pet<T>& pet) { pet.makeSound(); }
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				miyav
+				.....
+			*/
+			
+			Cat myCat; petGame(myCat);
+			
+			Bat myBat; petGame(myBat);
+			
+			return 0;
+		}
+		
+	* Örnek 4, 'CRTP' örüntüsünü de gördüğümüze göre en sonki derste yarım kalan; bir sınıfın üye fonksiyonu
+	içerisinde 'shared_ptr' ile hayatı kontrol edilen '*this' nesnesini gösteren 'shared_ptr' nin kopyasını çıkartmak
+	isterseniz, sınıfımızı 'CRTP' örüntüsü ile kalıtım yoluyla 'std::enable_shared_from_this' sınıfından elde
+	etmeliyiz.
+		//..
+		class Neco : public std::enable_shared_from_this<Neco>{ // 'CRTP' noktası
+			public:
+				Neco() { std::cout << "Neco::Neco() : " << this << "\n"; }
+				
+				void func()
+				{
+					std::cout << "Neco::func() işlevi : " << this << "\n";
+					
+					// Ben, 'func' işlevinin bir 'shared_ptr' ile kontrol edilen dinamik Neco nesnesi için
+					// çağrıldığına eminim. Aksi halde 'exception' gönderilecektir.
+					auto sptr{ shared_from_this() };
+					
+					// Artık 'func' işlevi hangi nesne için çağrılmış ise o nesnenin bir kopyası oluşturuldu.
+					std::cout << "sptr.use_count() : " << sptr.use_count() << "\n";
+					
+					std::cout << "this : " << this << "\n";
+					std::cout << "sptr : " << sptr << "\n";
+				}
+				
+				~Neco() { std::cout << "Neco::~Neco()\n"; }
+		};
+
+		int main()
+		{
+			/*
+				# OUTPUT #
+				Neco::Neco() : 0x562878916ec0
+				Neco::func() işlevi : 0x562878916ec0
+				sptr.use_count() : 2
+				this : 0x562878916ec0
+				sptr : 0x562878916ec0
+				Neco::~Neco()
+				Neco::Neco() : 0x5628789172f0
+				Neco::func() işlevi : 0x5628789172f0
+				hata yakalandi : bad_weak_ptr
+			*/
+			
+			{
+				auto sp{ std::make_shared<Neco>() };
+				sp->func();
+			}
+			
+			{
+				try{
+					auto srp{ new Neco };
+					
+					srp->func();
+				}
+				catch(const std::exception& ex)
+				{
+					std::cout << "hata yakalandi : " << ex.what() << "\n";
+				}
+			}
+			
+			return 0;
+		} 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,168 @@
+> 'friend' declarations: C++ dilinde bir sınıfın 'public interface' sini, sadece ilgili sınıfın 'public' bölümündekiler
+değil ama başlık dosyasındaki 'global namespace functions' lar da OLUŞTURUR. Fakat bu 'global namespace functions' sınıfın
+'private' kısmına erişemiyorlar. Ama onlar da sınfın bir malı, 'interface' e dahil. İşte bu 'global namespace functions'
+lara 'private' kısma erişme hakkı veriyoruz. 3 farklı yaklaşım vardır.
+    >> Global fonksiyonlara verilmesi,
+        * Örnek 1,
+            //..
+
+            class Nec{
+                private:
+                    void pfoo();
+                    int x;
+            };
+
+            Nec gn;
+
+            void gf(Nec p)
+            {
+                p.foo(); // 'private' kısma erişmeye çalıştığından SENTAKS HATASI.
+
+                Nec nx;
+                nx.x = 10; // 'private' kısma erişmeye çalıştığından SENTAKS HATASI.
+
+                gn.foo(); // 'private' kısma erişmeye çalıştığından SENTAKS HATASI.
+            }
+
+        * Örnek 2,
+            #include <iostream>
+
+            class Nec{
+                public:
+                    Nec(int y) : x(y) {}
+                    friend void gf(Nec p);
+                    
+                private:
+                    void foo()
+                    {
+                        std::cout << "void foo() was called. x : " << x << "\n";
+                    }
+                    
+                    int x;
+            };
+
+            Nec gn{120};
+
+            void gf(Nec p = gn)
+            {
+                std::cout << "void gf(Nec p) was called. p.x : " << p.x << "\n";
+            }
+
+            int main()
+            {
+                /* 
+                # OUTPUT #
+                void gf(Nec p) was called. p.x : 120
+                void gf(Nec p) was called. p.x : 240    
+                */
+                
+                gf();
+                Nec yn{240};
+                gf(yn);
+                
+                Nec other = 360;
+                other.gf(); // error: ‘class Nec’ has no member named ‘gf’
+            }
+
+            // 'friend' BİLDİRİMİNİ SINIFIN 'public' veya 'private' ALANINDA YAPMAMIZ BİR ANLAM FARKI OLUŞTURMAZ.
+
+    >> Sınıfın belirli bir üye fonksiyonlarına 'friend' yetkisi vermek,
+        * Örnek 1,
+            //..
+            class A{
+                friend void Myclass::foo(int);
+                // Bu bildirimin geçerli olması için, derleyicinin, Myclass sınıfının bildirimini görmesi gerekiyor.
+                // Artık Myclass sınıfının 'foo()' isimli fonksyionu, 'A' sınıfının 'private' kısmıne ERİŞEBİLİR.
+            }
+
+    >> Bir sınıfın başka bir sınıfa 'friend' yetkisi vermesi.
+        * Örnek 1,
+            //..
+            class Myclass; // forward-dec. is enough
+
+            class A{
+                friend class Myclass;
+                // 'Myclass' sınıfının tüm üye fonksiyonları artık 'A' sınıfının 'private' kısmına erişebilir.
+
+                int mx;
+            };
+        
+        * Örnek 2,
+            #include <iostream>
+            class Neco;
+
+            class Myclass{
+            public:
+                friend class Neco;
+            private:
+                void f1(){ std::cout << "mx : " << mx << "\n"; }
+                void f2(){ std::cout << "my : " << my << "\n"; } 
+                void f3(){ std::cout << "mz : " << mz << "\n"; }
+                int mx{1};
+                int my{2}; 
+                int mz{3};
+            };
+
+            class Neco{
+                public:
+                    void print()
+                    {
+                        myClass.f1();
+                        myClass.f2();
+                        myClass.f3();
+                    }
+                    
+                private:
+                    Myclass myClass;
+
+            };
+
+            int main()
+            {	
+                /*
+                    # OUTPUT #
+                    mx : 1
+                    my : 2
+                    mz : 3
+                */
+                
+                Neco myNec;
+                myNec.print();
+            }
+
+    >> Sınıf içerisinde 'friend' olarak bildirilen fonksiyonlar, ADL durumunda, isimleri bulunuyor. O ismi direkt
+    olarak kullandığımız zaman, sınıf içerisinde isim aranmadığından, fonksiyon bulunamıyor.
+        * Örnek 1,
+            //..
+            class Nec{
+                private:
+                    friend void pfoo(); // Senaryo I
+                    friend void pfoo(Nec); // Senaryo II
+                    void pfoo();
+            };
+
+            int main()
+            {
+                // Senaryo I
+                // HER NE KADAR BU FONKSİYON 'global functions' DA OLSA İSİM SINIF İÇERİSİNDE ARANMADIĞINDAN DOLAYI
+                // BULUNAMIYOR VE SENTAKS HATASI.
+                pfoo();
+
+                // Senaryo II
+                Nec ax;
+                pfoo(ax); // ADL KURALLARI GEREĞİ BU ÇAĞRI LEGALDİR.
+            }
+
+	>> Bir sınıfın 'Special Member Functions' larına da bu özellik verilebilir. Tıpkı bir sınıfın bir fonksiyonuna bu
+	özelliğin verilmesi gibi.
+	
+	>> 'Partly Friend' / 'Kısmi Arkadaşlık' özelliğini doğrudan vermek mümkün değildir. Yani bir sınıfa/fonksiyona
+	'friend' özelliği verildiğinde, normal şartlar altında, iş bu sınıf/fonksiyon sizin bütün 'data members' lara ve
+	'member functions' lara erişebilir. Kısmi arkadaşlığı sağlayan 'idiomatic' yaklaşımlara ise 'Avukat-Müvekkilik Idiom'
+	denir.
+	
+	>> ARKADAŞIMIN ARKADAŞI BENİM ARKADAŞIM DEĞİLDİR.
+	
+	>> BİRİNE ARKADAŞLIK TEKLİF ETTİM DİYE O DA BENİM ARKADAŞIM OLACAK DEĞİL.
+	
+	>> BABAMIN/DEDEMİN ARKADAŞLARI BENİM ARKADAŞIM DEĞİL.

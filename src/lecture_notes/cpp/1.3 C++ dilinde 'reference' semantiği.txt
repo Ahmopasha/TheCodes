@@ -1,0 +1,358 @@
+> C++ dilinde 'reference' semantiği: "Legacy C++ döneminde kullanılan referanslar ve Modern C++ ın getirdiği araçları
+kullanmak için oluşturulan referanslar", şeklinde kabaca iki gruba ayırabilir ve bunları en haliyle 'L-Value Reference' ve
+'R-Value Reference' şeklinde isimlendirebiliriz. Bunlardan,
+	>> Legacy C++ döneminden beri kullanılagelen referanslara kabaca 'L-Value Reference' denir.
+		>>> 'L Value References', bir ismin yerine geçen referans isimlerdir. Hayata gelirken ilk değer vermek zorunludur. 
+			>>>> 'non-const L Value References', değişkenlerimize bağlarken tür uyuşmazlığı olmamalı.
+
+			* Örnek 1,
+				// Some codes here...
+				
+				int main()
+				{
+					int x = 100;
+					int& rx = x;
+					// 'rx' is a reference to 'x'. Yani, 'rx' demek 'x' demek. 'rx' ayrı bir nesne DEĞİLDİR.
+					// Ama hafızada yer kaplayıp kaplamaması ayrı bir konu. Arka planda dönenler derleyiciye bağlı.
+
+					rx = 1000; // x is 1000.
+
+					int y = 31;
+					rx = y; // x is 31 now.
+					
+					// int& rTemp; // Sentaks hatası. Çünkü ilk değer verilmedi.
+					
+					// double& dr = x;
+					// Sentaks hatası. Çünkü tür uyuşmazlığı var. İlgili referansın kendisi 'const' olsaydı eğer geçerli
+					// olacaktı.
+				}
+			
+			* Örnek 2,
+				// Some codes here...
+				
+				int main()
+				{
+					int x{10};
+					int* xPtr{&x};
+					int& xRef{*xPtr}; // 'xRef' is a reference to 'x' now.
+					
+					++xRef; // x is now '11'.
+				}		
+
+			* Örnek 3,
+				// Some codes here...
+				
+				int main()
+				{
+					int a[]{10, 20, 30, 40};
+					
+					int* p{a};
+					// 'p' göstericisi, array-decay mekanizmasından dolayı, 'a' dizisinin ilk elemanını göstermekte.
+					
+					int* &r{p};
+					// 'r' is a reference to 'int*'. Yani 'r' demek 'p' demektir.
+					
+					++r; // 'r'/'p' artık ilgili 'a' dizisinin ikinci elemanını gösteriyor.
+					++*r; // 'r'/'p' tarafından refere edilen/gösterilen o elemanın değeri bir arttırılıyor.
+				}		
+
+			* Örnek 4,
+				// Some codes here...
+				
+				int main()
+				{
+					int a[]{10, 20, 30, 40, 50}; // 'a' türü => int[5]
+					
+					int (&ra)[5] = a;
+					// 'ra' artık 'a' dizisini refere etmektedir. Yani 'a' demek 'ra' demektir.
+					// 'ra' türü => int (&)[5].
+					// 'a' türü => int[5]
+					
+					// auto& ra = a;
+					// Yukarıdaki bildirim şekli ile aynı anlamdadır. 'Type-deduction' mekanizmasını kullanır.
+					
+					// auto ra = a;
+					// Bu şekilde kullanılırsa 'array-decay' mekanizması devreye girecektir. Yani 'a = &a[0]' şeklinde
+					// olacaktır ki bu durumda 'ra' nın türü ise 'int*' olacaktır.
+					
+					std::cout << ra[3] << "\n"; // Ekrana '40' değerini yazdıracaktır.
+					
+					int* ptr = ra;
+					// 'array-decay' mekanizmasından dolayı, 'ptr' göstericisi, ilgili dizinin ilk elemanını göstermektedir.
+				}	
+
+	>> Modern C++ ile dile eklenen 'Move Semantics' ve 'Perfect Forwarding' mekanizmanlarında kullanılnan referanslara ise
+	kabaca 'R-Value Reference' denir.
+
+	>> Fonksiyonlara da referanslar bağlanabilir. 
+		* Örnek 1,
+			// Some code here...
+			
+			int foo(int, int);
+			int main()
+			{
+				int (*fPtr)(int, int) = foo;
+				// 'function-pointer conversion' mekanizmasından dolayı 'fPtr' isimli gösterici yukarıdaki
+				// 'int foo(int, int)' imzalı fonksiyonu göstermektedir.
+				
+				// ...				  = &foo;
+				// 'address-of' operatörü kullanıldığı için 'function-pointer conversion' mekanizması devreye girmiyor.
+				// Fakat yine aynı kapıya çıkıyoruz.
+				
+				// Yukarıdaki her iki senaryoda da 'fPtr' nin gösterdiği değer 'foo()' fonksiyonunun adresidir.
+				
+				int (&rPtr)(int, int) = foo;
+				// Referans semantiğini kullanırsak da bu şekilde bildirim yapacağız. Artık 'rPtr' demek 'foo()' demektir.
+			}
+	
+	>> Dizilere de referanslar bağlanabilir.
+		* Örnek 2,
+			// Some code here...
+			
+			int main()
+			{
+				int a[10] = {0};
+				// 10 elemanlı, elemanları 'int' türden olan bir dizi.
+				
+				int* p = a;
+				// Burada 'p' isimli gösterici, 'a' dizisinin ilk elemanını göstermekte (pointer-to-int). Bu 'p'
+				// göstericisinin değerini bir arttırdığımız zaman, ilgili dizinin ikinci elemanını gösterecektir.
+				
+				int(*pArray)[10] = &a;
+				// Burada 'pArray' isimli gösterici, bir dizi göstericisi. 10 elemanlı bir diziyi işaret eder. Bu 'pArray'
+				// isimli göstericisinin değerini bir arttırdığımız zaman, bir sonraki 10 elemanlı diziyi gösterir. Eğer
+				// köşeli parantez içerisine '10' rakamı yerine '11' rakamı yazsaydık, sentaks hatası oluşmuş olacaktı.
+				
+				int (&rArray)[10] = a;
+				// Burada 'rArray' demek aslında 'a' dizisi demek. 'a' DİZİSİNİN İLK ELEMANI DEMEK DEĞİLDİR. YANİ DİZİNİN
+				// GENELİNİ REFERANSTIR. 'array-decay' MEKANİZMASINDAN SÖZ EDİLEMEZ. Eğer köşeli parantez içerisine '10'
+				// yerine '5' yazsaydık sentaks hatası alacaktık.
+				
+				int& r = a[0];
+				// Burada ise 'r' demek 'a' dizisinin ilk elemanı demek.
+
+				int& rTwo = *a;
+				// Burada da 'rTwo' demek 'a' dizisinin ilk elemanı demek. Çünkü 'array-decay' mekanizması devreye girmiştir.
+			}	
+
+	>> USE 'references' WHEREVER YOU CAN; USE 'pointers' WHEREVER YOU MUST.
+	
+	>> Fonksiyonların geri dönüş değeri olarak 'reference' kullanımı:
+		* Örnek 1,
+			// Some code here...
+			
+			int g = 100;
+			
+			int& foo()
+			{
+				// some code here...
+				
+				return g;
+			}
+			
+			int func()
+			{
+				return 31;
+			}
+			
+			int main()
+			{
+				// foo();
+				// Artık bu ifadenin değer kategorisi 'L-Value Expression' kategorisindedir. Çünkü bize 'g' nesnesini
+				// referans yoluyla döndürmektedir.
+				// Döndürülen nesnenin adresini alabiliriz de. // &foo();
+				// Doğrudan buna atama da yapabiliriz. // foo() = 32;
+				// 'L-Value Referance' a da bağlayabiliriz. // int& r = foo(); // Artık 'r' demek 'g' demektir.
+				
+				// NOT: 'func()' fonksiyonun geri döndürdüğü değerin kategorisi ise hala 'R-Value Expression'
+				// kategorisindedir.
+			}
+			
+		* Örnek 2,
+			// Some code here...
+			
+			int* foo()
+			{
+				int x = 10;
+				
+				++x;
+				
+				return &x;
+			}
+			
+			int main()
+			{
+				int* y = foo();
+				// 'foo()' FONKSİYONU İÇERİSİNDE 'automatic ömürlü' BİR NESNE 'Call-By-Reference' YOLUYLA DÖNDÜRÜLDÜĞÜ
+				// İÇİN 'Tanımsız Davranış' A NEDEN OLUR. 
+			}
+			
+		>>> Eğer bir fonksiyonun geri dönüş değerinin kategorisi 'L-Value Expression' ise;
+			>>>> Bu fonksiyon statik ömürlü bir nesne döndürmektedir. Bu durumda bu nesne ya global isim alanındaki bir nesne
+			yada fonksiyon bloğunda 'static' anahtar sözcüğü ile nitelenmiş bir nesnedir.
+			
+			>>>> Bu fonksiyon dinamik ömürlü bir nesne döndürmektedir ('malloc()' vs.).
+				* Örnek 1,
+					// Some code here...
+					
+					struct Data{
+						int x, y, z;
+					};
+					
+					// Pointer Semantics kullanıldı.
+					Data* createData(int a, int b, int c)
+					{
+						Data* p = (Data*)malloc(sizeof(Data));
+						
+						if(!p)
+						{
+							std::cerr << "Not Enough Memory\n"; exit(EXIT_FAILURE); 
+						}
+						
+						p->x = a;
+						p->y = b;
+						p->z = c;
+						
+						return p;
+					}
+					
+					// Reference Semantics kullanıldı.
+					Data& createDataR(int a, int b, int c)
+					{
+						Data* p = (Data*)malloc(sizeof(Data));
+						
+						if(!p)
+						{
+							std::cerr << "Not Enough Memory\n"; exit(EXIT_FAILURE); 
+						}
+						
+						p->x = a;
+						p->y = b;
+						p->z = c;
+						
+						return *p;
+					}
+					
+					int main()
+					{
+						Data* ptr = createData(10, 20, 30); // Pointer Semantics kullanıldı.
+						Data& ptrR = createDataR(10, 20, 30); // Reference Semantics kullanıldı. 
+					}
+			
+		>>> Bu fonksiyon, çağıran koddan aldığı nesneyi, çağıran koda tekrar geri döndürmektedir.
+	
+	>> C++ dilinde 'const T*' türünden 'T*' türüne ve 'const T&' türünden 'T&' türüne otomatik dönüşüm olmadığından, böyle
+	bir dönüşüm girişiminde bulunmak sentaks hatasıdır. 
+		>>> 'const T' türünden bir nesneyi, 'T&' türünden bir referansa bağlayamayız. Benzer şekilde 'const T' türden bir
+		nesnenin adresini de 'T*' türden bir göstericiye, atayamayız/ilk değer olarak veremeyiz. Her iki durum da sentaks
+		hatasıdır. 
+			* Örnek 1,
+				// Some code here...
+				
+				int main()
+				{
+					const int x = 10;
+					int* ptr = &x; // Bu kod parçası sentaks hatasına neden olur.
+					
+					int& ref = x; // Bu kod parçası da sentaks hatasına neden olur.
+				}
+		
+		>>> OKUMA AMAÇLI KULLANILAN REFERANSLAR VE GÖSTERİCİLER 'const' OLMALI. YAZMA AMAÇLI KULLANILAN REFERANSLAR VE
+		GÖSTERİCİLER 'non-const' OLMALI.
+
+		>>> EĞER DİLİN ARAÇLARINI KULLANARAK 'const T' TÜRÜNDEN BİR NESNEYİ 'T' TÜRÜNDEN BİR NESNEYE CAST EDEREK(C-style),
+		DEĞİŞTİRME GİRİŞİMİ DE 'Tanımsız Davranış' A NEDEN OLUR.
+			* Örnek 1,
+				// Some code here...
+				
+				int main()
+				{
+					const int x = 10;
+					int* ptr = nullptr;
+					
+					// Some code here...
+					
+					ptr = (int*)&x;
+					*ptr = 12; // 'Tanımsız Davranış'.
+				}	
+
+	>> C++ dilinde 'R-Value Expression' kategorisinde olan nesneleri/değişkenleri, 'const T&' türünden 'L-Valur Referance'
+	referanslara bağlayabiliriz. Fakat bu nesneleri, 'T&' türünden 'L-Value Referance' referanslara bağlamayamız.
+		* Örnek 1,
+			// Some code here...
+			
+			int main()
+			{
+				int& r = 100;
+				// Sentaks hatasıdır. Çünkü 'R-Value Expression' olan bir ifade, 'non-const L-Value Referance' türünden bir
+				// referansa bağlanamaz.
+				
+				const int& cr = 1000;
+				// Legaldir. Çünkü 'R-Value Expression' olan bir ifade, 'const L-Value Referance' türünden bir referansa
+				// bağlanabilir. Çünkü, arka planda derleyici geçici bir nesne oluşturur ve o nesneyi de ilgili
+				// 'R-Value Expression' nın değeri ile hayata getirir.
+				// const int gn = 1000;
+				// Sonrasında da bizim 'cr' isimli referansımızı da oluşturulan bu geçici nesneye bağlar.
+				// const int& cr = gn;
+				// Bahsi geçen referansın isminin skopunun sona ermesi ile geçici nesnenin de hayatı sonra erer.
+			}	
+			
+	>> C++ dilinde referansın türü ile bağlanacak nesnenin türü aynı olmak zorundadır. Fakat 'const' bir referanslar için
+	geçerli değildir. Farklı türden nesneleri, 'const' referanslara bağlayabiliriz.
+		* Örnek 1,
+			// Some code here...
+			
+			int main()
+			{
+				int ival = 100;
+				double& dRef = ival;
+				// Sentaks hatasıdır. Çünkü 'int' türünden bir nesne, 'double' türünden bir referansa bağlanamaz.
+				
+				const double& cDoubleRef = ival;
+				// Legaldir. Farklı türden nesneler, farklı türden 'const' referanslara bağlanabilir. Yukarıdaki
+				// 'geçici nesne' oluşturma mekanizması burada da işler.
+				
+				// const double gn = ival;
+				// Burada 'int' türünden 'double' türüne otomatik dönüşüm yapılmaktadır. Veri kaybı meydana gelebilir.
+				
+				// const double& cDoubleRef = gn; 
+			}		
+			
+	>> C++ dilinde 'reference' semantiği ile 'pointer' semantiği arasındaki farklılıklar: 
+		>>> 'pointer' bir değişkene ilk değer vermek zorunlu değil fakat 'reference' a ilk değer vermek zorunludur.
+		
+		>>> Bir 'const-pointer' to 'int' şeklinde olan, yani kendisinin 'const' olduğu 'pointer' lar aynı nesneyi göstermek
+		zorundadırlar. Benzer şekilde de 'reference' lar da aynı nesneye bağlı olmak zorundalar. 'pointer' to 'int' şeklinde
+		olan, yani kendisinin 'const' olmadığı 'pointer' lar farklı nesneleri gösterebilirler.
+		
+		>>> Kendisinin 'const' olmadığı 'pointer' lara 'nullptr' değeri ile ilk değer verebiliriz veya 'nullptr' değerini
+		atayabiliriz. Fakat aynı durum 'reference' lar için geçerli değildir.
+			>>> C dilinde 'pointer' lar dilin kuralından bağımsız olarak iki durumdadırlar; 'valid pointer' veya
+			'invalid pointer'.
+				>>>> 'valid pointer' durumda olanlar ya bir nesnenin adresini tutarlar ya bir dizinin bittiği yerin
+				adresini(dizinin son elemanından sonraki yer) tutarlar ya da 'nullptr' tutarlar.
+					>>>>> NOT: DİZİNİN BİTTİĞİ YERİN ADRESİNİ TUTAN 'pointer' LARI '*' OPERATÖRÜ İLE DEREFERENCE YAPMAK
+					'Tanımsız Davranış' A NEDEN OLUR.
+				
+				>>>> 'invalid pointer' durumda olanlar ya 'Garbage Value' tutan 'pointer' lar ya da 'Dangling Pointer'
+				(gösterdiği değişkenin ömrü bitti ama kendisinin ömrü daha bitmedi) olanlardır. 
+				
+		>>> 'pointer' gösteren 'pointer' legal iken, yani bir göstericinin adresini tutan bir başka gösterici,
+		'reference' to 'reference' diye bir kavram yoktur.
+		
+		>>> Elemanları 'pointer' olan bir 'array' mevcut, fakat elemanları 'reference' olan bir dizi mevcut değildir.
+		
+	>> C++ dilindeki 'R-Value Referance' lar 'move semantics' ve 'perfect forwarding' mekanizmalarında kullanılırlar. İki
+	adet '&' işareti deklaratör olarak kullanılır. Nasılki 'L-Value Referance' lara 'L-Value Expression' ile ilk değer vermek
+	mecburi, ki referansın 'const' olmadığı varsayılıyor, 'R-Value Referance' lara da 'R-Value Referance' ile ilk değer
+	vermek mecburidir. 
+		* Örnek 1,
+			// Some code here...
+			
+			int main()
+			{
+				int x{};
+				
+				int& r = 10; // Sentaks hatasıdır. 'non-const L-Value Referance' ları 'R-Value Expression' lara bağlayamayız.
+				int&& rr = x; // Sentaks hatasıdır. 'R-Value Referance' ları 'L-Value Expression' lara bağlayamayız.
+			}		

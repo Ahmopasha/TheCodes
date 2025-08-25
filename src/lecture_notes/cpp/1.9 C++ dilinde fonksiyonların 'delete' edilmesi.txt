@@ -1,0 +1,94 @@
+> Fonksiyonların 'delete' edilmesi: 
+	>> Bütün fonksiyonlar 'delete' edilebilir. Global olması, 'static' ve 'non-static' olması durumu değiştirmez.
+		* Örnek 1,
+			int foo() = delete; // Artık bu fonksiyona yapılan çağrı sentaks hatası.
+			
+	>> 'Function Overload Resolution' A katılırlar. 
+		* Örnek 1,
+			int foo() = delete; // Artık bu fonksiyona yapılan çağrı sentaks hatası.
+			int foo(char);
+			int foo(int);
+			int foo(double);
+			
+			// Toplam dört adet fonksiyon yüklemesi vardır. 
+			
+			int main()
+			{
+				foo(); // SENTAKS HATASININ NEDENİ İLGİLİ FONKSİYONUN 'delete' EDİLMİŞ OLMASI. 
+			}
+			
+	>> DERLEYİCİ SÖZ KONUSU ÜYE FONKSİYONUN KODUNU YAZARKEN BİR SENTAKS HATASI OLUŞURSA, YAZMAKTA OLDUĞU ÖZEL ÜYE
+	FONKSİYONU 'delete' EDER.
+		* Örnek 1,
+			class Myclass{
+				public:
+					const int x;
+					int& r;
+			};
+			
+			// Yukarıdaki sınıfın 'Default Ctor' u DERLEYİCİ TARAFINDAN YAZILMIŞTIR, 'implicitly-declared' STATÜSÜNDEDİR.
+			// Dolayısıyla primitive türleri de 'garbage-value' ile hayata getirir.
+			// Fakat 'const' / 'L-value Reference' türden değişkenlere ilk değer vermek zorundayız. Bundan dolayı
+			// 'Default Ctor' 'delete' edildi.
+			
+			int main()
+			{
+				Myclass mx; // 'delete' edilmiş bir üye fonksiyona çağrı SENTAKS hatası oluşturacaktır.
+			}
+			
+		* Örnek 2,
+			class Member{
+				public:
+					Member(int); // Parametreli Ctor olduğu için 'Default Ctor' YOKTUR.
+			};
+		
+			class Neco{
+				private:
+					Member mx;
+					// Bu sınıfın 'Default Ctor' U DERLEYİCİ TARAFINDAN YAZILDI. Sınıf türleri için de 'Default Ctor'
+					// çağrıldı. Fakat Member sınıfında o türden üye fonksiyon olmadığından, bu sınıfın 'Default Ctor' u
+					// 'delete' EDİLDİ.
+			};
+			
+			int main()
+			{
+				Neco nec; // Nec türü için 'Default Ctor' çağrılacak. Fakat 'delete' edildiğinden, SENTAKS HATASI.
+			}
+			
+		* Örnek 3,
+			class Member{
+				private:
+					Member(); // 'Default Ctor' is a 'private'.
+			};
+		
+			class Neco{
+				private:
+					Member mx;
+					// Bu sınıfın 'Default Ctor' U DERLEYİCİ TARAFINDAN YAZILDI. Sınıf türleri için de'Default Ctor'
+					// çağrıldı. Fakat Member sınıfının 'Default Ctor' u 'private' olduğundan erişemeyecek ve bu sınıfın
+					// 'Default Ctor' u 'delete' edilecek.
+			};
+			
+			int main()
+			{
+				Neco nec; // Nec türü için 'Default Ctor' çağrılacak. Fakat 'delete' edildiğinden, SENTAKS HATASI.
+			}
+
+		* Örnek 4,
+			class Member{
+				public:
+					Member() = delete; // 'Default Ctor' programcı tarafından 'delete' edilmiş. 'user-declared, but deleted'.
+			};
+		
+			class Neco{
+				private:
+					Member mx;
+					// Bu sınıfın 'Default Ctor' U DERLEYİCİ TARAFINDAN YAZILDI. Sınıf türleri için de 'Default Ctor'
+					// çağrıldı. Fakat Member sınıfının 'Default Ctor' u 'delete' edildiğinden dolayı, bu sınıfınki de
+					// 'delete' edilecek.
+			};
+			
+			int main()
+			{
+				Neco nec; // Nec türü için 'Default Ctor' çağrılacak. Fakat 'delete' edildiğinden, SENTAKS HATASI.
+			}

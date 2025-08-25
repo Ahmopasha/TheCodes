@@ -1,0 +1,866 @@
+> 'random' kütüphanesi: Sayıyı üreten kısım başka, o sayıları dağıtan kısım başkadır. Sayıyı üreten kısmın kodları bütün
+derleyicilerde aynı olmak zorunludur. Fakat dağıtan kısım için böyle bir zorunluk söz konusu değildir.
+	* Örnek 1,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				3.499.211.612
+				581.869.302
+				3.890.346.734
+				3.586.334.585
+				545.404.204
+				4.161.255.391
+				3.922.919.429
+				949.333.985
+				2.715.962.298
+				1.323.567.403
+			*/
+
+			std::mt19937 eng;
+			
+			for(int i = 0; i < 10; ++i)
+				std::cout << de(eng()) << std::endl; // '.operator()()' fonksiyonuna çağrı yapılmıştır.
+			return 0;
+		}
+		
+	* Örnek 2,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				11010000100100011011101101011100001000101010111010011110111101101110011111100001111110101110111011010101110
+				00011000111110111100100100000100000100011010100101100111110000000011110110111110111111110100111010011000000
+				0000000101001110001001010110101111111000011010000111100010010010111011101001001110111001000000100100101011
+			*/
+
+			std::mt19937 eng;
+			
+			for(int i = 0; i < 10; ++i)
+				std::cout << std::bitset<32>(eng());
+				
+			// Aslında dağıtım için kullanılacak sınıf, yukarıdaki birler ve sıfırları kullanarak bir
+			// dağılım gerçekleştirmektedir.
+			
+			return 0;
+		}
+		
+	* Örnek 3,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				0 / 4294967295
+			*/
+
+			std::mt19937 eng;
+			
+			std::cout << eng.min() << " / " << eng.max() << std::endl;
+			
+			return 0;
+		}
+		
+	* Örnek 4,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				3.241.986.011
+				788.524.768
+				550.517.220
+				195.242.712
+				2.503.779.386
+				1.202.091.195
+				330.249.489
+				884.407.208
+				2.578.693.249
+				3.611.958.086
+			*/
+
+			std::mt19937 eng( std::chrono::steady_clock::now().time_since_epoch().count() );
+			// Tohum değeri sistem saatine bağlandığı için her defasında başka farklı sayılar
+			// üretilecektir.
+			
+			for(int i = 0; i < 10; ++i)
+				std::cout << de(eng()) << std::endl;
+			
+			return 0;
+		}
+		
+	* Örnek 5,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				1.903.269.765
+				1.922.826.769
+				1.789.128.003
+				324.336.966
+				3.913.977.513
+				1.935.086.952
+				539.655.785
+				4.241.226.083
+				1.583.303.667
+				3.847.192.695
+			*/
+
+			std::mt19937 eng( std::random_device{}() );
+			// 'random_device' her defasında farklı bir sayı üreteceğinden, tohum değerini ona bağlarsak
+			// her defasında farklı sayı ürettirebiliriz.
+			
+			for(int i = 0; i < 10; ++i)
+				std::cout << de(eng()) << std::endl;
+			
+			return 0;
+		}
+		
+	* Örnek 6,
+		//..
+		int main() 
+		{
+			std::mt19937 eng;
+			
+			eng.discard(9999); // İlk '9999' adet rakam atlandı.
+			
+			// Bütün derleyicilerde bu rakam aynı olmak zorunda. 
+			std::cout << eng() << std::endl; // OUTPUT => 4123659995
+		   
+			return 0;
+		}
+		
+	* Örnek 7,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				true
+				3.499.211.612
+				581.869.302
+				3.890.346.734
+				3.586.334.585
+				545.404.204
+				4.161.255.391
+				3.922.919.429
+				949.333.985
+				2.715.962.298
+				1.323.567.403
+				false
+				3.499.211.612
+				581.869.302
+				3.890.346.734
+				3.586.334.585
+				545.404.204
+				4.161.255.391
+				3.922.919.429
+				949.333.985
+				2.715.962.298
+				1.323.567.403
+				true
+			*/
+
+			std::mt19937 engOne, engTwo;
+			
+			// Her iki sayı üreticisi eğer aynı miktarda sayı üretmişse ve tohum değerleri de birbirine eşitse
+			// durumları da birbirine eşittir.
+			std::cout << std::boolalpha << (engOne == engTwo) << "\n";
+			
+			for(int i = 0; i < 10; ++i)
+				std::cout << de(engOne()) << std::endl;
+				
+			std::cout << std::boolalpha << (engOne == engTwo) << "\n";
+			
+			for(int i = 0; i < 10; ++i)
+				std::cout << de(engTwo()) << std::endl;
+				
+			std::cout << std::boolalpha << (engOne == engTwo) << "\n";
+			
+			return 0;
+		}
+		
+	* Örnek 8,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				725.333.953 251.387.296 3.200.466.189 
+				725.333.953 251.387.296 3.200.466.189 
+			*/
+
+			std::mt19937 engOne;
+			
+			engOne.discard(10000);
+			
+			std::stringstream ss;
+			
+			ss << engOne; // 'state' bilgisi belleğe yazıldı.
+			for(int i = 0; i < 3; ++i)
+				std::cout << de(engOne()) << " ";
+				
+			std::cout << "\n";
+			
+			ss >> engOne; // 'state' bilgisi bellekten okundu.
+			for(int i = 0; i < 3; ++i)
+				std::cout << de(engOne()) << " ";
+				
+			std::cout << "\n";
+			
+			// 'state' bilgisi aynı olduğundan aynı değerleri üretti.
+			
+			return 0;
+		}
+
+Önceki derste bahsedilen 'engine' ler ile üretilen bitleri, direkt olarak kullanmıyoruz. Belirli dağıtım kriterlerine göre
+belli aralıklara dağıtıyoruz. ŞU UNUTULMAMALIDIR Kİ PROGRAMI HER ÇALIŞTIRDIĞIMIZ ZAMAN FARKLI SAYI ZİNCİRLERİNİN ÜRETİLMESİ
+BİR ZORUNLULUK DEĞİLDİR. AYNI SAYI ZİNCİRİ TEST KODU OLARAK KULLANILMASI GEREKİYORSA, TOHUM DEĞERİNİ DEĞİŞTİRMEMELİYİZ. YİNE
+ŞUNU DA UNUTMAMALIYIZ Kİ RASTGELE SAYI ÜRETEN MOTORLARIN KODLARI BÜTÜN DERLEYİCİLERDE AYNI OLDUĞUNDAN, BÜTÜN DERLEYİCİLER
+AYNI TOHUM DEĞERİ İLE AYNI SAYI ZİNCİRİNİ OLUŞTURMASI GARANTİ ALTINDADIR. Şimdi pekiştirici örneklerle devam edelim:
+	* Örnek 1,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				3867483570
+				20356776
+				1379478486
+				1464935884
+				1455388117
+			*/
+			
+			std::mt19937 eng{ 76324u };
+			// Eğer 4 'byte' ise o kadar büyüklük kadar farklı tohum değerine sahip olabilir,
+			// sahip olduğumuz farklı tohum değerleri ile de farlı sayı zincirleri üretebiliriz.
+										
+			for (size_t i = 0; i < 5; ++i)
+				std::cout << eng() << std::endl; // Üretilen rastgele sayıları bizler 'bit' kaynağı olarak kullanacağız.
+			return 0;
+		}
+		
+	* Örnek 2,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				1406028867
+				679029235
+				2532478700
+				1169003239
+				990393276
+			*/
+			using namespace std::chrono;
+			
+			// Daraltıcı dönüşüm göz ardı edilmiştir.
+			std::mt19937 eng{ steady_clock::now().time_since_epoch().count() };
+			//                                ^            ^            ^
+			//                                |            |            |
+			//                                |            |        Bu 'duration' bilgisini tohum değeri olarak kullandık
+			//                                |    Bu 'time-point' i kullanarak orijinden geçen 'duration' elde edildi.
+			//                   Bir 'time-point elde ettik' 
+			
+			
+			// Artık programı her çalıştırdığımız zaman farklı bir zincir elde edeceğiz.
+			for (size_t i = 0; i < 5; ++i)
+				std::cout << eng() << std::endl;
+			
+			return 0;
+		}
+		
+	* Örnek 3,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				2398323425
+				1661854891
+				2158870406
+				3119861730
+				18490202
+			*/
+			using namespace std::chrono;
+			
+
+			std::mt19937 eng{ std::random_device{}() };
+			// 'random_device' gerçek rastgele sayı üretmek için kullanılan bir sınıf türü.
+			// Bu sınıfı kullanarak rastgele oluşturulan sayıları tohum değeri olarak kullanırsak,
+			// bizim 'eng' isimli motorumuz da rastgele sayıları üretecektir her çalıştırdığımızda. 
+			
+			
+			// Artık programı her çalıştırdığımız zaman farklı bir zincir elde edeceğiz.
+			for (size_t i = 0; i < 5; ++i)
+				std::cout << eng() << std::endl;
+			
+			return 0;
+		}
+		
+	* Örnek 4,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				4123659995
+			*/
+			using namespace std::chrono;
+			
+
+			std::mt19937 eng;
+			
+			// İlk '9999' adet sayıyı üretmişsin gibi 'state' bilgini güncelle fakat gerçekte hiç üretme.
+			eng.discard(9999);
+			
+			std::cout << eng() << std::endl; // Üretilecek 10000. sayı bütün derleyicilerde aynıdır.
+			return 0;
+		}
+		
+	* Örnek 5.1,
+		//..
+		static const size_t SIZE = 10'000'000;
+		void fillVector(size_t size)
+		{
+			std::mt19937 eng;
+			std::vector<int> ivec;
+			std::generate_n(std::back_inserter(ivec), SIZE, eng);
+		}
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				Duration : 0.696304
+			*/
+			using namespace std::chrono;
+			auto tp_start = steady_clock::now();
+			
+			fillVector(SIZE);
+			
+			auto tp_end = steady_clock::now();
+			
+			std::cout << "Duration : " << duration<double>(tp_end - tp_start).count() << std::endl;
+			return 0;
+		}
+		
+	* Örnek 5.2,
+		//..
+		static const size_t SIZE = 10'000'000;
+		void fillVector(size_t size)
+		{
+			std::mt19937 eng;
+			std::vector<int> ivec(size);
+			std::generate_n(ivec.begin(), size, eng);
+		}
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				Duration : 0.221361
+			*/
+			using namespace std::chrono;
+			auto tp_start = steady_clock::now();
+			
+			fillVector(SIZE);
+			
+			auto tp_end = steady_clock::now();
+			
+			std::cout << "Duration : " << duration<double>(tp_end - tp_start).count() << std::endl;
+			return 0;
+		}
+		
+	* Örnek 5.3,
+		//..
+		static const size_t SIZE = 10'000'000;
+		void fillVector(size_t size)
+		{
+			std::mt19937 eng;
+			std::vector<int> ivec;
+			ivec.reserve(size);
+			std::generate_n(std::back_inserter(ivec), size, eng);
+		}
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				Duration : 0.65144
+			*/
+			using namespace std::chrono;
+			auto tp_start = steady_clock::now();
+			
+			fillVector(SIZE);
+			
+			auto tp_end = steady_clock::now();
+			
+			std::cout << "Duration : " << duration<double>(tp_end - tp_start).count() << std::endl;
+			return 0;
+		}
+		
+	* Örnek 5.4,
+		//..
+		static const size_t SIZE = 10'000'000;
+		void fillVector(size_t size)
+		{
+			std::mt19937 eng;
+			std::vector<int> ivec(size);
+			std::generate_n(ivec.begin(), size, std::ref(eng));
+		}
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				Duration : 0.429909
+			*/
+			using namespace std::chrono;
+			auto tp_start = steady_clock::now();
+			
+			fillVector(SIZE);
+			
+			auto tp_end = steady_clock::now();
+			
+			std::cout << "Duration : " << duration<double>(tp_end - tp_start).count() << std::endl;
+			return 0;
+		}
+		
+	* Örnek 6,
+		//..
+		template<typename T>
+		void showID(T x)
+		{
+			std::cout << typeid(T).name() << "\n";    
+		}
+
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				St23mersenne_twister_engineImLm32ELm624ELm397ELm31ELm2567483615ELm11ELm4294967295ELm7ELm2636928640ELm15E
+				Lm4022730752ELm18ELm1812433253EE
+				----------------------------------
+				St17reference_wrapperISt23mersenne_twister_engineImLm32ELm624ELm397ELm31ELm2567483615ELm11ELm4294967295E
+				Lm7ELm2636928640ELm15ELm4022730752ELm18ELm1812433253EEE
+			*/
+			using namespace std::chrono;
+			
+			std::mt19937 eng;
+			showID(eng);
+			std::cout << "----------------------------------\n";
+			showID(ref(eng));
+			
+			return 0;
+		}
+		
+	* Örnek 7,
+		//..
+		std::mt19937& myengine(/*Parametreler duruma göre değiştirilebilir.*/)
+		{
+			static std::mt19937 eng{ std::random_device{}() };
+			return eng;
+		}
+		int main() 
+		{
+			/*
+				# OUTPUT #
+			*/
+			using namespace std::chrono;
+			
+			std::cout << myengine( )( ) << std::endl;
+			//                    ^  ^ 
+			//                    |  |
+			//                    |  Fonksiyonun referans döndürdüğü 'mt19937' nesnesinin '.operator()()'
+			// 					  |  fonksiyonuna yapılan çağrı. 
+			//                    Fonksiyon çağrı parantezi
+			return 0;
+		}
+
+Diğer yandan Üretilen sayıların dağılımında kullanılan dağılım sınıfları: Rastgele sayı üreten sınıfların derleyiciler
+nezdinde aynı sayıları üretme garantisi vardır fakat dağılımda kullanılan sınıflar için böyle bir garanti söz konusu
+değildir. Bu dağıtım sınıflarından en çok kullanılanları
+    'std::uniform_int_distribution',
+    'std::uniform_real_distribution',
+    'std::normal_distribution',
+    'discrete_distribution'
+sınıflarıdır. Aşağıda bu hususa ilişkin pekiştirici örnekler verilmiştir: 
+    * Örnek 1,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                581869302
+                545404204
+                949333985
+                1323567403
+                418932835
+                1196140740
+                809094426
+                676943009
+                471852626
+                2084672536
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            
+            std::uniform_int_distribution<int> dist;
+            // 'int' türünün tutabileceği minimum ve maksimum değer aralığında
+            // dağılım yapılacaktır. Aralığı daraltmak istiyorsak 'Ctor.' fonksiyonuna
+            // argüman olarak geçmemiz gerekiyor.
+                                                        
+            for(int i = 0; i < 10; ++i)
+                std::cout << dist(eng) << std::endl;
+            // 'eng' ile üretilen 'bit' leri, 'dist' ile yukarıdaki aralık
+            // değerleri arasında dağıtıyoruz ve ekrana yazdırıyoruz.
+                                                        
+            return 0;
+        }
+        
+    * Örnek 2,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                1 166077
+                2 166840
+                3 167194
+                4 166974
+                5 166220
+                6 166695
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            
+            // '1' ve '6' dahil bu iki rakam aralığında sayılar üretilecek.
+            std::uniform_int_distribution<int> dist{1, 6};
+                                                        
+            std::map<int, int> cmap;
+            
+            for(int i = 0; i < 1'000'000; ++i)
+            {
+                ++cmap[dist(eng)];
+            }
+            
+            for(auto [dice, count] : cmap)
+            {
+                std::cout << dice << " " << count << std::endl;
+            }
+            
+            // Üretilen rakamlar birbirlerine ne kadar da yakınlar.
+            
+            return 0;
+        }
+        
+    * Örnek 3,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                1 ************************************************************************************************
+                **********************************************************************
+                2 ************************************************************************************************
+                **********************************************************************
+                3 ************************************************************************************************
+                ***********************************************************************
+                4 ************************************************************************************************
+                **********************************************************************
+                5 ************************************************************************************************
+                **********************************************************************
+                6 ************************************************************************************************
+                **********************************************************************
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            
+            // '1' ve '6' dahil bu iki rakam aralığında sayılar üretilecek.
+            std::uniform_int_distribution<int> dist{1, 6};
+                                                        
+            std::map<int, int> cmap;
+            
+            for(int i = 0; i < 1'000'000; ++i)
+            {
+                ++cmap[dist(eng)];
+            }
+            
+            for(auto [dice, count] : cmap)
+            {
+                // Her 1000 rakam için bir '*' basacaktır. 
+                std::cout << dice << " " << std::string(count / 1000, '*') << "\n";
+            }
+            
+            // Üretilen rakamlar birbirlerine ne kadar da yakınlar.
+            
+            return 0;
+        }
+        
+    * Örnek 4,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            
+            // Aşağıda şablon parametresi olarak sadece 'int' değil 'integral' tiplerin hepsi kullanılabilir.
+            std::uniform_int_distribution<int> dist{1, 6}; // Normal kullanım.
+
+            // Şablon parametresi varsayılan argüman olarak 'int' almakta.
+            std::uniform_int_distribution<> dist2{1, 6};
+            
+            std::uniform_int_distribution dist3{1, 6}; // C++17, CTAD
+            
+            // Gerçek sayılar için 'std::uniform_real_distribution' sınıfını kullanmamız gerekiyor.
+            
+            //...
+            
+            return 0;
+        }
+        
+    * Örnek 5,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            
+            std::uniform_int_distribution<int> dist{1, 6}; // Normal kullanım.
+
+            // Şablon parametresi varsayılan argüman olarak 'int' almakta.
+            std::uniform_int_distribution<> dist2{1, 6};
+            
+            std::uniform_int_distribution dist3{1, 6}; // C++17, CTAD
+            
+            //...
+            
+            return 0;
+        }
+        
+    * Örnek 6,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            
+            std::uniform_real_distribution<float> dist{.0f, 1.0f}; // Normal kullanım.
+
+            // Şablon parametresi varsayılan argüman olarak 'double' almakta.
+            std::uniform_real_distribution<> dist2{.0, 1.0};
+            
+            std::uniform_real_distribution dist3{.0f, 1.0f}; // C++17, CTAD
+            
+            //...
+            
+            return 0;
+        }
+        
+    * Örnek 7,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                0.814724_0.135477_0.905792
+                0.835009_0.126987_0.968868
+                0.913376_0.221034_0.632359
+                0.308167_0.0975404_0.547221
+                0.278498_0.188382_0.546881
+                0.992881_0.957507_0.996461
+                0.964889_0.967695_0.157613
+                0.725839_0.970593_0.98111
+                0.957167_0.109862_0.485376
+                0.798106_0.80028_0.297029
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            std::uniform_real_distribution dist3{.0f, 1.0f}; // C++17, CTAD
+            
+            for(int i = 0; i < 10; ++i)
+            {
+                auto x = dist3(eng); auto y = dist3(eng); auto z = dist3(eng);
+                
+                std::cout << x << "_" << y << "_" << z << "\n";
+            }
+            return 0;
+        }
+        
+    * Örnek 8,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                -------------------------------------------
+                
+                Ortalama : 50
+                Standart Sapma : 5
+                26
+                27
+                28
+                29
+                30
+                31
+                32
+                33
+                34
+                35
+                36*
+                37**
+                38****
+                39*******
+                40**********
+                41***************
+                42**********************
+                43******************************
+                44**************************************
+                45************************************************
+                46**********************************************************
+                47******************************************************************
+                48*************************************************************************
+                49******************************************************************************
+                50*******************************************************************************
+                51******************************************************************************
+                52*************************************************************************
+                53******************************************************************
+                54*********************************************************
+                55************************************************
+                56**************************************
+                57*****************************
+                58**********************
+                59***************
+                60**********
+                61*******
+                62****
+                63**
+                64*
+                65
+                66
+                67
+                68
+                69
+                70
+                71
+                72
+                73
+            */
+            
+            std::mt19937 eng; // 'default_seed' değeri kullanıldı.
+            
+            std::cout << "Ortalama : "; double mean; std::cin >> mean;
+            std::cout << "Standart Sapma : "; double sDev; std::cin >> sDev;
+            std::normal_distribution<> dist{mean, sDev}; // Varsayılan argüman 'double'
+            
+            std::map<int, int> cmap;
+            
+            for(int i = 0; i < 1'000'000; ++i)
+            {
+                ++cmap[std::round(dist(eng))]; // .5 değerine göre aşağı veya yukarıya yuvarlıyoruz.
+            }
+            
+            std::cout << "\n-------------------------------------------\n" << std::endl;
+            
+            std::cout << "Ortalama : " << mean << "\n";
+            std::cout << "Standart Sapma : " << sDev << "\n";
+            
+            std::cout << std::setfill('0');
+            
+            for(auto [value, counter] : cmap)
+            {
+                std::cout << std::setw(2) << value << std::string(counter / 1000, '*') << "\n";
+            }
+            return 0;
+        }
+        
+    * Örnek 9, Her bir değerin gelme yüzdesini biz belirlemek istiyorsak:
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                Zar Degeri : 0 : 1559
+                Zar Degeri : 1 : 1630
+                Zar Degeri : 2 : 1654
+                Zar Degeri : 3 : 1601
+                Zar Degeri : 4 : 1655
+                Zar Degeri : 5 : 1901
+            */
+            
+            std::default_random_engine eng{ std::random_device{}() };
+            // 'default_random_engine' aslında arka planda 'mt19937' kullanıyor ekseriyetle.
+            
+            std::array<double, 6> weights{ 10., 10., 10., 10., 10., 12. };
+            // Bir zarı ele alırsak;
+            // '1' gelme ihtimali 10 / 62
+            // '6' gelme ihtimali 12 / 62
+            // Böylelikle bir nevi hileli bir zar oluşturduk.
+            // Herhangi bir veri yapısı da kullanabiliriz.
+            
+            std::discrete_distribution<size_t> dist{ std::begin(weights), std::end(weights) };
+            // Elimizdeki veri yapısını kullanarak, sınıfın 'range' parametreli
+            // kurucu işlevine çağrı yapıyoruz.
+                                                                            
+            std::map<size_t, size_t> results;
+            for(size_t i{}; i < 10'000; ++i)
+            {
+                ++results[dist(eng)];
+            }
+            
+            for(const auto& [die, count] : results)
+            {
+                std::cout << "Zar Degeri : " << die << " : " << count << std::endl;
+            }
+            return 0;
+        }
+        
+    * Örnek 10,
+        //..
+        int main() 
+        {
+            /*
+                # OUTPUT #
+                Zar Degeri : 0 : 613
+                Zar Degeri : 1 : 683
+                Zar Degeri : 2 : 761
+                Zar Degeri : 3 : 588
+                Zar Degeri : 4 : 859
+                Zar Degeri : 5 : 1037
+                Zar Degeri : 6 : 443
+                Zar Degeri : 7 : 315
+                Zar Degeri : 8 : 1330
+                Zar Degeri : 9 : 3371
+            */
+            
+            std::default_random_engine eng{ std::random_device{}() };
+            // 'default_random_engine' aslında arka planda 'mt19937' kullanıyor ekseriyetle.
+            
+            std::discrete_distribution<size_t> dist{ 5, 6, 7, 5, 8, 9, 4, 3, 12, 31 };
+            // İlgili sınıfın 'std::initializer_list' parametreli
+            // kurucu işlevine çağrı yapıyoruz.
+                                                                            
+            std::map<size_t, size_t> results;
+            for(size_t i{}; i < 10'000; ++i)
+            {
+                ++results[dist(eng)];
+            }
+            
+            for(const auto& [die, count] : results)
+            {
+                std::cout << "Zar Degeri : " << die << " : " << count << std::endl;
+            }
+            return 0;
+        }

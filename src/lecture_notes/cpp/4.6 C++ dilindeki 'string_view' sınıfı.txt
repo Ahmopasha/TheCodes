@@ -1,0 +1,459 @@
+> 'std::string_view' sınıfı : Normal şartlarda fonksiyonlarımızın parametresi 'const' türden birer referanslardır eğer ilgili 
+yazıyız sadece okuma amacıyla alıyorsak. Fakat bu durum zaman zaman ekstra maliyetli olmaktadır. Aşağıdaki örneği
+inceleyelim;
+	* Örnek 1,
+		//..
+		
+		void func(const std::string& other) {/*...*/}
+		
+		int main()
+		{
+			func("Ahmet");
+			// İlgili fonksiyonumuzun aldığı argüman 'const char[6]' türünden. Fakat fonksiyonumuz 'std::string'
+			// türden argüman beklemekte. Dolayısıyla 'std::string' türünden geçici bir nesne oluşturulacak ki
+			// değeri "Ahmet" yazısı, ve fonksiyonumuzun bloğu içerisinde 'other' isimli referans aslında bu geçici
+			// nesneye referans olacaktır. 'std::string' türünden geçici nesne oluşturulduğu için maliyeti arttırıyor.
+			
+			/* Buradan hareketle diyebiliriz ki;
+			   i. OKUMA AMAÇLI BİR FONKSİYON KULLANACAKSAK, PARAMETRE TÜRÜ 'std::string_view' OLMASI, YUKARIDAKİ GEREKSİZ
+			   MALİYETTEN KAÇINMAMIZA OLANAK SAĞLAYACAKTIR. Çünkü 'std::string_view' sınıfımız içerisinde ya iki tane
+			   'const char*' türünden gösterici ya da bir adet 'const char*' türünden göstericiyle bir adet 'size_t' türünden
+			   değişken vardor. Böylelikle 'pointer-aritmatich' kullanarak okuma amacıyla yazımızı üzerinde gezinebiliyoruz.
+			   ii. 'std::string_view' içerisindeki göstericiler 'dangling-pointer' olabilir veya 'null-terminated-string'
+			   GÖSTERMİYOR OLABİLİR. Bunun sorumluluğu 'std::string_view' sınıfını kullanan bizlerde. DOLAYISIYLA DİKKATLİ
+			   OLMALIYIZ.
+			   iii. 'std::string_view' sınıfı içerisinde sadece ve sadece 'std::string' sınıfının OKUMA AMACI GÜDEN ÜYE
+			   FONKSİYONLARI VARDIR. 
+			*/
+		}
+		
+	* Örnek 2,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				Ahmet
+				--------------------------
+				Ahmet
+				--------------------------
+				Ahmet
+				--------------------------
+			*/ 
+			
+			std::array<char, 5> nameArray{ 'A', 'h', 'm', 'e', 't' };
+			for (auto i : nameArray)
+				std::cout << i;
+			
+			std::cout << "\n--------------------------" << std::endl;
+			
+			std::vector<char> nameVector{ 'A', 'h', 'm', 'e', 't' };
+			for (auto i : nameVector)
+				std::cout << i;
+				
+			std::cout << "\n--------------------------" << std::endl;
+			
+			char nameCarray[6] = { 'A', 'h', 'm', 'e', 't', '\0' };
+			for(size_t i = 0; i < sizeof(nameCarray) / sizeof(nameCarray[0]); ++i)
+				std::cout << nameCarray[i];
+				
+			std::cout << "\n--------------------------" << std::endl;
+			
+			return 0;
+		} 
+		
+	* Örnek 3,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				std::string => 32
+				std::string_view => 16
+			*/ 
+			
+			std::cout << "std::string => " << sizeof(std::string) << std::endl;
+			std::cout << "std::string_view => " << sizeof(std::string_view) << std::endl;
+			return 0;
+		} 
+		
+	* Örnek 4,
+		//..
+		int main() 
+		{
+			char str[] = "Ahmet Kandemir Pehlivanli";
+			
+			std::string s { "Cpp ogrenmek istiyor." };
+			
+			std::array<char, 10> ar{ 'a', 'm', 'a', ' ', 'n', 'a', 's', 'i', 'l', '?' };
+			
+			std::string_view sw1;
+			std::cout << "[" << sw1 << "]" << std::endl; // OUTPUT => []
+			
+			std::string_view sw2 = "Necati Ergin";
+			std::cout << "[" << sw2 << "]" << std::endl; // OUTPUT => [Necati Ergin]
+			
+			std::string_view sw3{ str, 6 };
+			std::cout << "[" << sw3 << "]" << std::endl; // OUTPUT => [Ahmet ]
+			
+			std::string_view sw4{ s };
+			std::cout << "[" << sw4 << "]" << std::endl; // OUTPUT => [Cpp ogrenmek istiyor.]
+			
+			std::string_view sw5{ s.data() + 13, 8 };
+			std::cout << "[" << sw5 << "]" << std::endl; // OUTPUT => [istiyor.]
+			
+			// C++17 ile birlikte 'size' büyüklüğü olan her şeyi, 'std::size()' fonksiyonuna geçebiliriz.
+			std::string_view sw6{ ar.data(), std::size(ar) };
+			
+			std::cout << "[" << sw6 << "]" << std::endl; // OUTPUT => [ama nasil?]
+			
+			return 0;
+		} 
+		
+	* Örnek 5,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				true
+				true
+				true
+				
+				
+				false
+				false
+				false
+			*/ 
+			
+			std::cout << std::boolalpha;
+			
+			std::string_view sw;
+			std::cout << ( sw.data() == nullptr ) << std::endl;
+			std::cout << sw.empty() << std::endl;
+			std::cout << ( sw.size() == 0 ) << std::endl;
+			
+			std::cout << "\n" << std::endl;
+			
+			sw = "Ahmet";
+			std::cout << ( sw.data() == nullptr ) << std::endl;
+			std::cout << sw.empty() << std::endl;
+			std::cout << ( sw.size() == 0 ) << std::endl;
+			
+			return 0;
+		} 
+		
+	* Örnek 6,
+		//..
+		class Person{
+			public:
+				Person(std::string name) : m_name(std::move(name)){}
+				std::string_view getName() const 
+				{
+					return m_name; // BUNU YAPMAMALIYIZ.
+				}
+				
+			private:
+				std::string m_name;
+		};
+
+		Person createPerson() { return Person{"Ahmet Kandemir Pehlivanli"}; }
+
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				�z�*Vehlivanli
+				Ahmet Kandemir Pehlivanli
+			*/ 
+			
+			// Approach - I
+			auto sw = createPerson().getName();
+			//	                ^           ^
+			//	                |           Oluiturulan geçici nesnenin '*this' i kullanılmıştır.
+			//                  Burada geçici nesne oluşturulmuştur.	
+			// Artık geçici nesnenin hayatı burada biteceği için, 'sw' içerisindeki göstericiler 'dangling-pointer'
+			// haline gelmiştir.
+			std::cout << sw << std::endl;
+			
+			// Approach - II
+			Person personOne{ createPerson() }; // Artık geçici nesne değil, otomatik ömürlü bir nesne oluşturduk.
+
+			// İş bu otomatik ömürlü nesnemiz hayatta olduğu süre boyunca 'swTwo' içerisindeki göstericiler 'valid'.
+			auto swTwo = personOne.getName();
+			
+			std::cout << swTwo << std::endl;
+			
+			// ÇIKTIDA DA GÖRÜLDÜĞÜ ÜZERE GERİ DÖNÜŞ DEĞERİNİ 'std::string_view' YAPMAMIZ BİR TAKIM SORUNLARA YOL AÇMAKTADIR.
+			
+			return 0;
+		} 
+		
+	* Örnek 7,
+		//..
+		std::string getString(int ival) { return std::to_string(ival); }
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				Tam sayi : 31133113
+				s2 : 31133113
+				s3 : 31133113
+				s4 : 31133113
+				*p1 : 3
+				*p2 : 3
+			*/ 
+			
+			int ival = 31133113; std::cout << "Tam sayi : " << ival << std::endl;
+			
+			// auto& s1 = getString(ival);
+			// error: cannot bind non-const lvalue reference of type ‘std::__cxx11::basic_string&’ to an rvalue of type
+			// ‘std::string’ {aka ‘std::__cxx11::basic_string’}
+			
+			const auto& s2 = getString(ival); std::cout << "s2 : " << s2 << std::endl;
+			// Burada ilgili fonksiyonumuzun döndürdüğü geçici nesnenin hayatı uzatılmıştır. 'life-extension'
+			
+			auto&& s3 = getString(ival); std::cout << "s3 : " << s3 << std::endl;
+			// Burada ilgili fonksiyonumuzun döndürdüğü geçici nesnenin hayatı uzatılmıştır. 'life-extension'
+			
+			std::string_view s4 = getString(ival); std::cout << "s4 : " << s4 << std::endl;
+			// 'Tanımsız Davranış'. 's4' içerisindeki göstericiler 'dangling-pointer' haline gelmekteler. Çünkü ilgili
+			// fonksiyonumuzun döndürdüğü geçici nesnenin ömrü bitmiştir.
+			
+			const char* p1 = getString(ival).c_str(); std::cout << "*p1 : " << *p1 << std::endl;
+			// 'Tanımsız Davranış'. 'p1' artık 'dangling-pointer' haline gelmekte. Çünkü ilgili fonksiyonumuzun döndürdüğü
+			// geçici nesnenin ömrü bitmiştir.
+			
+			auto p2 = getString(ival).c_str(); std::cout << "*p2 : " << *p2 << std::endl;
+			// 'Tanımsız Davranış'. 'p2' artık 'dangling-pointer' haline gelmekte. Çünkü ilgili fonksiyonumuzun döndürdüğü
+			// geçici nesnenin ömrü bitmiştir.
+			
+			return 0;
+		} 
+		
+	* Örnek 8,
+		//..
+		class BigData{
+			public:
+				char* getBuffer()
+				{
+					return buffer;
+				}
+			
+			private:
+				char buffer[5'000'000];
+		};
+
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				Char : 1
+				Char* : 8
+				BigData : 5000000
+				std::string : 32
+				std::string_view : 16
+			*/ 
+			
+			std::cout << "Char : " << sizeof(char) << std::endl;
+			
+			std::cout << "Char* : " << sizeof(char*) << std::endl;
+			
+			BigData dataOne;
+			std::cout << "BigData : " << sizeof(dataOne) << std::endl;
+			
+			std::string stringOne{ dataOne.getBuffer() };
+			std::cout << "std::string : " << sizeof(stringOne) << std::endl;
+			
+			std::string_view stringViewOne{ dataOne.getBuffer() };
+			std::cout << "std::string_view : " << sizeof(stringViewOne) << std::endl;
+			return 0;
+		} 
+		
+	* Örnek 9,
+		//..
+		void func(std::string_view sw)
+		{
+			// i. 'std::string_view' sınıfının gösterdiği yazının 'null-terminated string' OLMA ZORUNLULUĞU YOKTUR.
+			
+			const char* p = sw.data();
+			
+			// ii. Fakat 'std::strlen()' fonksiyonuna 'null-terminated string' geçilmediği durumlarda 'Tanımsız Davranış'
+			// meydana gelecektir.
+			auto n = std::strlen(p); 
+			
+			std::cout << "[" << n << "] => " << p << std::endl;
+		}
+
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				[25] => Ahmet Kandemir Pehlivanli
+
+			*/ 
+			
+			func("Ahmet Kandemir Pehlivanli"); // LEGAL. Çünkü yazının sonunda 'null' karakteri vardır.
+			
+			func(std::string_view{}); // Burada herhangi bir 'null' karakter mevcut değil.
+			
+			// Burada herhangi bir 'null' karakter mevcut değil.
+			std::array<char, 5> nameArray{ 'A', 'h', 'm', 'e', 't' };
+			
+			func( std::string_view( nameArray.data(), 5 ));
+			return 0;
+		} 
+	
+	* Örnek 10,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				-------------------------------
+				[ , basimda bir bosluk hissi var...]
+				[ , basimda bir bosluk hissi var...]
+				-------------------------------
+				[ , basimda bir bosluk hissi var...]
+				[bosluk hissi var...]
+				-------------------------------
+				[ , basimda bir bosluk hissi var...]
+				[ , basimda bir bosluk hissi var...]
+				-------------------------------
+				[ , basimda bir bosluk hissi var...]
+				[, basimda bir bosluk hissi var...]
+			*/ 
+			
+			std::cout << "-------------------------------" << std::endl;
+			
+			std::string str{ " , basimda bir bosluk hissi var..." };
+			std::string_view strView{ str };
+			std::cout << "[" << str << "]" << std::endl;
+			std::cout << "[" << strView << "]" << std::endl;
+			
+			std::cout << "-------------------------------" << std::endl;
+			
+			strView.remove_prefix(15);
+			std::cout << "[" << str << "]" << std::endl;
+			std::cout << "[" << strView << "]" << std::endl;
+			
+			std::cout << "-------------------------------" << std::endl;
+			
+			strView.remove_prefix(-15);
+			std::cout << "[" << str << "]" << std::endl;
+			std::cout << "[" << strView << "]" << std::endl;
+			
+			std::cout << "-------------------------------" << std::endl;
+			
+			strView.remove_prefix( std::min( strView.find_first_not_of(" "), strView.size() ) );
+			// i. İlgili '.find_first_not_of()' fonksiyonu boşluk karakteri olmayan ilk karakterin indeksini döndürecektir.
+			// Eğer bütün karakterler boşluk karakteriyse, 'std::string::npos' değerini döndürecektir.
+			// ii. 'std::min()' ise argüman olarak aldığı ifadelerden en küçüğünü döndürecektir.
+			
+			std::cout << "[" << str << "]" << std::endl;                                         
+			std::cout << "[" << strView << "]" << std::endl;
+			
+			// '.remove_prefix()' işlevi görüntülemenin aralığını daraltmak içindir. Yani arka plandaki göstericilerden,
+			// yazının başını göstereni ötelemektedir.
+			
+			return 0;
+		} 	
+			
+	* Örnek 11,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				ar : [abcd]
+				sw : [abcd]
+				@trim_index : 4
+				Our string: [abcd], uzunlugu : (7)
+				Our string: [abcd], uzunlugu : (4)
+			*/ 
+			
+			char ar[] = { 'a', 'b', 'c', 'd', '\0', '\0', '\0' };
+			std::cout << "ar : " << "[" << ar << "]" << std::endl;
+			
+			std::string_view sw(ar, sizeof ar); // 'sizeof()' işlevinin operandı bir ifade ise '()' zorunlu DEĞİL.
+			std::cout << "sw : " << "[" << sw << "]" << std::endl;
+			
+			auto trim_index = sw.find('\0'); // '\0' karakterini bulduğunda, indeksini döndürmektedir.
+			std::cout << "@trim_index : " << trim_index << std::endl;
+			
+			// Eğer '\0' karakteri bulunamasaydı 'std::string::npos' değeri döndürülecekti.
+			if( trim_index != std::string_view::npos )
+				// sw.remove_suffix(3);
+				sw.remove_suffix( sw.size() - trim_index ); // Yazının sonunu gösteren gösterici ötelenmiş oldu.
+				
+			std::cout << "Our string: [" << ar << "], uzunlugu : (" << sizeof(ar) << ")" << std::endl;
+			std::cout << "Our string: [" << sw << "], uzunlugu : (" << sw.size() << ")" << std::endl;
+			
+			// '.remove_suffix()' işlevi görüntülemenin aralığını daraltmak içindir. Yani arka plandaki göstericilerden,
+			// yazının sonunu göstereni ötelemektedir.
+			
+			return 0;
+		} 
+
+	* Örnek 12,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				[]
+				[necati]
+				
+				
+				[necati]
+				[necati]
+			*/ 
+			
+			std::string_view sw; 
+			std::string str{"necati"}; 
+			std::cout << "[" << sw << "]" << std::endl;
+			std::cout << "[" << str << "]" << std::endl;
+			
+			std::cout << "\n" << std::endl;
+			
+			// sw = str;
+			sw = str.operator std::string_view();
+			// sw = str.operator std::basic_string_view<char, std::char_traits<char>>(); 
+			std::cout << "[" << sw << "]" << std::endl;
+			std::cout << "[" << str << "]" << std::endl;
+			
+			std::cout << "\n" << std::endl;
+			
+			// 'std::string' sınıfının 'std::string_view' sınıfına otomatik dönüşümü gerçekleştirecek ki ilgili 'Ctor.'
+			// fonksiyonunun 'explicit' olmadığı anlaşılmaktadır, '.operator string_view()' tür dönüştürme operatör
+			// fonksiyonu vardır.
+			
+			// Yukarıdaki senaryonun tam tersinde ise '.operator=()' fonksiyonu çağrılmaktadır.
+			/*
+				# ÖZETLE # (aşağıdaki denklem tam tersi de olabilir, teyit edilmelidir.)
+				std::string => std::string_view : '.operator std::string_view()'
+				std::string_view => std::string : '.operator='
+			*/
+			return 0;
+		} 
+		
+	* Örnek 13,
+		//..
+		int main() 
+		{
+			/*
+				# OUTPUT #
+				A7_c
+				NSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE
+				St17basic_string_viewIcSt11char_traitsIcEE
+			*/ 
+			
+			using namespace std::string_literals;
+			using namespace std::string_view_literals;
+			
+			std::cout << typeid("alican").name() << std::endl;
+			std::cout << typeid("alican"s).name() << std::endl;
+			std::cout << typeid("alican"sv).name() << std::endl;
+			
+			return 0;
+		} 
