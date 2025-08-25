@@ -1,0 +1,1214 @@
+> C++20 ile gelen irili/ufaklı değişiklikler:
+    >> C++20 öncesinde negatif değerli işaretli tam sayıları sola kaydırmak "Tanımsız Davranış" iken, C++20 ile birlikte
+    artık geçerli hale getirildi. C++20 öncesinde negatif değerli işaretli tam sayıları sağa kaydırırken soldan eklenecek
+    rakamın "0" mı "1" olacağı implementasona bağlıyken, C++20 ile birlikte bu eklenen rakam "1" rakamı olacaktır.  
+        * Örnek 1,
+            #include <iostream>
+            #include <format>
+
+            int main()
+            {
+                int x = -1; 
+                std::cout << std::format("{0:032b}	{0}\n", x, x); // -0000000000000000000000000000001        -1
+
+                x <<= 1;	// İşaretli tam sayılardan, değeri negatif olanları,
+                            // "bitsel sola kaydırma" işlemine tabii tutmak 
+                            // "Tanımsız Davranış" a neden olmaktadır, C++17 itibariyle.
+                            // C++20 ile artık geçerli hale getirildi. Sağdan eklenen
+                            // rakamlar "0" olacaktır. C++20 ile negatif tam sayıların
+                            // temsilinin ikiye tümleyen aritmatiği ile yapılmasını garanti
+                            // altına alınmıştır. 
+                
+                std::cout << std::format("{0:032b}	{0}\n", x, x); // -0000000000000000000000000000010        -2
+            }
+
+        * Örnek 2,
+            #include <iostream>
+            #include <format>
+
+            int main()
+            {
+                int x = -2; 
+                std::cout << std::format("{0:032b}	{0}\n", x, x); // -0000000000000000000000000000010        -2
+
+                x >>= 1;	// Negatif tam sayıları sağa kaydırdığımız zaman, soldan 
+                            // eklenecek rakamların "0" ya da "1" olması implementasona
+                            // bağlıdır, C++20 öncesinde. C++20 itibariyle iş bu işlem
+                            // sonucunda, soldan eklenecekler rakam "1" rakamı olacaktır. 
+                
+                std::cout << std::format("{0:032b}	{0}\n", x, x); // -0000000000000000000000000000001        -1
+            }
+
+    >> İşaretli tam sayılar ile işaretsiz tam sayıların karşılaştırılmasında derleyiciler tipik olarak uyarı verirler. C++20 itibariyle
+    "ssize" isimli global bir fonksiyon eklendi. Geri dönüş değeri işaretli tam sayı türüdür. Dolayısıyla işaretli tam sayı ile işaretsiz 
+    tam sayıları karşılaştırırken bu global fonksiyonu kullanmamız halinde derleyici uyarı mesajı vermeyecektir. 
+        * Örnek 1,
+            #include <vector>
+            int main()
+            {
+                std::vector ivec{ 3, 6, 1, 3, 2, 9 };
+                for (int i{}; i < size(ivec); ++i) { // warning C4018: '<': signed/unsigned mismatch
+                    //...
+                }
+            }
+
+        * Örnek 2,
+            #include <vector>
+            int main()
+            {
+                std::vector ivec{ 3, 6, 1, 3, 2, 9 };
+                for (int i{}; i < ssize(ivec); ++i) { 
+                    //...
+                }
+            }
+
+    >> C++20 ile birlikte yapıların "bitfield" veri elemanları, sınıfların diğer elemanları gibi, "Default Member Init." ya da "In-class Init".
+    ile ilk değer alabilmektedir. 
+        * Örnek 1,
+            struct Nec {
+                int x : 4{7};   // "Default Member Init." 
+                int y : 3 = 5;  // "Default Member Init." 
+                int z : 1;
+            };
+
+            int main()
+            {
+                //...
+            }
+
+    >> "bit" başlık dosyası ve fonksiyonları: Buradaki fonksiyonlar "constexpr" fonksiyonlardır. İşaretli tam sayılar ile bu başlık dosyasındaki
+    fonksiyonların kullanılması sentaks hatasıdır.
+        * Örnek 1,
+            #include <bit>
+            #include <iostream>
+            #include <format>
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    0001100000011000            6168        -Base X
+                    0110000001100000           24672        -Rotate X Left  by  2
+                    0000011000000110            1542        -Rotate X Left  by -2
+                    0000011000000110            1542        -Rotate X Right by  2
+                    0110000001100000           24672        -Rotate X Right by -2
+                    0001000000000000            4096        -Floor of X
+                    0010000000000000            8192        -Ceil  of X
+                */
+
+                uint16_t x = 0b0001'1000'0001'1000;
+                std::cout << std::format("{0:016b}\t{0:8}\t-Base X\n", x);
+                std::cout << std::format("{0:016b}\t{0:8}\t-Rotate X Left  by  2\n", std::rotl(x, 2));
+                std::cout << std::format("{0:016b}\t{0:8}\t-Rotate X Left  by -2\n", std::rotl(x, -2));
+                std::cout << std::format("{0:016b}\t{0:8}\t-Rotate X Right by  2\n", std::rotr(x, 2));
+                std::cout << std::format("{0:016b}\t{0:8}\t-Rotate X Right by -2\n", std::rotr(x, -2));
+                std::cout << std::format("{0:016b}\t{0:8}\t-Floor of X\n", std::bit_floor(x));
+                std::cout << std::format("{0:016b}\t{0:8}\t-Ceil  of X\n", std::bit_ceil(x));
+            }
+
+        * Örnek 2,
+            #include <bit>
+            #include <iostream>
+            #include <format>
+            #include <bitset>
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    00011111
+                    00011110
+                    00000000
+                    00000000
+                    Has single bit: false
+
+
+                    01000000
+                    00000001
+                    Has single bit: true
+                */
+                constexpr uint8_t x = 31;
+                std::cout << std::bitset<8>(x) << '\n';
+                std::cout << std::bitset<8>(x & (x - 1)) << '\n';
+                std::cout << std::bitset<8>(!(x & (x - 1))) << '\n';
+                std::cout << std::bitset<8>(x && !(x & (x - 1))) << '\n';
+                constexpr auto power_of_two_of_x{ x && !(x & (x - 1)) }; // false
+                std::cout << "Has single bit: " << std::boolalpha << std::has_single_bit(x) << '\n';
+                puts("\n");
+                constexpr uint8_t y = 64;
+                std::cout << std::bitset<8>(y) << '\n';
+                std::cout << std::bitset<8>(y && !(y & (y - 1))) << '\n';
+                constexpr auto power_of_two_of_y{ y && !(y & (y - 1)) }; // true
+                std::cout << "Has single bit: " << std::boolalpha << std::has_single_bit(y) << '\n';
+            }
+
+        * Örnek 3,
+            #include <bit>
+            #include <iostream>
+            #include <format>
+            #include <bitset>
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    # of left zero : 3
+                    # of right zero: 3
+                    # of left  one : 0
+                    # of right one : 0
+                    # of set bit   : 2
+                */
+                std::boolalpha(std::cout);
+                constexpr uint8_t x = 0b0001'1000;
+                std::cout << "# of left zero : " << std::countl_zero(x) << '\n';
+                std::cout << "# of right zero: " << std::countr_zero(x) << '\n';
+                std::cout << "# of left  one : " << std::countl_one(x) << '\n';
+                std::cout << "# of right one : " << std::countr_one(x) << '\n';
+                std::cout << "# of set bit   : " << std::popcount(x) << '\n';
+            }
+
+        * Örnek 4.0, 
+            #include <bit>
+            #include <iostream>
+            #include <format>
+            #include <bitset>
+
+            int main()
+            {
+                auto x = static_cast<int>(e); // "e" is "2". 
+                auto y = reinterpret_cast<int>(e); // ERROR
+                auto y = *reinterpret_cast<int*>(&e);	// "Undefined Behaviour" except for;
+                                                        // casting between "signed int" and "unsigned int",
+                                                        // casting to "char" types,
+                                                        // casting between C-Style struct's address and its first member.
+                union FloatingInt {
+                    float f;
+                    int i;
+                };
+                FloatingInt fi = { e }; // "Undefined Behaviour"
+                auto ival = fi.i;	// Birliklerin aktif olmayan elemanlarının bu şekilde kullanılması;
+                                    // C dilinde geçerli, fakat C++ dilinde "Tanımsız Davranış".  
+
+                int my_value{};
+                std::memcpy(&my_value, &e, sizeof(e));	// "memcpy" is NOT a "consexpr" function. So, it is costly.
+                                                        // Does not check the types, may cause "Undefined Behavior".
+                                                        // But, a valid way until "std::bit_cast". 
+
+                auto my_second_value = std::bit_cast<unsigned int, float>(e); // A NEW WAY SINCE C++20
+            }
+
+        * Örnek 4.1,
+            #include <bit>
+            #include <iostream>
+            #include <format>
+            #include <bitset>
+
+            struct Nec {
+                std::uint16_t a;
+                std::uint16_t b;
+            };
+
+            int main()
+            {
+                float e = 2.71828;
+                auto my_second_value = std::bit_cast<unsigned long long, float>(e); // ERROR
+
+                Nec myNec{ 123u, 456789u };
+                auto my_value = std::bit_cast<unsigned, Nec>(myNec); // OK 
+            }
+
+        * Örnek 5.0,
+            #include <bit>
+            #include <iostream>
+            #include <format>
+            #include <bitset>
+
+            int main()
+            {
+                // Old School: Run-time Checking
+                int x = 1; 
+                if (*(char*)(&x))
+                    std::cout << "little endian\n";
+                else
+                    std::cout << "big endian\n";
+
+                // C++20: Compile-time Checking
+                static_assert(std::endian::native == std::endian::little);
+            }
+
+        * Örnek 5.1,
+            #include <bit>
+            #include <iostream>
+            #include <format>
+            #include <bitset>
+
+            int main()
+            {
+                if constexpr (std::endian::native == std::endian::little) {
+                    // In case of "Little Endian"
+                }
+                else if constexpr (std::endian::native == std::endian::big) {
+                    // In case of "Big Endian"
+                }
+                else {
+                    // In case of "Mixed Endian". 
+                }
+            }
+
+    >> "Dependant Type" : Şablon parametresi "T" ye bağlı olan tür demektir. C++20'ye kadar bu türü tanıtmak için "typename" 
+    anahtar sözcüğünü kullanmak zorundaydık.
+        * Örnek 1,
+            template<typename T>
+            void func(typename T::value_type) 
+            {
+                
+            }
+
+    Buradaki "value_type" işte "Dependant Type" olarak geçer. Burada "typename" kullanarak aslında bunun bir tür olduğunu 
+    belirtmekteyiz. C++20 ile birlikte bunun tür olmasından başka bir şey olması mümkün değilse, öyle bağlamlarda "typename" 
+    kullanmaya gerek yoktur. Öylesi bağlamlarda kullanmamız ise sentaks hatası oluşturmayacaktır. 
+        * Örnek 1, Global fonksiyonun geri dönüş değerinin yazıldığı yerlerde "typename" anahtar sözcüğünü kullanmaya gerek 
+        yoktur.
+            // Until C++20
+            template<typename T>
+            typename T::Erg foo() {}
+
+            // Since C++20
+            template<typename T>
+            T::Erg foo() {}
+
+            int main()
+            {
+               //...
+            }
+
+        * Örnek 2, Fakat fonksiyonun parametre parantezinde hala "typename" anahtar sözcüğünü kullanmak zorundayız. Aksi halde 
+        ilgili sınıfın "static" veri elemanı olarak değerlendirilecektir. Bunun istisnası sınıfların üye fonksiyonlarıdır. Öylesi
+        fonksiyonlarda yine "typename" anahtar sözcüğüne gerek yoktur. 
+            // ERROR
+            template<typename T>
+            void foo(T::Erg) {}
+
+            int main()
+            {
+                //...
+            }
+
+        * Örnek 3, Sınıflarda aşağıdaki biçimde kullanılmasında "typename" gerekmemektedir.
+            template<typename T>
+            struct PointerTrait {
+                using Pointer = void*;
+            };
+
+            template<typename T>
+            struct Ergin {
+                using PtrNew = PointerTrait<T>::Pointer; // Since C++20
+                using PtrOld = typename PointerTrait<T>::Pointer; // Until C++20
+
+                T::Nec my_member_func(T::Nec)
+                {
+                    //...
+                }
+            };
+
+            int main()
+            {
+                //...
+            }
+
+        * Örnek 4, "static_cast" operatörününde de "typename" anahtar sözcüğüne gerek yoktur. 
+            template<typename T>
+            T::Nec my_func(typename T::Nec p)
+            {
+                return static_cast<T::Nec>(p);
+            }
+
+            int main()
+            {
+                //... 
+            }
+
+        * Örnek 5, "concepts" oluştururken de "typename" anahtar sözcüğünü kullanmak mecburi değildir. Fakat C++20 öncesinde
+        "concepts" zaten mevcut DEĞİLDİR.
+            template<typename T>
+            concept my_concept = requires (T::Nec x) {
+                std::cout << x;
+            };
+
+            int main()
+            {
+                //...
+            }
+
+    >> "type_traits" başlık dosyasına, işaretli tam sayı ile işaretsiz tam sayıları karşılaştırmada kullanmak üzere, bir takım 
+    fonksiyonlar eklenmiştir. 
+        * Örnek 1.0,
+            #include <type_traits>
+            #include <iostream>
+
+            template<typename T, typename U>
+            constexpr bool CmpLess(T t, U u) noexcept
+            {
+                using UT = std::make_unsigned_t<T>;
+                using UU = std::make_unsigned_t<U>;
+
+                if constexpr (std::is_signed_v<T> == std::is_signed_v<U>) {
+                    return t < u;
+                }
+                else if constexpr (std::is_signed_v<T>) {
+                    return t < 0 ? true : UT(t) < u;
+                }
+                else {
+                    return u < 0 ? false : t < UU(u);
+                }
+            }
+
+            int main()
+            {
+                //...
+            }
+
+        * Örnek 1.1,
+            #include <type_traits>
+            #include <iostream>
+
+            int main()
+            {
+                int x = -1; 
+                unsigned ux = 2;
+                if (x > ux) // x is greater than y  
+                {
+                    std::cout << "x is greater than y\n";
+                }
+                else
+                {
+                    std::cout << "x is less than y\n";
+                }
+
+                if (std::cmp_greater(x, ux)) // x is less than y
+                {
+                    std::cout << "x is greater than y\n";
+                }
+                else
+                {
+                    std::cout << "x is less than y\n";
+                }
+            }
+
+    >> "[]" operatörü içerisinde "," operatörü ile oluşturulan ifadeyi, C++23 itibariyle, doğrudan kullanamayacağız. Fakat aynı
+    ifadeyi "()" ile sarmalayarak da kullanabiliriz. 
+        * Örnek 1,
+            #include <iostream>
+
+            int main()
+            {
+                int a[5]{0};
+                a[1, 2] = 31; // warning: top-level comma expression in array subscript is deprecated [-Wcomma-subscript]
+                for(auto i : a)
+                    std::cout << i << ' '; // 0 0 31 0 0 
+                std::cout << '\n';
+                
+                a[(2,3)] = 31; // OK 
+                for(auto i : a)
+                    std::cout << i << ' '; // 0 0 31 31 0 
+                std::cout << '\n';   
+            }
+
+    >> C++20 itibariyle adres türlerinden "bool" türlerine dönüşüm  "Narrowing Conversion" kategorisine eklenmiştir. Tabii sadece "{}" ile 
+    ilk değer verilmesi durumunda geçerlidir. 
+        * Örnek 1,
+            int main()
+            {
+                void* vp;
+                
+                bool b = vp;
+                bool c(vp);
+                bool d{vp}; // narrowing conversion of ‘vp’ from ‘void*’ to ‘bool’ [-Wnarrowing]
+            }
+
+    >> C++20 itibariyle dinamik ömürlü dizi oluştururken, dizinin boyutunu belirtmeden, "{}" ile ilk değer verdiğimiz zaman sentaks hatası 
+    olurken, artık dizinin boyutunu belirtmeye lüzum kalmamıştır. 
+        * Örnek 1,
+            int main()
+            {
+                char* ptr = new char[]{"eray goksu\n"};
+            }
+
+    >> C++20 ile birlikte "Alias Template" kullanırken "CTAT" dan da artık faydalanabiliriz. 
+        * Örnek 1,
+            #include <iostream>
+
+            template<typename T>
+            using first_int_pair = std::pair<int, T>;
+
+            int main()
+            {
+                first_int_pair my_pair{ 1, 1.1 }; // alias template deduction only available with ‘-std=c++20’ or ‘-std=gnu++20’
+            }
+
+    >> C++20 ile birlikte "inline" isim alanlarını direkt olarak bildirim sırasında kullanabiliriz.
+        * Örnek 1,
+            #include <iostream>
+
+            // Until C++20
+            namespace A{
+                namespace B{
+                    inline namespace C{
+                        int c; 
+                    }
+                }
+            }
+
+            // Since C++20 : Artık "inline" isimalanlarını bu şekilde kullanabiliriz. 
+            namespace AA::BB::inline CC{ // C++17: error: nested identifier required before ‘inline’
+                int c;
+            }
+
+            int main()
+            {
+                A::B::C::c = 1; // Until C++20
+                AA::BB::c = 2; // Since C++20 
+            }
+
+    >> "source_location" isimli yeni bir başlık dosyası daha geldi. C dilinden gelen "__LINE__", "__FILE__" ve "__func__" sembolik
+    sabitleri yerine bu başlık dosyası ile gelen "source_location" türünü kullanabiliriz. 
+        * Örnek 1,
+            #include <source_location>
+            #include <iostream>
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    File Name: main.cpp
+                    Func Name: int main()
+                    Line No  : 6
+                    Column No: 54
+                */
+                
+                constexpr auto s1 = std::source_location::current();
+                constexpr auto pf_name = s1.file_name();
+                constexpr auto pf_func = s1.function_name();
+                constexpr auto pf_line = s1.line();
+                constexpr auto pf_colmn = s1.column();
+                
+                std::cout << "File Name: " << pf_name << '\n'
+                        << "Func Name: " << pf_func << '\n'
+                        << "Line No  : " << pf_line << '\n'
+                        << "Column No: " << pf_colmn << '\n';
+            }
+
+        * Örnek 2,
+            #include <source_location>
+            #include <iostream>
+
+            void foo(std::source_location s1 = std::source_location::current())
+            {
+                std::cout << "File Name: " << s1.file_name() << '\n'
+                        << "Func Name: " << s1.function_name() << '\n'
+                        << "Line No  : " << s1.line() << '\n'
+                        << "Column No: " << s1.column() << '\n';
+            }
+
+            std::source_location bar(void)
+            {
+                return std::source_location::current();
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    File Name: main.cpp
+                    Func Name: std::source_location bar()
+                    Line No  : 14
+                    Column No: 41
+                */
+                
+                foo(bar());
+            }
+
+        * Örnek 3,
+            #include <source_location>
+            #include <iostream>
+            #include <vector>
+
+            std::vector<std::source_location> sl_vec;
+
+            void foo(void)
+            {
+                //...
+                auto sl = std::source_location::current();
+                sl_vec.push_back(sl);
+                //...
+            }
+
+            void bar(void)
+            {
+                //...
+                    auto sl = std::source_location::current();
+                    sl_vec.push_back(sl);
+                //...
+            }
+
+            void baz(void)
+            {
+                //...
+                        auto sl = std::source_location::current();
+                        sl_vec.push_back(sl);
+                //...
+            }
+
+            void func(std::source_location s1 = std::source_location::current())
+            {
+                std::cout << "File Name: " << s1.file_name() << '\n'
+                        << "Func Name: " << s1.function_name() << '\n'
+                        << "Line No  : " << s1.line() << '\n'
+                        << "Column No: " << s1.column() << "\n\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    File Name: main.cpp
+                    Func Name: int main()
+                    Line No  : 45
+                    Column No: 56
+                    
+                    File Name: main.cpp
+                    Func Name: void foo()
+                    Line No  : 10
+                    Column No: 44
+                    
+                    File Name: main.cpp
+                    Func Name: void bar()
+                    Line No  : 18
+                    Column No: 48
+                    
+                    File Name: main.cpp
+                    Func Name: void baz()
+                    Line No  : 26
+                    Column No: 52        
+                */
+                            auto sl = std::source_location::current();
+                            sl_vec.push_back(sl);
+                            
+                foo(); bar(); baz();
+                for(auto const& sl : sl_vec)
+                    func(sl);
+            }
+
+    >> "using enum" bildirimi de C++20 ile gelmiştir. 
+        * Örnek 1
+            #include <iostream>
+
+            enum class Color{
+                white,
+                yellow,
+                blue,
+                black
+            };
+
+            void white(){}
+            void yellow(){}
+            void blue(){}
+            void black(){}
+
+            void func(Color c)
+            {
+                switch(c) {
+                    using enum Color; // Since C++20: usage of "using declaration"
+                    case white: white(); break;
+                    case yellow: yellow(); break;
+                    case blue: blue(); break;
+                    case black: black(); break;
+                }
+            }
+
+            int main()
+            {
+
+            }
+
+    >> C++23 ile dile eklenen, "auto" anahtar sözcüğünün yeni bir "overload" edilmiş halini inceleyelim; Anımsanacağı üzere 
+    fonksiyon şablonlarında fonksiyon çağrısı sırasında "std::initializer_list" kullanılması sentaks hatasıyken, "auto" kullanılarak 
+    değişken bildirimlerinde sentaks hatası meydana gelmemektedir. Hatta "auto" ile şablon parametresi "T" nin farklı olduğu tek 
+    nokta da burasıydı. 
+        * Örnek 1.0,
+            #include <iostream>
+            #include <initializer_list>
+
+            template<typename T>
+            void func(T x)
+            {
+                std::cout << x.size() << ':';
+                for(auto i: x) std::cout << i << ' '; 
+                std::cout << '\n';
+            }
+
+            int main()
+            {
+                func({ 3, 5, 7, 9 }); // ERROR
+            }
+
+        * Örnek 1.1,
+            #include <iostream>
+            #include <initializer_list>
+
+            template<typename T>
+            void func(T x)
+            {
+                std::cout << x.size() << ':';
+                for(auto i: x) std::cout << i << ' '; 
+                std::cout << '\n';
+            }
+
+            int main()
+            {
+                func(std::initializer_list<int>{ 3, 5, 7, 9 }); // 4:3 5 7 9 
+            }
+
+    Artık C++23 ile birlikte "auto" anahtar sözcüğünü de "func" fonksiyonu çağrısında kullanabiliriz. Fakat burada unutmamamız gereken 
+    şey, "auto()" ile oluşturulan ifadenin "R-Value" OLDUĞUDUR. 
+        * Örnek 1,
+            #include <iostream>
+            #include <initializer_list>
+
+            template<typename T>
+            void func(T x)
+            {
+                std::cout << x.size() << ':';
+                for(auto i: x) std::cout << i << ' '; 
+                std::cout << '\n';
+            }
+
+            int main()
+            {
+                func(auto({ 3, 5, 7, 9 })); // 4:3 5 7 9
+            }
+        
+        * Örnek 2,
+            #include <iostream>
+
+            int main()
+            {
+                int y = 10;
+                int& z = auto(y); // cannot bind non-const lvalue reference of type 'int&' to an rvalue of type 'int'
+            }
+    
+    >> "std::type_identity" : C++20 ile dile eklenmiştir ve karşılık geldiği tür için tür çıkarımını "disable" 
+    etmektedir. Anımsanacağı üzere derleyici "T" için tür çıkarımı yaparken bazı durumlarda "T" türüne 
+    karşılık farklı türler gelmekte, bu da "ambigous" a neden olmaktadır. 
+        * Örnek 1,
+            #include <vector>
+
+            template<typename T>
+            void func(std::vector<T>& ivec, T&& elem) {}
+
+            int main() {
+                std::vector<int> ivec;
+                
+                // Burada,
+                // "ivec" için "T" nin türü "int" olacaktır. 
+                // "elem" için "T" nin türü "int" olacaktır çünkü sağ 
+                // taraf ifadelerini "Universal Reference" a gönderdiğimizde
+                // türün kendisi yönünde çıkarım yapılmaktadır. 
+                func(ivec, 12); 
+                
+                int x{ 123 };
+                // Burada,
+                // "ivec" için "T" nin türü "int" olacaktır. 
+                // "elem" için "T" nin türü "int&" olacaktır çünkü sol 
+                // taraf ifadelerini "Universal Reference" a gönderdiğimizde
+                // o türe referans bir tür şeklinde çıkarım yapılmaktadır. 
+                // "T" hem "int" hem de "int&" olamayacağı için sentaks 
+                // hatası alacağız. 
+                func(ivec, x);
+            }
+
+        * Örnek 2,
+            #include <std::string>
+
+            template<typename T>
+            void func(std::vector<T>& ivec, T elem) {}
+
+            int main() {
+                std::vector<int> ivec;
+                // Burada "ivec" için "T" tür çıkarımı "int" yönünde. 
+                // "32" için "T" yine "int" olacak. Herhangi bir sorun 
+                // yok. 
+                func(ivec, 32);
+                
+                std::vector<std::string> svec;
+                func(svec, "Ulya Yuruk");
+                // Burada "svec" için "T" tür çıkarımı "std::string"
+                // yönünde olacak. 
+                // "Ulya Yuruk" için "T" tür çıkarımı "const char*"
+                // yönünde olacak. "T" için iki farklı tür olduğundan
+                // sentaks hatası alacağız. 
+            }
+
+    İşte bu "ambigous" probleminin çözüm yollarından birisi de "std::type_identity" tür eş ismini kullanmaktır.
+    Tipik implementasyonu aşağıdaki gibidir;
+        * Örnek 1,
+            #include <string>
+            #include <vector>
+
+            template<typename T>
+            struct TypeIdentity {
+                using Type = T;
+            };
+
+            template<typename T>
+            using TypeIdentity_t = typename TypeIdentity<T>::Type; 
+            // C++20 ile birlikte bildirimde "typename" kullanma zorunluluğu kalktı.
+
+            template<typename T>
+            void func(std::vector<T>& ivec, TypeIdentity_t<T> elem) {}
+
+            int main() {
+                std::vector<int> ivec;
+                func(ivec, 32);
+                
+                std::vector<std::string> svec;
+                func(svec, "Ulya Yuruk");
+            }
+
+    Şimdi de kullanım senaryolarına bakalım;
+        * Örnek 1.0,
+            #include <string>
+            #include <vector>
+            #include <type_traits>
+            #include <iostream>
+            template<typename T>
+            void func(std::vector<T>& ivec, std::type_identity_t<T> elem) {
+                std::cout << typeid(T).name() << '\n';
+            }
+
+            int main() {
+                std::vector<int> ivec;
+                func(ivec, 32); // int
+                
+                std::vector<std::string> svec;
+                func(svec, "Ulya Yuruk"); // string
+            }
+
+        * Örnek 1.1,
+            #include <string>
+            #include <vector>
+            #include <type_traits>
+            #include <iostream>
+            template<typename T>
+            void func(std::type_identity_t<T> elem, std::vector<T>& ivec) {
+                std::cout << typeid(T).name() << '\n';
+            }
+
+            int main() {
+                std::vector<int> ivec;
+                func(32, ivec); // int
+                
+                std::vector<std::string> svec;
+                func("Ulya Yuruk", svec); // string
+            }
+
+    >> "Explicit Object Parameter" : C++23 ile dile eklenmiştir. "non-static" üye fonksiyonların gizli bir parametre değişkeni vardır
+    ve o sınıf türünden bir göstericidir. Eğer fonksiyon "const" ise iş bu gizli parametre de "const" olur, yani "const T*". İşte bu gizli 
+    parametreyi açık hale getirebiliriz ve ismi ile kullanabiliriz. Fonksiyonun birinci parametresi olmalıdır. Kullanım biçimi şu şekildedir;
+
+        -> "this" anahtar sözcüğünü yazıyoruz.
+        -> Sonrasında sınıfın türünü yazıyoruz. 
+            -> Eğer referans semantiği ile kullanacaksak "&", gösterici semantiği kullanacaksak "*" atomunu yazıyoruz. Pekala bu iki 
+            semantiği KULLANMAYADABİLİRİZ. Bu durumda nesnenin bir kopyası üzerinde işlem yapmış oluruz. 
+            -> Bu aşamada parametreyi "L-Value Reference", "R-Value Reference", "const L-Value Reference", "const R-Value Reference" 
+            olarak da kullanabiliriz. 
+        -> Son olarak da bu parametre için bir isim yazıyoruz.
+
+    Dolayısıyla fonksiyonun imzasındaki ilk parametre aşağıdaki gibi olabilir;
+
+        "this T self"
+        "this T& self"                "this T* self"
+        "this const T& self"          "this const T* self"
+        "this T&& self" 
+        "this const T&& self"
+
+    Ancak bu şekilde bir parametre kullanırsak, veri elemanlarını direkt isimleriyle veya "this" göstericileri ile niteleyerek 
+    kullanamayız. 
+        * Örnek 1.0,
+            #include <iostream>
+
+            class Myclass {
+                public:
+                    Myclass(int x) : mx{ x } {}
+                    void set(int x) { mx = x; }
+                    void print() const { std::cout << mx << '\n'; }
+                private:
+                    int mx{};
+            };
+
+            int main() {
+                Myclass mc(20); 
+            }
+
+        * Örnek 1.1,
+            #include <iostream>
+
+            class Myclass {
+                public:
+                    Myclass(int x) : mx{ x } {}
+                    void set(this Myclass& self, int x) { 
+                        // mx; // ERROR
+                        // this.mx; // ERROR
+
+                        self.mx; // OK: "self" demek "*this" demektir. 
+                    }
+                    void print() const { std::cout << mx << '\n'; }
+                private:
+                    int mx{};
+            };
+
+            int main() {
+                Myclass mc(20); 
+                mc.print(); // 20
+                
+                mc.set(31);
+                mc.print(); // 31
+            }
+
+        * Örnek 1.2,
+            #include <iostream>
+
+            class Myclass {
+                public:
+                    Myclass(int x) : mx{ x } {}
+                    void foo(this Myclass self) { 
+                        self.mx = 999; 
+                    }
+                    void print() const { std::cout << mx << '\n'; }
+
+                    int mx{ 35 };
+            };
+
+            int main() {
+                Myclass a;
+                
+                std::cout << a.mx << '\n'; // 35
+                
+                a.foo();
+                
+                std::cout << a.mx << '\n'; // 35
+                
+            }
+
+    Tabii "Explicit Object Parameter" ile, fonksiyon imzalarında belittiğimiz "Reference Qualifiers" yerine de kullanabiliriz;   
+        * Örnek 1.0,
+            #include <iostream>
+
+            class Neco {
+                public:
+                    // Bu fonksiyon sadece "L-Value Reference" türler tarafından çağrılabilir. 
+                    void foo() & { std::cout << "foo() &\n"; }
+                    
+                    // Bu fonksiyon sadece "R-Value Reference" türler tarafından çağrılabilir. 
+                    void foo() && { std::cout << "foo() &&\n"; }
+                    
+                    // Bu fonksiyon sadece "const L-Value Reference" türler tarafından çağrılabilir. 
+                    void foo() const & { std::cout << "foo() const &\n"; }
+                    
+                    // Bu fonksiyon sadece "const R-Value Reference" türler tarafından çağrılabilir. 
+                    void foo() const && { std::cout << "foo() const &&\n"; }
+            };
+
+            int main() {
+                // "L-Value Reference"
+                Neco nec1; nec1.foo(); // foo() &
+                
+                // "R-Value Reference"
+                Neco{}.foo(); // foo() &&
+                
+                // "const L-Value Reference"
+                const Neco nec2; nec2.foo(); // foo() const &
+                
+                // "const R-Value Reference"
+                std::move(nec2).foo(); // foo() const &&
+            }
+
+        * Örnek 1.1,
+            #include <iostream>
+
+            class Neco {
+                public:
+                    // Bu fonksiyon sadece "L-Value Reference" türler tarafından çağrılabilir. 
+                    void foo(this Neco&)  { std::cout << "foo() &\n"; }
+                    
+                    // Bu fonksiyon sadece "R-Value Reference" türler tarafından çağrılabilir. 
+                    void foo(this Neco&&) { std::cout << "foo() &&\n"; }
+                    
+                    // Bu fonksiyon sadece "const L-Value Reference" türler tarafından çağrılabilir. 
+                    void foo(this const Neco&) { std::cout << "foo() const &\n"; }
+                    
+                    // Bu fonksiyon sadece "const R-Value Reference" türler tarafından çağrılabilir. 
+                    void foo(this const Neco&&)  { std::cout << "foo() const &&\n"; }
+            };
+
+            int main() {
+
+                // "L-Value Reference"
+                Neco nec1; nec1.foo(); // foo() &
+                
+                // "R-Value Reference"
+                Neco{}.foo(); // foo() &&
+                
+                // "const L-Value Reference"
+                const Neco nec2; nec2.foo(); // foo() const &
+                
+                // "const R-Value Reference"
+                std::move(nec2).foo(); // foo() const &&
+            }
+
+    Şimdi de "Explicit Object Parameter" kullanmanın avantajlarını irdeleyelim;
+        >>> Şablonlarda kod tekrarının önüne geçmektedir. Şöyleki;
+            * Örnek 1.0, Görüldüğü gibi dört fonksiyonun yaptığı iş aynı. Sadece kendisini çağıran nesne değişmekte. 
+                #include <optional>
+
+                template<typename T>
+                class Optional {
+                    bool has_value() const; 
+                    
+                    // For "non-const L-Value":
+                    constexpr T& value() & {
+                        if (has_value()) return this->m_value;
+                        
+                        throw std::bad_optional_access();
+                    }
+                    
+                    // For "const L-Value":
+                    constexpr const T& value() const & {
+                        if (has_value()) return this->m_value;
+                        
+                        throw std::bad_optional_access();
+                    }
+                    
+                    // For "non-const R-Value":
+                    constexpr T&& value() && {
+                        if (has_value()) return std::move(this->m_value);
+                        
+                        throw std::bad_optional_access();
+                    }
+                    
+                    // For "const R-Value":
+                    constexpr T&& value() const && {
+                        if (has_value()) return std::move(this->m_value);
+                        
+                        throw std::bad_optional_access();
+                    }
+                    
+                    //...
+                };
+
+            * Örnek 1.1, İş bu fonksiyonları tek bir fonksiyon haline şu şekilde getirebiliriz;
+                #include <optional>
+
+                template<typename T>
+                class Optional {
+                    bool has_value() const; 
+                    
+                    template<typename Self>
+                    constexpr auto&& value(this Self&& self) { // Forwarding Reference
+                        if(self.has_value()) return std::forward<Self>(self).m_value;
+                        throw std::bad_optional_access();
+                    }
+                    
+                    //... 
+                };
+
+            * Örnek 2,
+                struct Neco {
+                    template<typename T>
+                    void foo(this T&& self) {
+                        //...
+                    }
+                };
+
+                int main() {
+                    Neco mynec;
+                    mynec.foo(); 
+                    // "T"    => "Neco&".
+                    // "self" => "Neco&".
+                    
+                    const Neco cmynec;
+                    cmynec.foo(); 
+                    // "T"    => "const Neco&".
+                    // "self" => "const Neco&".
+                    
+                    std::move(mynec).foo(); 
+                    // "T"    => "Neco".
+                    // "self" => "Neco&&".
+                    
+                    std::move(cmynec).foo(); 
+                    // "T"    => "const Neco".
+                    // "self" => "const Neco&&".
+                }
+
+        >>> Yine şablon kullanarak, "CRTP" için alternatif oluşturabiliriz.
+            * Örnek 1,
+                #include <iostream>
+                #include <typeinfo>
+
+                struct Base {
+                    template<typename Self>
+                    void foo(this Self&& self) {
+                        std::cout << typeid(self).name() << '\n';
+                    }
+                };
+
+                struct Der_I : Base {
+                    
+                };
+
+                struct Der_II : Base {
+                    
+                };
+
+                struct Der_III : Base {
+                    
+                };
+
+                int main() {
+                    Base my_base; my_base.foo(); // 4Base
+                    Der_I der_I; der_I.foo(); // 5Der_I
+                    Der_II der_II; der_II.foo(); // 6Der_II
+                    Der_III der_III; der_III.foo(); // 7Der_III
+                }
+
+            * Örnek 2.0,
+                // CRTP Base
+                template<typename Der>
+                struct postfix_inc {
+                    Der operator++(int) {
+                        auto& self = static_cast<Der&>(*this);
+                        
+                        Der tmp(self);
+                        ++self; 
+                        // ".operator++()" fonksiyonunun "overload" edildiğine güvenilerek 
+                        // bu fonksiyon yazılmıştır.
+                        
+                        return tmp;
+                    }
+                };
+
+                struct Nec : postfix_inc<Nec> {
+                    Nec& operator++();
+                };
+
+                int main() {}
+
+            * Örnek 2.1,
+                struct postfix_inc {
+                    template<typename Self>
+                    auto operator++(this Self&& self, int) {
+                        auto tmp(self);
+                        ++tmp;
+                        // ".operator++()" fonksiyonunun "overload" edildiğine güvenilerek 
+                        // bu fonksiyon yazılmıştır.
+                        
+                        return tmp;
+                    }
+                };
+
+                struct Nec : postfix_inc {
+                    Nec& operator++();
+                };
+            
+        >>> "Recursive Lambda" oluşturmayı daha kolay hale getirmektedir. Normalde direkt olarak "Recursive Lambda" 
+        mevcut değildir, bir takım teknikler ile oluşturmaktayız. Artık daha kolay hale getirmektedir.
+            * Örnek 1,
+                #include <iostream>
+
+                int main() {
+                    auto f = [](this auto&& self, int n){
+                        //...
+
+                        if (n == 0) return 1;
+                        else return n * self(n-1);
+                    };
+
+                    std::cout << f(6) << '\n'; // 720
+                }
+
+            * Örnek 2,
+                #include <iostream>
+
+                int main() {
+                    auto gcd = [](this auto self, int a, int b) -> int {
+                        return b == 0 ? a : self(b, a % b);
+                    };
+
+                    std::cout << gcd(12, 40) << '\n'; // 4
+                }
+
+    >> "Conditionally Explicit Ctor." : Sınıfın kurucu işlevinin "excplicit" olmasının bir koşula bağlanması durumudur. Anımsanacağı üzere
+    "Default Ctor.", tek parametreli "ctor.", çift parametreli "ctor." fonksiyonlarını "explicit" olarak betimleyebildiğimiz gibi tam tersi 
+    yönde de betimleyebiliyorduk. Artık C++20 ile birlikte bu fonksiyonların "explicit" olup olmamasını da bir "compile time" sabitine 
+    bağlayabiliriz. Kullanım biçimi "noexcept" fonksiyonu gibidir. 
+        * Örnek 1,
+            class Myclass {
+                public:
+                    explicit(true) Myclass();
+            };
+
+        * Örnek 2,
+            #include <type_traits>
+
+            template<typename T>
+            class Myclass {
+                public: 
+                    explicit(std::is_integral_v<T>) Myclass(T) {}
+            };
+
+            int main() {
+                // Myclass<int> m = 5; // error: conversion from ‘int’ to non-scalar type ‘Myclass’ requested
+
+                Myclass<float> m = 5.; // OK
+            }
+
+        * Örnek 3, En tipik kullanım yeri sarmalanan sınıflarda görülmektedir. Sarmalanan sınıfın ilgili "ctor." fonksiyonu "explicit" ise 
+        onu sarmalayan sınıfın o fonksiyonunun da "explicit" olmasını istiyoruz. 
+            #include <type_traits>
+
+            class Neco {
+            public:
+                Neco() = default;
+                explicit Neco(int) {}
+            };
+
+            template<typename T>
+            class Wrapper {
+                public:
+                    Wrapper() = default;
+                    
+                    template<typename U>
+                    explicit(!std::is_convertible_v<U, T>) Wrapper(U){
+                        // -----> (1)
+                        // Burada;
+                        // "U" için "double",
+                        // "T" için "Neco"
+                        // gelecek. Böylelikle "double" to "Neco"
+                        // dönüşümünü sınamış olacağız.
+                        // "Neco" sınıfının "Conversion Ctor."
+                        // fonksiyonu "explicit" olduğundan, sınama 
+                        // "false" döndürecektir. Bunun değilini 
+                        // alırsak da "Neco" sınıfınınki ile uyumlu
+                        // hale gelmiş olur. 
+                    }
+            };
+
+            int main() {
+                Wrapper<Neco> mynec(4.); // -----> (1)
+            }
+
+
+> Hatırlatıcı Notlar:
+    >> "unspecified behavior", "implementation defined" ın kapsayan kümesidir. İkisi arasındaki fark ise "implementation defined"
+    olması durumunda derleyicinin bunu dökümante etmesi ve ilgili kod farklı yerlerde tekrar tekrar çağrıldığında aynı 
+    sonucun alınması gerekiyor. Halbuki "unspecified behavior" için bunlar geçerli değildir. 

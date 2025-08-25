@@ -1,0 +1,169 @@
+> "std::copy", "std::move", "std::copy_backward" ve "std::move_backward" isimli algoritma fonksiyonları: 
+    * Örnek 1, Aşağıda "copy_backward" algoritma fonksiyonunun temsili gösterimi de kullanılmıştır.
+        #include <vector>
+        #include <algorithm>
+        #include <numeric>
+        #include <iostream>
+
+        template<typename BidIt1, typename BidIt2>
+        BidIt2 Copy_Backward(BidIt1 first, BidIt1 last, BidIt2 dest_end){
+            while(first != last){
+                *--dest_end = *--last;
+            }
+            
+            return dest_end;
+        }
+
+        int main()
+        {
+            {
+                /*
+                    # OUTPUT #
+                    0 1 2 3 4 5 6 7 8 9 
+                    0 1 0 1 2 3 4 7 8 9 
+                */
+                
+                std::vector<int> ivec(10); iota(ivec.begin(), ivec.end(), 0);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+                
+                copy_backward(ivec.begin(), ivec.begin() + 5, ivec.begin() + 7);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+            }
+            
+            std::cout << "==================\n";
+            
+            {
+                /*
+                    # OUTPUT #
+                    0 1 2 3 4 5 6 7 8 9 
+                    0 1 0 1 2 3 4 7 8 9 
+                */
+                
+                std::vector<int> ivec(10); iota(ivec.begin(), ivec.end(), 0);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+                
+                Copy_Backward(ivec.begin(), ivec.begin() + 5, ivec.begin() + 7);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+            }
+        }
+
+    * Örnek 2, Aşağıda "copy" algoritma fonksiyonunun temsili gösterimi de kullanılmıştır.
+        #include <vector>
+        #include <algorithm>
+        #include <numeric>
+        #include <iostream>
+
+        template<typename InIter, typename OutIter>
+        OutIter Copy(InIter first, InIter last, OutIter dest_first){
+            while(first != last){
+                *dest_first++ = *first++;
+            }
+            
+            return dest_first;
+        }
+
+        int main()
+        {
+            {
+                /*
+                    # OUTPUT #
+                    0 1 2 3 4 5 6 7 8 9 
+                    0 1 2 3 4 0 1 2 8 9
+                */
+                
+                std::vector<int> ivec(10); iota(ivec.begin(), ivec.end(), 0);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+                
+                copy(ivec.begin(), ivec.begin() + 3, ivec.begin() + 5);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+            }
+            
+            std::cout << "==================\n";
+            
+            {
+                /*
+                    # OUTPUT #
+                    0 1 2 3 4 5 6 7 8 9 
+                    0 1 2 3 4 0 1 2 8 9
+                */
+                
+                std::vector<int> ivec(10); iota(ivec.begin(), ivec.end(), 0);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+                
+                Copy(ivec.begin(), ivec.begin() + 3, ivec.begin() + 5);
+                for(auto i : ivec)
+                    std::cout << i << " ";
+                std::cout << "\n";
+            }
+        }
+
+    * Örnek 3, Aşağıda ise hem "std::move" hem de "std::move_backward" algoritma fonksiyonlarının temsili gösterimi kullanılmıştır.
+        #include <vector>
+        #include <algorithm>
+        #include <numeric>
+        #include <iostream>
+
+        template<typename InIter, typename OutIter>
+        OutIter Move(InIter first, InIter last, OutIter dest_first){
+            while(first != last){
+                *dest_first++ = std::move(*first++);
+            }
+            
+            return dest_first;
+        }
+
+        template<typename BidIt1, typename BidIt2>
+        BidIt2 Copy_Backward(BidIt1 first, BidIt1 last, BidIt2 dest_end){
+            while(first != last){
+                *--dest_end = std::move(*--last);
+            }
+            
+            return dest_end;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                ==================
+                Size: 4 => ahmet ulya nurettin yuruk 
+                ==================
+                Size: 4 =>     
+            */
+            
+            std::vector<std::string> svec{"ahmet", "ulya", "nurettin", "yuruk"};
+            std::vector<std::string> destvec(svec.size());
+            
+            std::cout << "==================\n";
+            
+            copy(svec.begin(), svec.end(), destvec.begin());
+            std::cout << "Size: " << svec.size() << " => ";
+            for(auto&& name : svec)
+                std::cout << name << " ";
+            std::cout << "\n";
+            
+            std::cout << "==================\n";
+            
+            move(svec.begin(), svec.end(), destvec.begin());
+            std::cout << "Size: " << svec.size() << " => ";
+            for(auto&& name : svec)
+                std::cout << name << " ";
+            std::cout << "\n";   
+        }
+
+    Yine bu "std::move" ve "std::move_backward" işlemlerinden sonra geride kalanın "Moved From State" halinde olduğuna da 
+    dikkat ediniz. 

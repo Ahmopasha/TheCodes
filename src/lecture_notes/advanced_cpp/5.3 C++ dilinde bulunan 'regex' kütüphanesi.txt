@@ -1,0 +1,1061 @@
+> "std::regex" : "Regular Expression" ifadesinin kısaltması, Düzenli İfadelerin İngilizce'sidir. Tamamiyle yazılar ile ilgili bir 
+konudur. C++11 ile dile eklenmiştir. Bir "regex" metni, bir yazının uyması gereken kuralları betimleyen bir metindir. Özel bir notasyona 
+sahiptir. Bu notasyon ile bir yazıya ilişkin kural seti betimlenir. Tıpkı "st::format" veya "scanf" fonksiyonlarındaki notasyon gibi. 
+İşte bu notasyonlar üzerinden şöyle kazanımlar elde edebiliriz;
+    
+    -> "validation", bir yazının kurallara uyup uymadığının sınanması. 
+    -> "search", bir yazı içerisinde arama işlemleri için. 
+    -> "replace", bir yazı üzerinde değişiklik yapmak için. 
+
+Tabii bu avantajların yanında en büyük dezavantaj, bu kütüphanenin MALİYETLİ olmasıdır. Yani "std::string" ve türevi sınıflardaki 
+fonksiyonlar ile yapabileceğimiz şeyleri "std::regex" sınıfındaki fonksiyonlar ile YAPTIRMAKTAN KAÇINMALIYIZ. Bu noktada önümüzde 
+iki yol çıkmaktadır;
+
+    -> "Regex" notasyonunu öğrenmek ki bu notasyonu gerek diğer dillerde gerek metin editörlerinde kullanabiliriz. Örneğin,
+    "regex101.com" isimli internet adresinden bu notasyonlar hakkında bilgi edinebiliriz. 
+    -> C++ dilinin "Regex" notasyonlarını nasıl ele aldığı; hangi fonksiyonun ne tür işleve sahip olduğu vs. 
+
+Şimdi de bu yolları sırasıyla irdeleyelim;
+    >> "Regex" Notasyonu: Bir notasyon kendi içerisinde bazı özel anlama taşıyan karakterlere sahiptir. Bunlara "meta-character"
+    denir. Eğer özel anlamı haricinde, karakterin bizzat kendisini kullanmak istiyorsak, "\" karakteri ile birlikte kullanmalıyız. 
+    Bu "meta-character" haricindeki diğer karakterler, kendi anlamlarındadır. 
+        * Örnek 1.0, "." karakterinin özel anlamı "'\n' karakteri hariç bütün karakterler" anlamındadır. Bu durumda, ".abc" biçiminde
+        bir notasyon oluşturursak şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bunlar bünyesinde dört harfli şöyle kelimeler barındırsın; ilki harfi "\n" hariç herhangi bir harf, 
+            ikincisi "a", üçüncüsü "b" ve dördüncüsü "c" harfi olacak. Bu durumda içerisinde "aabc" kelimesini içeren bir kelimeyi 
+            bulabiliriz. 
+
+        * Örnek 1.1, "." karakterinin bizzat kendisini kullanmak istiyorsak, onu "\" ile birleştirmeliyiz. Bu durumda "\.abc" biçiminde 
+        bir notasyon oluşturursak şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bunlar bünyesinde dört harfli ".abc" kelimesini barındırsın. 
+
+        * Örnek 1.2, İş bu nedenden dolayı "\" karakterinin bizzat kendisini kullanmak istiyorsak, oluşturacağımız notasyonda "\\"
+        biçiminde yazmalıyız. Bu durumda şu noktaya da dikkat çekmek gerekmektedir; 
+
+            -> C++ dilinde "\" karakteri de bir "meta-character" olarak geçer. Dolayısıyla "string literal" içerisinde bizzat "\"
+            kullanmak için "\\" şeklinde yazıyoruz. Diğer yandan notasyon içerisinde "\" karakterini bizzat kullanmak için de "\\" 
+            yazıyoruz. İşte bu notasyonumuzu C++ diline aktarırken, "\" karakterini bizzat kullanmak için, "\\\\" biçiminde yazmalıyız. 
+
+    Bunun dışında "n-tane karakterden herhangi biri olabilir" manasına gelen bir notasyon oluşturmak için "[]" içerisinde iş bu "n" 
+    tane karakterin listesini yazıyoruz. 
+        * Örnek 1, "[aei]" biçiminde bir notasyon şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bunlar bünyesinde "a", "e" veya "i" karakterlerinden herhangi birisini barındırabilir. 
+            Buradaki mevzu iş bu hecelerin hepsini bünyesinde barındırması değil, bu hecelerden en az birini bünyesinde
+            barındırmasıdır. 
+
+        * Örnek 2, "[aei][ou]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bunlar bünyesinde bir hece "aei" kümesinden, bir hece "ou" kümesinden olmak şartıyla, bu kümelerden 
+            oluşturulan iki harfli o kelimeyi barındırsın. Örneğin, bu notasyon ile bünyesinde "eo" kelimesini barındıranlar
+            bulunacaktır. 
+
+    Diğer yandan "n-tane karakterden birisi olmayacak" manasına gelen bir notasyon oluşturmak için "[]" içerisinde il önce "^", daha 
+    sonra iş bu "n" tane karakterin listesini yazıyoruz. Böylelikle iş bu karakter listesindekileri BÜNYESİNDE BARINDIRMAYANLAR 
+    bulunacaktır. 
+        * Örnek 1, "[^mhrt]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bünyesinde "m", "h", "r" veya "t" karakterleri OLMASIN. 
+
+    Buna ilaveten "bir aralık içerisindeki karakterlerden herhangi biri olabilir" manasına gelen bir notasyon oluşturmak için, "[]"
+    içerisine aralığın ilk ve son harflerini yazdıktan sonra bu iki harfin arasına "-" karakterini ekliyoruz. Böylelikle "ilk ve son 
+    harf dahil, aralıktaki karakterlerden herhangi birisi olabilir" manasını elde etmiş oluyoruz. 
+        * Örnek 1, "[a-e]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> "a" ve "e" heceleri dahil, bu iki hece arasındaki hecelerin herhangi birisini barındırabilir. 
+
+        * Örnek 2, "[a-e][e-k]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bunlar bünyesinde bir hece "a" ve "e" arasındaki karakter kümesinden, bir hece de "e" ve "k" arasındaki 
+            karakter kümseinden olmak şartyıla, bu kümelerden oluşturulan iki harfli o kelimeyi barındırsın. Örneğin, bu notasyon ile
+            bünyesinde "cj" kelimesini barındıranlar bulunacaktır.  
+
+        * Örnek 3, "[0-9]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bünyesinde rakam karakterlerinden herhangi birisini barındırsın. Dolayısıyla yazımız içerisindeki 
+            sayıları da ayrı ayrı bulacaktır. 
+
+    Öte yandan "bir aralık içerisindeki karakterlerden herhangi biri olmayacak" manasına gelen bir notasyon oluşturmak için, "[]"
+    içerisine ilk olarak "^" karakterini, devamında aralığın ilk ve son harflerini yazdıktan sonra bu iki harfin arasına "-"
+    karakterini ekliyoruz. Böylelikle "bu aralıktakileri içermeyen" manasını elde etmiş oluyoruz. 
+        * Örnek 1, "[^0-9]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bünyesinde rakam karakterleri BULUNMASIN. 
+
+        * Örnek 2, "[^0-9a-z]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> Öyle kelimeler ki bünyesinde hem rakam karakterleri hem de küçük harfli alfabedeki kelimeleri BULUNMASIN. 
+
+    Şimdi buraya kadarkileri bir örnekte toplayalım;
+        * Örnek 1, "[mkr0-9A-F]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> "m", "k" veya "r" karakterlerinden herhangi birisini, rakam karaktarlerini ve "A" ve "F" arasındaki büyük harfli 
+            karakterleri, ki "A" ve "F" dahildir, bünyesinde barındıran kelime(ler). Burada bir tane "[]" kullanıldığı için tek 
+            bir harf üzerinden gidilmektedir. 
+
+        * Örnek 2, "[^mkr0-9A-F]" biçimindeki bir notasyon şu anlama gelecektir;
+
+            -> Yukarıdaki örnekteki şartları SAĞLAMAYAN kelime(ler). 
+
+    Bunların haricinde, bazı aralık değerleri için özel karakterler de vardır. 
+        * Örnek 1, "[0-9]" demek yerine "\d" kullanmak aynı anlama gelecektir. Burada "d" harfinin küçük olması önemlidir. 
+        Burada "D" harfinin kullanılması "^" karakteri etkisi yapmaktadır. Dolayısıyla "[^0-9]" demek yerine "\D" kullanmak aynı
+        anlama gelecektir.
+
+        * Örnek 2, "\s" karakteri boşluk karakterleri anlamındadır. "tab" ile "space" tuşları ile oluşturulan boşluk karakterleri 
+        de buna dahildir. "new-line" da yine bu karakter kapsamındadır. "\S" ise boşluk karakteri olmayan anlamındadır. 
+
+        * Örnek 3, "\w" karakteri "Alphanumeric" karakter anlamındadır. "underscore" karakteri de buna dahildir, yani "_" karakteri.
+        "\W" karakteri ise "Alphanumeric" olmayan karakter anlamındadır. 
+
+    Pekala bizler bir kelimeyi de notasyon içerisine koyabiliriz. Bunun için "()" kullanmalıyız. Pekala "()" ile öncelik de
+    oluşturabiliriz.
+        * Örnek 1, "(kan)" şeklindeki notasyon;
+
+            -> Bünyesinde "kan" kelimesini içerenleri tespit edecektir. 
+
+        * Örnek 2, "(\(kan\))" şeklindeki notasyon;
+
+            -> Bünyesinde "(kan)" kelimesini içerenleri tespit edecektir. 
+
+    "Regex" notasyonundaki bir diğer önemli kavram da "quantifiers" kavramıdır. Yani kendisinden evvelki "token" dan kaç tane olması 
+    gerektiğini belirtmektedir. 
+        * Örnek 1.0, "?": kendisinden evvelki "token" dan ya bir tane olacak ya hiç olmayacak. Dolayısıyla "ka?r" biçimindeki bir 
+        notasyon;
+            
+            -> Bünyesinde "kar" veya "kr" içeren kelimeleri bulabiliriz. 
+
+        * Örnek 1.1, "[kts]a?[rmn]" notasyonu bizlere öyle kelimeler bulacak ki bunlar;
+
+            -> "k", "t" veya "s" harflerinden birisini ve 
+            -> Yukarıdaki harflerden sonra "a" harfi gelebilir de gelmeyedebilir de ve 
+            -> "r", "m" veya "n" harflerinden birisini İÇERMELİDİR. 
+
+        * Örnek 1.2, "(kan)?\d" notasyonu bizlere öyle kelimeler bulacak ki bunlar;
+
+            -> Bünyesinde "kan" kelimesi oladabilir, olmayadabilir. 
+            -> "kan" kelimesi varsa devamında rakam karakteri, "kan" kelimesi yoksa da yalnız rakam
+            karakterini içermelidir. 
+
+        * Örnek 2.0, "*": kendisinden evvelki "token" dan ya sıfır tane ya da daha fazla olacak. Dolayısıyla "ah*" biçimindeki bir 
+        notasyon;
+
+            -> "ah", "ahh", "ahhh" vb. kelimelerini tespit edecektir. 
+
+        * Örnek 2.1, "[krm]*" notasyonu bizlere öyle kelimeler bulacak ki bunlar;
+
+            -> -> "k", "r" veya "m" harflerinden birisinden ya sıfır yane ya da daha fazlasını bünyesinde barındıracak.  
+
+        * Örnek 3.0, "+": kendisinden evvelki "token" dan ya bir tane ya da fazla olacak. Dolayısıyla "\d+" biçimindeki bir notasyon;
+
+            -> En az bir tane rakam karakteri olacak, ancak daha fazla da olabilir. 
+
+        * Örnek 4.0, "{n}": kendisinden öncekinden, "n" adedince olmalı. Dolayısıyla "\d{3}" biçimindeki bir notasyon;
+
+            -> Üç basamaklı rakamları tespit edecektir. 
+
+        * Örnek 4.1, "{n,}": kendisinden öncekinden, en az "n" adedince olmalı. Yine bu "n" değeri de dahildir. Dolayısıyla
+        "\d{3,}" biçimindeki bir notasyon; 
+
+            -> En az üç basamaklı rakamları tespit edecektir. 
+
+        * Örnek 4.2, "{n,m}": kendisinden öncekinden, en az "n" en fazla "m" adedince olmalı. Yine bu "n" ve "m" değerleri de dahildir.
+        Dolayısıyla "\d{3,5}" biçimindeki bir notasyon; 
+
+            -> En az üç, en fazla beş basamaklı rakamları tespit edecektir.
+    
+    Şimdi buraya kadarkileri bir özetleyelim;
+
+        -> "?", kendisinden öncekinden sıfır ya da bir tane olmalı. 
+        -> "*", kendisinden öncekinden sıfır ya da "n" tane olmalı. 
+        -> "+", kendisinden öncekinden bir ya da "n" tane olmalı. 
+        -> "{n}", kendisinden öncekinden "n" adedince. 
+        -> "{n,}", kendisinden öncekinden en az "n" adedince. 
+        -> "{n,m}", kendisinden öncekinden en az "n" en fazla "m" adedince. 
+
+    Diğer yandan "quantifiers" kavramı iki alt kavrama sahiptir. Bunlar "greedy" ve "lazy". 
+        >> "greedy" : Varsayılan durumdur. "n" taneyi kapsayanlar için kapsayabildiği kadarını kapsar. 
+            * Örnek 1, Notasyonumuz "3\.\d+" biçiminde olsun. Böylelikle "\d+" ifadesiyle en az bir tane rakam karakteri olması gerekmekte.
+            Dolayısıyla bulunan kelime içerisinde "." karakterinden sonra 300 tane rakam varsa, bu 300 tanenin hepsi de dahil edilecek. 
+
+        >> "lazy" : İşte yukarıdaki gibi 300 karakterin hepsinin kapsanması yerine, sadece şartı sağlayan ilk karakterin dahil edilmesidir. 
+        Bunu gerçekleştirmek için de ilgili "quantifiers" "token" inin peşine "?" karakterini ekliyoruz. Yani minimal şart sağlandığı an
+        gerçekleştirim duracaktır. 
+            * Örnek 1, Notasyonumuz "3\.\d+?" biçiminde olsun. Artık sadece "3.4" biçimindeki yazıları bulacaktır. 
+            
+            * Örnek 2, Notasyonumuz "ahmet(can)??" biçiminde olsun. Eğer sadece "ahmet(can)?" olsaydı, "can" kelimesinin olduğu veya 
+            olmadığı bütün kelimeler kapsam dahilinde olacaktı. Ancan "ahmet(can)??" notasyonundaki minimal şart "can" kelimesinin 
+            olmaması olduğundan, sadece "ahmet" ismini bulacaktır. 
+
+    "Regex" notasyonundaki bir diğer önemli kavram da "anchor" kavramıdır. Bu kavram pozisyon, yer belirtmektedir. Şöyleki:
+
+        * Örnek 1, "^kar" ifadesindeki "^", yazının başına bak demektir. SATIRIN BAŞINA DEĞİL. Yani;
+            
+            -> Yazının başındaki kelime "kar" kelimesini içermelidir.  
+
+        * Örnek 2, "kar$" ifadesindeki "$", yazının sonuna bak demektir. Yani;
+
+            -> Yazının sonundaki kelime "kar" kelimesini içermelidir.  
+
+        * Örnek 3.0, "\btor" ifadesi, kelimenin başında "tor" kelimesini; "tor\b" ifadesi, kelimenin sonunda "tor" kelimesini;
+        "\Btor" ifadesi kelimenin başında "tor" kelimesi olmayacak; "tor\B" ifadesi kelimenin sonunda "tor" kelimesi olmayacak.
+        Böylelikle "\Btor\B" ifadesi ise başında ve sonunda "tor" olmayanlar manasındadır. 
+
+    Pekiyi bütün bu anlatılanlar sonucunda "if\s*\(.*\)\s*;" notasyonu şu manaya gelmektedir;
+
+        -> "if"  => Başta "if" kelimesi olmalı. 
+        -> "\s*" => Devamında sıfır ya da "n" tane boşluk karakteri gelmeli.
+        -> "\("  => Devamında "(" in bizzat kendisi gelmeli demek. 
+        -> ".*"  => Devamında herhangi bir karakterden sıfır ya da "n" tane gelmeli. 
+        -> "\)"  => Devamında ")" in bizzat kendisi gelmeli demek.
+        -> "\s*" => Devamında sıfır ya da "n" tane boşluk karakteri gelmeli.   
+        -> ";"   => En sonunda ";" karakteri olmalı. 
+
+    Bu notasyon ile şu kelimeleri bulabiliriz;
+        
+        "if(x>y);", "if (  x   >    y     )      ;", ... 
+
+    Hatta bu notasyonu kullanarak aşağıdaki örnekteki kod üzerinde arama yapabiliriz;   
+        * Örnek 1, https://onlinegdb.com/B_uJjxNHI using "if\s*\(.*\)\s*;" enabled w/ "RegExp Search". 
+            int main() {
+                int x = 10;
+                if (x > 5); // <<< 
+                    ++x;
+            }
+
+    Diğer yandan "\d{4}\.[A-F]{4}\.\d{4}" notasyonu şu manaya gelmektedir;
+
+        -> "\d{4}"    => Dört adet rakam karakteri. 
+        -> "\."       => "." karakterinin bizzat kendisi. 
+        -> "[A-F]{4}" => "A" ve "F" harfleri arasındaki harflerden dört adet. 
+        -> "\."       => "." karakterinin bizzat kendisi. 
+        -> "\d{4}"    => Dört adet rakam karakteri. 
+
+    Bu notasyonu ise "MY_NOTATION" ile göstermek gerekirse;
+
+        -> "MY_NOTATION\b" => Satır sonundaki iş bu notasyonu sağlayanlar. 
+        -> "\bMY_NOTATION" => Kelime başındaki iş bu notasyonu sağlayanlar. 
+        -> "\BMY_NOTATION" => Kelime başındaki iş bu notasyonu SAĞLAMAYANLAR. 
+        -> "MY_NOTATION\B" => Satır sonundaki iş bu notasyonu SAĞLAMAYANLAR. 
+
+    Şimdi de "()" atomunun detaylarına değinelim. Yukarıda anlatılan özelliklerine ilaveten şu özelliklere de sahiptir;
+        
+        -> Bazı durumlarda öncelik kazandırıyor. 
+        -> "grouping" / "capture group" dediğimiz gruplama özelliğine sahip. 
+        -> "Back reference" 
+
+    Şöyleki;
+        * Örnek 1, "a\d+" notasyonundaki "+" sadece "\d" yi kapsamaktadır. Fakat "(a\d)+" notasyonundaki ise "a\d" yi 
+        kapsamaktadır. Dolayısıyla bir öncelik parantezi oluşturmuş olduk. Aynı zamanda bir "capture-group" da oluşturmuş 
+        olduk. Ancak yukarıdaki "quantifiers" için parantez çok önem arz etmektedir. 
+
+        * Örnek 2, Yukarıdaki "MY_NOTATION" isimli notasyondaki "\d{4}\.[A-F]{4}\.\d{4}" ifadesini;
+
+            -> "(\d{4})\.[A-F]{4}\.\d{4}" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})" ifadesini
+            ayrıca tutmaktadır. Dolayısıyla bu ifadeye karşılık gelenleri ayrıca "get" edebileceğiz. 
+            -> "(\d{4})\.([A-F]{4})\.\d{4}" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})" ifadesini ve 
+            "([A-F]{4})" ifadesini ayrıca tutacaktır. Dolayısıyla bu ifadelere karşılık gelenleri ayrıca "get" edebileceğiz. 
+            -> "(\d{4})\.([A-F]{4})\.(\d{4})" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})" ifadesini, 
+            "([A-F]{4})" ifadesini ve "(\d{4})" ifadesini ayrıca tutacaktır. Dolayısıyla bu ifadelere karşılık gelenleri ayrıca
+            "get" edebileceğiz. 
+
+        Ancak yukarıdaki gibi bir kullanımda hem öncelik parantezi işlevi hem de "grouping" işlemi gerçekleştirilecek. Fakat
+        "grouping" işlemi maliyetli bir iş olduğundan, yani sadece öncelik parantezi işlevini kullanacaksak, "(?:)" biçiminde 
+        kullanmalıyız.
+
+        * Örnek 3, İlk "capture-group" da bulunan ifadenin aynısının başka yerde olmasını istiyorsak, bu yöntemi kullanmalıyız. 
+        Yukarıdaki "MY_NOTATION" isimli notasyondaki "\d{4}\.[A-F]{4}\.\d{4}" ifadesini "(\d{4})\.([A-F]{4})\1\2" ifadesine
+        çevirelim. Böylece;
+
+            -> Birinci "capture-group" olan "(\d{4})" ifadesi için karşılık gelen ifadenin birebir aynısı "\1" ifadesinin 
+            bulunduğu yerde de olacaktır. 
+            -> İkinci "capture-group" olan "([A-F]{4})" ifadesi için karşılık gelen ifadenin birebir aynısı "\2" ifadesinin 
+            bulunduğu yerde de olacaktır. 
+
+        Dolayısıyla "(\d{4})\.([A-F]{4})\1\2" ifadesiyle şunları bulabiliriz;
+
+            "1234.ABCD1234ABCD", "9876.QWER9876QWER", ... 
+
+        * Örnek 1, ".*([a-z]{2}).*\1.*\1" notasyonu;
+
+            -> ".*"         => Herhangi bir karakterden sıfır ya da "n" tane olmalı. 
+            -> "([a-z]{2})" => Birinci "capture-group". "a" ile "z" arasındaki harflerden iki tane. 
+            -> ".*"         => Herhangi bir karakterden sıfır ya da "n" tane olmalı. 
+            -> "\1"         => Birinci "capture-group" a ilişkin sonucun birebir aynısı olmalı. 
+            -> ".*"         => Herhangi bir karakterden sıfır ya da "n" tane olmalı. 
+            -> "\1"         => Birinci "capture-group" a ilişkin sonucun birebir aynısı olmalı. 
+
+        anlamına gelmekte olup, aşağıdaki sonuçlar bulacaktır;
+
+            "word-for-word", "wine-drinking", ...
+
+    "Regex" notasyonundaki bir diğer önemli kavram da "alternator" kavramıdır. Burada kullanılan karakter ise "|" karakteridir. 
+    Bu karakterden önce gelen veya sonra gelenden bir tanesi seçilebilir anlamındadır, yani "veya" bağlamı taşır. 
+        * Örnek 1, "kar|telsel" biçimindeki notasyon bize;
+
+            -> Ya "kar" kelimesinin ilgili kelime içinde olmasını
+            -> Ya "telsel" kelimesinin ilgili kelime içinde olmasını
+
+        * Örnek 2, "(kar|tel)sel" biçimindeki notasyon bize;
+
+            -> Ya "kar" kelimesinin ya da "tel" kelimesinin ilgili kelime içinde olmasını
+            -> "sel" kelimesinin ilgili kelime içinde olmasını
+
+        * Örnek 3.0, "\b([1-9]|[12][0-9]|3[01])\b" biçimindeki notasyon ise bizlerin bir ay içerisindeki günleri vermektedir;
+
+            -> "\b" ler ile iş bu notasyonu sağlayanların kelime başında ve satır sonunda olması istenmiş. 
+            -> "[1-9]"     => Ayın ilk dokuz günü için. 
+            -> "[12][0-9]" => Ayın 10. ve 29. günleri ve arasındaki günleri için. İlk basamak "1" veya "2", ikinci basamak 
+            "0" ile "9" arasındakilerden bir tanesi.
+            -> "3[01]"     => Ayın 30. ve 31. günleri için. İlk basamak "3", ikinci basamak "0" veya "1". 
+
+        * Örnek 3.1, "\b([1-9]|1[012])\b" biçimindeki notasyon ise bizlerin bir yıl içerisindeki ayları vermektedir;
+
+            -> "\b" ler ile iş bu notasyonu sağlayanların kelime başında ve satır sonunda olması istenmiş. 
+            -> "[1-9]"   => Senenin ilk dokuz günü için.
+            -> "1[012]"  => İlk basamak "1", ikinci basamak ise "0" veya "1" veya "2". 
+
+    "Regex" notasyonundaki iki diğer önemli kavram da "look-ahead" ve "look-back" kavramlarıdır. Ancak bu kavramlar bazı "regex" 
+    motorlarınca desteklenmiyor olabilir. 
+        >>> "look-ahead" : Bu kavram da "positive look-ahead" ve "negative look-ahead" olmak üzere ikiye ayrılır. 
+            >>>> "positive look-ahead" : Örneğin bizler "necati" ismini arıyor olalım. Bize öyle "necati" isimleri vermeli ki
+            "necati" isminden sonra "ergin" ismi gelmiş olsun. Bizler aramayı direkt olarak "necati ergin" biçiminde yaparsak,
+            sadece "necati ergin" olanları döndürecekti. Fakat aramayı "necati" biçiminde yapıyoruz, sonuç olarak öyle "necati" ler
+            almalıyız ki bunların devamında da "ergin" olsun. Bu biçimde arama yapmak için "(?=)" şablonunu kullanırız. 
+                * Örnek 1, Notasyonumuz "necati(?=ergin)" olsun. Bu notasyon ile bizler "ahmetnecatiergin" biçimindeki bir ismi 
+                bulabileceğiz. Buradaki kritik nokta "necati" isminin bulunması ve bu bulunanlardan "necati" isminden sonra "ergin"
+                isminin gelmesidir. 
+
+            >>>> "negative look-ahead" : "positive" olanından farklı olarak burada da devamında "ergin" gelmesi değil, gelmemesi 
+            gerekmektedir. Şablonumuz "(?!)" biçimindedir. 
+                * Örnek 1, Notasyonumuz "necati(?!ergin)" olsun. Bu notasyon ile bizler "ahmetnecatisasmaz" biçimindeki bir 
+                ismi bulabiliriz. Buradaki kritik nokta "necati" isminin bulunması ve bu bulunanlardan "necati" isminden sonra
+                "ergin" isminin GELMEMESİDİR.
+
+        >>> "look-back" : Bu kavram da "positive look-back" ve "negative look-back" olmak üzere ikiye ayrılır.  
+            >>>> "positive look-back" : "positive look-ahead" in diğer yönlüsüdür. Yani devamındaki değil, evvelindekinin şartı 
+            sağlaması gerekmektedir. Şablon olarak "(?<=)" kullanırız. 
+                * Örnek 1, Notasyonumuz "(?<=ergin)necati" olsun. Bu notasyon ile bizler "erginnecatiİstanbul" biçimindeki bir 
+                ismi bulabiliriz. 
+
+            >>>> "negative look-back" : "positive" olanından farklı olarak burada da evvelindekinin "ergin" olması değil, OLMAMASI 
+            gerekmektedir. Şablonumuz "(?<!)" biçimindedir. 
+                * Örnek 1, Notasyonumuz "(?<!ergin)necati" olsun. Bu notasyon ile bizler "Kayserinecatiİstanbul" biçimindeki bir 
+                ismi bulabiliriz. 
+
+    Şimdi de genel örnekler ile pekiştirme yapalım;
+        * Örnek 1, "html" renk kodu olup olmadığınının sınanması: "#" ile başlayacak. Devamında altı ya da üç adet "hex-digit"
+        olacak. Notasyonumuz "#([A-Fa-f\d]{6}|[A-Fa-f\d]{3})" şeklinde olmalıdır. Böylelikle;
+
+            -> "#"             => İlk karakter "#" olmalı. 
+            -> "[A-Fa-f\d]{6}" => 6 adet "A" ile "F" aralığındaki veya "a" ile "f" aralığındaki karakterlerden veya rakam
+            karakteri gelmeli. 
+            -> "[A-Fa-f\d]{3}" => 3 adet "A" ile "F" aralığındaki veya "a" ile "f" aralığındaki karakterlerden veya rakam
+            karakteri gelmeli. 
+
+    >> C++ dilinin "Regex" notasyonlarını nasıl ele alışı: "regex" kütüphanesi dile C++11 ile eklenmiştir. Yukarıda da değinildiği 
+    üzere C++ dilinde notasyon kullanırken notasyonlarımızı "regex101.com" sitesine yazdığımız gibi değil, C++ dilinin anlayabilmesi 
+    için dönüştürmemiz gerekmektedir. Örneğin, "\d" notasyon bazında rakamları temsil etmektedir. C++ dilinde bunu kullanırken "\\d"
+    biçiminde yazmalıyız ki dil bunu "\d" olarak işleme soksun. Çünkü C++ dilinde "\" karakterini bizzat kullanmak için "\\" 
+    yazmalıyız. Eğer notasyonda bizzat "\" karakterini kullanacaksam, "\\d" olarak notasyon oluşturmalıyım. Fakat bunu C++ diline 
+    aktarırken "\\\\d" olarak aktarmalıyız. İşte bu problemi gidermek için de "Raw String Literal" kullanabiliriz.  
+        * Örnek 1, Benefits of Raw String Literals. 
+            #include <regex>
+
+            int main() {
+                // Amaç     : "\ahmet" kelimesini yazı içerisinde aramak. 
+                // Notasyon : "\\ahmet".
+                // Cpp      : "\\\\ahmet".
+
+                // L-Value 
+                std::regex rx{ "\\\\ahmet" }; // "without using 'Raw String Literal'"
+                std::regex rxx{ R("\\ahmet") }; // "with using 'Raw String Literal'"
+
+                // R-Value
+                std::regex{ "\\\\ahmet" }; // "without using 'Raw String Literal'"
+                std::regex{ R("\\ahmet") }; // "with using 'Raw String Literal'"
+            }
+
+        * Örnek 2.0.0, "regex_match" fonksiyonu ile sınama yapabiliriz:
+            #include <regex>
+            #include <string>
+            #include <iostream>
+
+            int main() {
+                // Amaç     : Üç adet rakam karakteri, devamında dört adet alfabetik karakter, devamında üç adet rakam karakteri. 
+                // Notasyon : "\d{3}[a-z]{4}\d{3}".
+                // Cpp      : "\\d{3}[a-z]{4}\\d{3}".
+                
+                std::regex rx{ "\\d{3}[a-z]{4}\\d{3}" };
+                
+                std::string the_text{ "123ahmo456" };
+                
+                if (std::regex_match(the_text, rx))
+                    std::cout << "Yes!"; // Yes!
+                else
+                    std::cout << "No...";  
+            }
+
+        * Örnek 2.0.1,
+            #include <regex>
+            #include <string>
+            #include <iostream>
+            #include <fstream>
+            #include <vector>
+
+            std::vector<std::string> file_to_vector(const std::string& file_name) {
+                std::ifstream ifs{ file_name };
+                if (!ifs) {
+                    std::cerr << file_name << " could not be opened\n";
+                    throw std::runtime_error{ file_name + " could not be opened" };
+                }
+                
+                // Mandotary Copy Ellision
+                return std::vector<std::string>{ std::istream_iterator<std::string>{ifs}, {}};
+            }
+
+            int main() {
+                // Amaç     : Kelime başı olsun. "a" ile "f" karakterleri arasındaki karakterlerden en az dört, 
+                // en fazla yedi adet olsun. Sonunda da "tion" ile bitsin.
+                // Notasyon : "\b[a-f]{4,7}tion".
+                // Cpp      : "\\b[a-f]{4,7}tion".
+                
+                auto vec = file_to_vector("WordList.txt");
+                std::cout << "[" << vec.size() << "]"; // [1006]
+                
+                std::regex rx{ "\\b[a-f]{4,7}tion" };
+                
+                std::ofstream ofs{ "out.txt" };
+                if (!ofs) {
+                    std::cerr << "out.txt could not be opened\n";
+                    exit(EXIT_FAILURE);
+                }
+                
+                for (const auto& word: vec) {
+                    if (std::regex_match(word, rx))
+                        ofs << word << '\n';
+                }
+                
+            }
+
+        * Örnek 2.0.2,
+            #include <regex>
+            #include <string>
+            #include <iostream>
+            #include <fstream>
+            #include <vector>
+
+            std::vector<std::string> file_to_vector(const std::string& file_name) {
+                std::ifstream ifs{ file_name };
+                if (!ifs) {
+                    std::cerr << file_name << " could not be opened\n";
+                    throw std::runtime_error{ file_name + " could not be opened" };
+                }
+                
+                // Mandotary Copy Ellision
+                return std::vector<std::string>{ std::istream_iterator<std::string>{ifs}, {}};
+            }
+
+            int main() {
+                // Amaç     : "co" ile başlayan, arada "n" tane karakter olan, "ion" ile bitenler.
+                // Notasyon : "co.*ion".
+                // Cpp      : "co.*ion".
+                
+                auto vec = file_to_vector("WordList.txt");
+                std::cout << "[" << vec.size() << "]"; // [1006]
+                
+                std::regex rx{ "co.*ion" };
+                
+                std::ofstream ofs{ "out.txt" };
+                if (!ofs) {
+                    std::cerr << "out.txt could not be opened\n";
+                    exit(EXIT_FAILURE);
+                }
+                
+                for (const auto& word: vec) {
+                    if (std::regex_match(word, rx))
+                        ofs << word << '\n';
+                } 
+            }
+
+        * Örnek 2.1.0, "regex_match" fonksiyonu ile "capture-group" lar üzerinde de işlem yapabiliriz.
+            #include <regex>
+            #include <string>
+            #include <iostream>
+            #include <fstream>
+            #include <vector>
+
+            std::vector<std::string> file_to_vector(const std::string& file_name) {
+                std::ifstream ifs{ file_name };
+                if (!ifs) {
+                    std::cerr << file_name << " could not be opened\n";
+                    throw std::runtime_error{ file_name + " could not be opened" };
+                }
+                
+                // Mandotary Copy Ellision
+                return std::vector<std::string>{ std::istream_iterator<std::string>{ifs}, {}};
+            }
+
+            int main() {
+                
+                /*
+                    # OUTPUT #
+                    [1007] : 1234ahmo4321
+                    # Capture Group Info #
+                    Size: 1
+                    Length: 12
+                    Pos: 0
+                */
+                
+                auto vec = file_to_vector("WordList.txt");
+                std::cout << "[" << vec.size() << "] : "; 
+                
+                std::regex rx{ "\\d{4}[a-z]{4}\\d{4}" };
+                
+                // "std::smatch" aslında bir "container".
+                // İlk öğesi ise bulunan yazının tamamı. 
+                // Diğer öğeleri ise varsa ilgili "capture-group" lara ilişkin. 
+                std::smatch the_capture_group;
+                
+                for (const auto& word: vec)
+                    if (std::regex_match(word, the_capture_group, rx)) {
+                        std::cout << word << '\n';
+                        std::cout << "# Capture Group Info #\n";
+                        std::cout << "Size: " << the_capture_group.size() << '\n';
+                        std::cout << "Length: " << the_capture_group.length(0) << '\n';
+                        std::cout << "Pos: " << the_capture_group.position(0) << '\n';
+                    }
+            }
+
+        * Örnek 2.1.1,
+            #include <regex>
+            #include <string>
+            #include <iostream>
+            #include <fstream>
+            #include <vector>
+
+            std::vector<std::string> file_to_vector(const std::string& file_name) {
+                std::ifstream ifs{ file_name };
+                if (!ifs) {
+                    std::cerr << file_name << " could not be opened\n";
+                    throw std::runtime_error{ file_name + " could not be opened" };
+                }
+                
+                // Mandotary Copy Ellision
+                return std::vector<std::string>{ std::istream_iterator<std::string>{ifs}, {}};
+            }
+
+            int main() {
+                
+                /*
+                    # OUTPUT #
+                    [1007] : 1234ahmo4321
+                    # Capture Group Info #
+                    [4] : 1234ahmo4321 1234 ahmo 4321 
+                    [4] : 1234ahmo4321 1234 ahmo 4321 
+                */
+                
+                auto vec = file_to_vector("WordList.txt");
+                std::cout << "[" << vec.size() << "] : "; 
+                
+                std::regex rx{ "(\\d{4})([a-z]{4})(\\d{4})" };
+                
+                std::smatch the_capture_group;
+                
+                for (const auto& word: vec) {
+                    if (std::regex_match(word, the_capture_group, rx)) {
+                        std::cout << word << '\n';
+                        std::cout << "# Capture Group Info #\n";
+                        
+                        // Prints Elements using "std::string": 
+                        std::cout << "[" << the_capture_group.size() << "] : ";
+                        for (std::size_t i{}; i < the_capture_group.size(); ++i) 
+                            std::cout << the_capture_group.str(i) << ' ';
+                        std::cout << '\n';
+                        
+                        // Prints Elements using "std::submatch::operator<<()":  
+                        std::cout << "[" << the_capture_group.size() << "] : ";
+                        for (std::size_t i{}; i < the_capture_group.size(); ++i) 
+                            std::cout << the_capture_group[i] << ' ';
+                        std::cout << '\n';
+                        
+                    }
+                }
+            }
+
+        * Örnek 2.1.2, 
+            #include <regex>
+            #include <string>
+            #include <iostream>
+            #include <fstream>
+            #include <vector>
+
+            std::vector<std::string> file_to_vector(const std::string& file_name) {
+                std::ifstream ifs{ file_name };
+                if (!ifs) {
+                    std::cerr << file_name << " could not be opened\n";
+                    throw std::runtime_error{ file_name + " could not be opened" };
+                }
+                
+                // Mandotary Copy Ellision
+                return std::vector<std::string>{ std::istream_iterator<std::string>{ifs}, {}};
+            }
+
+            int main() {
+                
+                /*
+                    # OUTPUT #
+                    [1007] : 1234ahmo4321
+                    # Capture Group Info #
+                    [4]        : 1234ahmo4321 1234 ahmo 4321 
+                    Length     : 12           4    4    4
+                    Start Index: 0            0    4    8
+                */
+                
+                auto vec = file_to_vector("WordList.txt");
+                std::cout << "[" << vec.size() << "] : "; 
+                
+                std::regex rx{ "(\\d{4})([a-z]{4})(\\d{4})" };
+                
+                std::smatch the_capture_group;
+                
+                for (const auto& word: vec) {
+                    if (std::regex_match(word, the_capture_group, rx)) {
+                        std::cout << word << '\n';
+                        std::cout << "# Capture Group Info #\n";
+                        
+                        // Prints Elements:
+                        std::cout << "[" << the_capture_group.size() << "] : ";
+                        for (std::size_t i{}; i < the_capture_group.size(); ++i) 
+                            std::cout << the_capture_group.str(i) << ' ';
+                        std::cout << '\n';
+                        
+                        // Prints Length of Elemets:
+                        // "0" numaralı indiste bulunan yazının uzunluğu. 
+                        // "1" numaralı indiste ilk "capture group" takinin uzunluğu.
+                        // ...
+                        std::cout << "Length: ";
+                        for (std::size_t i{}; i < the_capture_group.size(); ++i) 
+                            std::cout << the_capture_group.length(i) << ' ';
+                        std::cout << '\n';
+                        
+                        // Prints Index of Elemets: 
+                        // "0" numaralı indiste, bulunan yazının kendisi. 
+                        // "1" numaralı indiste, ilk "capture-group" taki ifadenin, 
+                        // yazının kaçıncı indisinde başladığı bilgisi.
+                        // "2" numaralı indiste, ikinci "capture-group" taki ifadenin, 
+                        // yazının kaçıncı indisinde başladığı bilgisi.
+                        // ...
+                        std::cout << "Start Index: ";
+                        for (std::size_t i{}; i < the_capture_group.size(); ++i) 
+                            std::cout << the_capture_group.position(i) << ' ';
+                        std::cout << '\n';
+                    }
+                }
+            }
+
+        * Örnek 3.0.0, "regex_search" ile arama yapabiliriz. 
+            #include <regex>
+            #include <string>
+            #include <iostream>
+            #include <fstream>
+            #include <vector>
+            
+            std::vector<std::string> file_to_vector_by_sentence(const std::string& file_name) {
+                std::ifstream ifs{ file_name };
+                if (!ifs) {
+                    std::cerr << file_name << " could not be opened\n";
+                    throw std::runtime_error{ file_name + " could not be opened" };
+                }
+                
+                std::vector<std::string> vec;
+                std::string sline;
+                while (getline(ifs, sline)) {
+                    vec.push_back(std::move(sline));
+                }
+                
+                // Named Return Value Opt. 
+                return vec; 
+            }
+
+            int main() {
+                
+                /*
+                    # OUTPUT #
+                    [1003] : Yes!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!
+                    No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!
+                    No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!No!
+                    ...
+                */
+                
+                auto vec = file_to_vector_by_sentence("WordList.txt");
+                std::cout << "[" << vec.size() << "] : "; 
+                
+                std::regex rx{ "(\\d{4})([a-z]{4})(\\d{4})" };
+                
+                for (const auto& s: vec) {
+                    if (std::regex_search(s, rx)) {
+                        std::cout << "Yes!";
+                    }
+                    else {
+                        std::cout << "No!";
+                    }
+                }
+            }
+
+        * Örnek 3.0.1,
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+
+            std::vector<std::string> file_to_vec(const std::string& f_name) {
+                std::ifstream ifs{ f_name };
+                if (!ifs) {
+                    throw std::runtime_error{ f_name + "file could not be opened!" };
+                }
+
+                return std::vector<std::string>{std::istream_iterator<std::string>{ifs}, {}};
+            }
+
+            int main() {
+                std::regex rx{ "(\\d{4})\\.([A-F]{4})\\.(\\d{4})" };
+                auto vec = file_to_vec("WordList.txt");
+                std::smatch sm;
+                for (const auto& s : vec) {
+                    if (std::regex_search(s, sm, rx)) {
+                        print(
+                            "{:<16}({})({})({}){:<16}\n", 
+                            sm.prefix().str(), // Birinci "capture group" öncesindeki metin. 
+                            sm.str(1), // Birinci "capture group" öncesindeki metin.
+                            sm.str(2), // İkinci "capture group" öncesindeki metin. 
+                            sm.str(3), // Üçüncü "capture group" öncesindeki metin. 
+                            sm.suffix().str() // Üçüncü "capture group" sonrasındaki metin. 
+                        );
+                    }
+                }
+            }
+
+        * Örnek 3.0.2,
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+
+            std::vector<std::string> file_to_vec(const std::string& f_name) {
+                std::ifstream ifs{ f_name };
+                if (!ifs) {
+                    throw std::runtime_error{ f_name + "file could not be opened!" };
+                }
+
+                return std::vector<std::string>{std::istream_iterator<std::string>{ifs}, {}};
+            }
+
+            int main() {
+                std::regex rx{ "(\\d{4})\\.([A-F]{4})\\.(\\d{4})" };
+                auto vec = file_to_vec("WordList.txt");
+                std::smatch sm;
+                for (const auto& s : vec) {
+                    if (std::regex_search(s, sm, rx)) {
+                        if (sm.str(2)[0] == 'F' && sm[3].str()[0] == '1') 
+                        // İkinci "capture group" un ilk harfi 'F', 
+                        // Üçüncü "capture group" un ilk harfi '1' olmalı. 
+                        print(
+                            "{:<16}({})({})({}){:<16}\n", 
+                            sm.prefix().str(), 
+                            sm.str(1),  
+                            sm.str(2), 
+                            sm.str(3), 
+                            sm.suffix().str() 
+                        );
+                    }
+                }
+            }
+
+        * Örnek 3.1.0, "std::sregex_iterator" kullanarak da arama yapabiliriz. 
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+            
+            std::string file_to_string(const std::string& f_name) {
+                std::ifstream ifs{ f_name };
+                if (!ifs) {
+                    throw std::runtime_error{ f_name + "file could not be opened!" };
+                }
+
+                return std::string{ std::istreambuf_iterator<char>{ifs}, {} };
+            }
+
+            int main() {
+                std::regex rx{ "(\\d{4})\\.([A-F]{4})\\.(\\d{4})" };
+                auto str = file_to_string("WordList.txt");
+                for (std::sregex_iterator iter{ str.begin(), str.end(), rx }, end; iter != end; ++iter) {
+                    // Buradaki "end" iteratörü "default" olarak hayata gelirse, "end-of-sequence iterator"
+                    // konumunda olacaktır. 
+                    if (iter->str(2)[0] == 'A') {
+                        // İkinci "capture group" un ilk harfi 'A' olmalı. 
+                        print("{}\n", iter->str());
+                    }
+                }
+            }
+
+        * Örnek 3.1.1,
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+            
+            std::string file_to_string(const std::string& f_name) {
+                std::ifstream ifs{ f_name };
+                if (!ifs) {
+                    throw std::runtime_error{ f_name + "file could not be opened!" };
+                }
+
+                return std::string{ std::istreambuf_iterator<char>{ifs}, {} };
+            }
+
+            int main() {
+                /*
+                    # OUTPUT #
+                    1    car
+                    2    card
+                    3    care
+                    4    career
+                    5    carry
+                */
+
+                std::regex rx{ "\\bcar\\w*" }; // 'car' ile başlamalı, devamında 'n' tane karakter olmalı. 
+                auto str = file_to_string("WordList.txt"); int counter{};
+                for (std::sregex_iterator itr{ str.begin(), str.end(), rx }; itr != std::sregex_iterator{}; ++itr) {
+                    print("{:<4} {}\n", ++counter, itr->str());
+                }
+            }
+
+        * Örnek 3.2.0, "sregex_token_iterator" ile "tokenization" işlemi yapabiliriz. 
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+            
+            std::string file_to_string(const std::string& f_name) {
+                std::ifstream ifs{ f_name };
+                if (!ifs) {
+                    throw std::runtime_error{ f_name + "file could not be opened!" };
+                }
+
+                return std::string{ std::istreambuf_iterator<char>{ifs}, {} };
+            }
+
+            int main() {
+                std::regex rx{ "(\\bcar)(\\w*)" }; // 'car' ile başlamalı, devamında 'n' tane karakter olmalı. 
+                auto str = file_to_string("WordList.txt");
+                for (std::sregex_token_iterator itr{ str.begin(), str.end(), rx, -1 }, end; itr != end; ++itr) {
+                    // '-1', uygun olmayanlar,
+                    // '0', bulunanlar,
+                    // '1', birinci "capture group",
+                    // '2', ikinci "capture group",
+                    // '{1,2}', birinci ve ikinci "capture group",
+                    print("{}\n", itr->str());
+                }
+            }
+
+        * Örnek 3.2.1, 
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+            
+            std::string file_to_string(const std::string& f_name) {
+                std::ifstream ifs{ f_name };
+                if (!ifs) {
+                    throw std::runtime_error{ f_name + "file could not be opened!" };
+                }
+
+                return std::string{ std::istreambuf_iterator<char>{ifs}, {} };
+            }
+
+            int main() {
+                std::regex rx{ "[\\s,.!]+" };
+                auto str = file_to_string("WordList.txt");
+                for (std::sregex_token_iterator itr{ str.begin(), str.end(), rx, -1 }, end; itr != end; ++itr) {
+                    print("{}\n", itr->str());
+                }
+            }
+
+        * Örnek 4.0, "mark_count" ile "capture group" ların adedini öğrenebiliriz. 
+            #include <regex>
+            #include <print>
+
+            int main() {
+                std::regex rgx{ "(ahmet (kandemir) pehlivanli) (merve pehlivanli)" };
+                std::print("{}\n", rgx.mark_count()); // 3
+            }
+
+        * Örnek 4.1.0,
+            #include <regex>
+            #include <print>
+
+            int main() {
+                std::regex rgx{ "(ahmet \\(kandemir\\) pehlivanli) (merve pehlivanli)" };
+                std::print("{}\n", rgx.mark_count()); // 2
+            }
+
+        * Örnek 4.1.1,
+            #include <regex>
+            #include <print>
+
+            int main() {
+                std::regex rgx{ "(?:ahmet \\(kandemir\\) pehlivanli) (?:merve pehlivanli)" };
+                std::print("{}\n", rgx.mark_count()); // 0
+            }
+
+        * Örnek 4.1.2,
+            #include <regex>
+            #include <print>
+
+            int main() {
+                std::regex rgx{ "(ahmet (kandemir) pehlivanli) (merve pehlivanli)", std::regex_constants::nosubs };
+                std::print("{}\n", rgx.mark_count()); // 0
+            }
+
+        * Örnek 5.0, "std::regex_replace" ile "replace" işlemi gerçekleştirebiliriz. 
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+
+            std::string file_to_string(const std::string& f_name) {
+                std::ifstream ifs{ f_name };
+                if (!ifs) {
+                    throw std::runtime_error{ f_name + "file could not be opened!" };
+                }
+
+                return std::string{ std::istreambuf_iterator<char>{ifs}, {} };
+            }
+
+            int main() {
+                /*
+                    # OUTPUT #
+                    interest        () int (erest)
+                    interesting     () int (eresting)
+                    international   () int (ernational)
+                    interview       () int (erview)
+                    into            () int (o)
+                    //...
+                */
+
+                std::regex rx{ "(\\w*)(int)(\\w*)" };
+                auto str = file_to_string("WordList.txt");
+                for (std::sregex_iterator iter{ str.begin(), str.end(), rx }, end; iter != end; ++iter) {
+                    print("{:<15} ({}) {} ({})\n", iter->str(), iter->str(1), iter->str(2), iter->str(3));
+                }
+
+                std::cout << "\n=====================\n";
+                
+                /*
+                # OUTPUT #
+                *
+                *
+                *
+                *
+                *
+                //...
+                */
+
+                // "match" olanların yerine "*" koyup, yeni halini 
+                // tek bir "std::string" olarak geri döndürür. 
+                auto result = std::regex_replace(str, rx, "*");
+                std::cout << "<" << result << ">\n";
+
+                std::cout << "\n=====================\n";
+
+                /*
+                    # OUTPUT #
+                    - int - erest
+                    - int - eresting
+                    - int - ernational
+                    - int - erview
+                    - int - o
+                    //...
+                */
+
+                // "match" olanların yerine ilgili "capture-group" ları koyup,
+                // yeni halini tek bir "std::string" olarak geri döndürür. 
+                result = std::regex_replace(str, rx, "$1-$2-$3");
+                std::cout << "<" << result << ">\n";
+
+                std::cout << "\n=====================\n";
+
+                /*
+                    # OUTPUT #
+                    //...
+                */
+
+                // "match" olanları silip,
+                // yeni halini tek bir "std::string" olarak geri döndürür. 
+                result = std::regex_replace(str, rx, "$'");
+                std::cout << "<" << result << ">\n";
+
+                std::cout << "\n=====================\n";
+
+                /*
+                    # OUTPUT #
+                    (interest)
+                    (interesting)
+                    (international)
+                    (interview)
+                    (into)
+                    //...
+                */
+
+                // "match" olanları tekrar yazar, ancak "()" içerisinde.
+                // Yeni halini tek bir "std::string" olarak geri döndürür. 
+                result = std::regex_replace(str, rx, "($&)");
+                std::cout << "<" << result << ">\n";
+            }
+
+        * Örnek 5.1,
+            #include <regex>
+            #include <vector>
+            #include <string>
+            #include <print>
+            #include <iostream>
+            #include <fstream>
+            
+            int main() {
+                /*
+                    # OUTPUT #
+                    // Enter a text : ben ben, bugun ne yazik ki ucaga yetismek zorundayim zorundayim arkadaslar, arkadaslar
+                    // ben, bugun ne yazik ki ucaga yetismek zorundayim arkadaslar, arkadaslar
+                */
+
+                std::cout << "Enter a text: ";
+                
+                std::string str;
+                std::getline(std::cin, str);
+                std::regex rx{ "\\b(\\w+)\\s+\\1" };
+
+                // Peşpeşe iki tane aynı metin geldiğinde, 
+                // bir tanesini silecek.
+                std::cout << std::regex_replace(str, rx, "$1");
+            }
+
+> Hatırlayıcı Notlar:
+    >> "regex101.com" da "multi-line" modunda olması, her bir kelimenin ayrı bir yazı olarak ele alınması anlamına gelmektedir.

@@ -1,0 +1,796 @@
+> Literals in C++: Sabitleri temsil etmektedir. 
+    * Örnek 1,
+        #include <iostream>
+
+        int main()
+        {
+            /*
+                # OUTPUT # 
+                181==181==181==181
+            */
+            
+            std::cout << 181 << "==" << 0b10'11'01'01 << "==" << 0XB5 << "==" << 0265 << "\n"; 
+        }
+
+Buna ek olarak bazı operator fonksiyonlar vardır ki bu fonksiyonların parametrik yapısı belli kurallara bağlı fakat 
+geri dönüş değeri herhangi bir türden olabilir. Bu fonksiyonlar, tıpkı sınıfların operatör fonksiyonları gibi, ilgili 
+sabitin kullandılması durumunda çağrılırlar. Örneğin, bir sınıf için ".operator*()" fonksiyonu yazılmış olsun. Nasılki 
+bu sınıf türünden iki nesneyi "*" operatörünün operandı yapıldığında ".operator*()" fonksiyonu çağrılıyorsa, sabitlere 
+ilişkin bu özel fonksiyonlar da sabitlerin kullanıldığı yerlerde çağrılmaktadır. Sınıflarda bulunan "operator overloading" 
+amaçlı kullanılan fonksiyonlardan farkı, parametrik yapısını kafamıza göre belirleme HAKKIMIZIN OLMAMASIDIR. Sadece geri 
+dönüş değerini belirleme hakkına sahipiz. Bir diğer engel de, kendi oluşturduğumuz bu "custom" fonksiyonları kullanırken,
+başına "_" karakterini de eklemeliyiz. Eğer standart olanları çağıracaksak, "_" karakterine gerek YOKTUR. Pekiyi bizler 
+"custom" bir şekilde bu fonksiyonları nasıl yazabiliriz? Karşımıza iki farklı yöntem çıkmaktadır. Bunlar "cooked" ve 
+"uncooked". Bu yöntemlerin her ikisini de tam sayı ve gerçek sayılar söz konusu olduğunda kullanabiliriz. Bu fonksiyonların 
+"constexpr" olması bir zorunluluk değildir. Fakat oladabilir. 
+    >> "cooked" : Bu yöntemde fonksiyonun parametresi "unsigned long long" türden olmak zorundadır eğer tam sayılar için 
+    kullanılacaksa. Gerçek sayıları kullanacaksa, "long double" türden olmak zorundadır. Şu şekilde oluşturabiliriz:
+
+        T operator""_<random-chars>(U){
+            //...
+        }
+
+    Artık "random-chars" kısmında belirtilen karakterleri bir tam sayı ile birlikte kullanırsak, bu fonksiyon çağrılacaktır.
+        * Örnek 1,
+            #include <iostream>
+            #include <string>
+            #include <cmath>
+
+            int operator""_sr(unsigned long long value){
+                std::cout << "operator\"\"_sr(" << value << ")\n";
+                return static_cast<int>(std::sqrt(value));
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT # 
+                    operator""_sr(823423)
+                    Result : 907
+                */
+                
+                auto x = 823423_sr;
+                // auto x = operator""_sr(823423_sr);
+                
+                std::cout << "Result : " << x << "\n";
+            }
+
+        * Örnek 2,
+            #include <iostream>
+            #include <string>
+            #include <cmath>
+            #include <cstring>
+
+            constexpr double operator""_mt(long double value){
+                return static_cast<double>(value);
+            }
+
+            constexpr double operator""_cm(long double value){
+                return static_cast<double>(value * 100);
+            }
+
+            constexpr double operator""_mm(long double value){
+                return static_cast<double>(value * 1000);
+            }
+
+            constexpr double operator""_km(long double value){
+                return static_cast<double>(value / 100);
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT # 
+                    Total Distance : 1.47975e+11
+                */
+                constexpr auto TotalDistance = 1.234_km + 230.789_mt + 789654.654123_cm + 147896325.523698741_mm;
+                std::cout << "Total Distance : " << TotalDistance << "\n";
+            }
+
+    >> "uncooked" : Bu yöntemde ise fonksiyonun parametresi "const char*" türden olmak zorundadır. Yine "cooked" biçimindeki 
+    gibi oluşturabiliriz. 
+        * Örnek 1,
+            #include <iostream>
+            #include <string>
+            #include <cmath>
+            #include <cstring>
+
+            int operator""_sr(const char* p){
+                std::cout << "operator\"\"_sr(" << std::strlen(p) << ")\n";
+                while(*p){
+                    std::cout << *p << " " << (int)*p << "\n";
+                    ++p;
+                }
+                
+                return 0;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT # 
+                    operator""_sr(6)
+                    8 56
+                    2 50
+                    3 51
+                    4 52
+                    2 50
+                    3 51
+                    Result : 0
+                */
+                
+                auto x = 823423_sr;
+                std::cout << "Result : " << x << "\n";
+            }
+
+        * Örnek 2,
+            #include <iostream>
+            #include <string>
+            #include <cmath>
+            #include <cstring>
+
+            int operator""_bin(const char* p){
+                int ret{};
+                while(*p){
+                    if(!(*p == '0' ||*p == '1'))
+                        throw std::runtime_error{"bad binary constant!"};
+                        
+                    ret = ret * 2 + (*p - '0');
+                    ++p;
+                }
+                
+                return ret;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT # 
+                    Result : 661
+                */
+                
+                auto x = 1010010101_bin;
+                std::cout << "Result : " << x << "\n";
+            }
+
+Anımsayacağımız üzere "row" ve "cooked" biçimde "literal" oluşturabiliyorduk. "row" biçimde oluşturduklarımız 
+"const char*" parametreli, "cooked" olanlar ise "unsigned long long" veya "long double" parametreli olacaktır. Pekiyi bizler başka hangi 
+parametreleri "custom" fonksiyonlar oluşturabiliriz? 
+    >> Normal şartlarda "const char*" parametreli olanlar, argümanı bir yazı biçiminde aldıklarından, yazının adresini geçmiş oluyorduk.
+    Pekiyi böylesi fonksiyonlara "" işareti kullanarak argüman geçmemiz mümkün müdür? Bunun için, tıpkı "++" operatörünün ön ek olarak
+    kullanıldığı senaryolar için ".operator++()" fonksiyonuna boş bir parametre belirtir gibi, bizler de "const char*" parametreli
+    fonksiyona boş bir parametre daha belirtmeliyiz. Fakat ikinci parametrenin türü yine "std::size_t" / "unsigned long" türünden olmalıdır. 
+        * Örnek 1, Aşağıdaki örneğin çıktısında da görüleceği üzere "" kullanarak argüman geçtiğimiz zaman sentaks hatası meydana 
+        gelmektedir. 
+            #include <iostream>
+            #include <string>
+
+            int operator""_sr(const char* p){
+                std::cout << "operator\"\"_sr(" << std::strlen(p) << ")\n";
+                while(*p){
+                    std::cout << *p << " " << (int)*p << "\n";
+                    ++p;
+                }
+                
+                return 0;
+            }
+
+            int operator""_vl(unsigned long long value){
+                std::cout << "operator\"\"_vl(" << value << ")\n";
+                
+                return 0;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    operator""_sr(9)
+                    1 49
+                    2 50
+                    3 51
+                    4 52
+                    5 53
+                    6 54
+                    7 55
+                    8 56
+                    9 57
+                    operator""_vl(987654321)
+                */
+                
+                123456789_sr;
+                //"12345678"_sr; // error: no matching literal operator for call to 'operator""_sr' with arguments of types 'const char *' and 'unsigned long'
+                
+                987654321_vl;
+                
+            }
+
+        * Örnek 2, Artık "operator""_srsr" fonksiyonunu çağırırken "" atomunu kullanarak parametre geçebiliriz. 
+            #include <iostream>
+            #include <string>
+
+            int operator""_sr(const char* p){
+                std::cout << "operator\"\"_sr(" << std::strlen(p) << ")\n";
+                while(*p){
+                    std::cout << *p << " " << (int)*p << "\n";
+                    ++p;
+                }
+                
+                return 0;
+            }
+
+            int operator""_srsr(const char* p, std::size_t len){
+                std::cout << "operator\"\"_srsr(" << len << ")\n";
+                while(*p){
+                    std::cout << *p << " " << (int)*p << "\n";
+                    ++p;
+                }
+                
+                return 0;
+            }
+
+            int operator""_vl(unsigned long long value){
+                std::cout << "operator\"\"_vl(" << value << ")\n";
+                
+                return 0;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    operator""_sr(9)
+                    1 49
+                    2 50
+                    3 51
+                    4 52
+                    5 53
+                    6 54
+                    7 55
+                    8 56
+                    9 57
+                    operator""_srsr(8)
+                    1 49
+                    2 50
+                    3 51
+                    4 52
+                    5 53
+                    6 54
+                    7 55
+                    8 56
+                    operator""_vl(987654321)
+                */
+                
+                123456789_sr;
+                // "12345678"_sr; // error: no matching literal operator for call to 'operator""_sr' with arguments of types 'const char *' and 'unsigned long'
+                "12345678"_srsr;
+                
+                987654321_vl;   
+            }
+
+        * Örnek 3,
+            #include <iostream>
+            #include <string>
+
+            std::string operator""_st(const char* p, std::size_t){
+                return std::string{p} + p;    
+            }
+
+            int main()
+            {
+                auto name = "Ahmet Kandemir"_st;
+                std::cout << "|" << name << "|\n"; // |Ahmet KandemirAhmet Kandemir|
+            }
+
+        * Örnek 4,
+            #include <iostream>
+            #include <string>
+            #include <vector>
+
+            std::vector<char> operator""_v(const char* p, std::size_t){
+                std::vector<char> n;
+                
+                while(*p)
+                    n.push_back(*p++);
+                    
+                return n;
+            }
+
+
+            int main()
+            {
+                auto vec = "murat yilmaz"_v;
+                std::cout << "Size: " << vec.size() << "\n"; // Size: 12
+            }
+
+    >> Bir diğer alternatif ise "char" parametreli fonksiyon yazmaktır. 
+        * Örnek 1,
+            #include <iostream>
+            #include <string>
+
+            int operator""_i(char p){
+                return static_cast<int>(p);
+            }
+
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    A : A 65
+                */
+                
+                std::cout << "A : " << 'A'<< " " << 'A'_i << "\n";
+            } 
+
+Bütün bunlar göz önüne alındığında fonksiyonlarımız "cooked" olmalıdır. "cooked" olmaları işimizi görmüyorsa, "raw" yapmalıyız. 
+Fakat hem "cooked" hem "raw" aynı isim alanında görünür olmamalıdır çünkü ya "Ambiguity" oluşacak ya da birisi seçilecektir. Dolayısıyla 
+bizler bu fonksiyon bildirimlerini bir "namespace" içerisine almalıyız. Şimdi de genel olarak örneklere bakalım:
+    * Örnek 1, Aşağıdaki örnekte ise ya "Ctor." fonksiyonu "explicit" yapılmalı ya da "PreventUsage"
+    parametreli bir "Ctor." yazılmalıdır. Aksi halde "Meter" sınıfına direkt olarak "double" tür atayabiliriz. 
+        #include <iostream>
+        #include <string>
+        #include <vector>
+
+        class Meter{
+        public:
+            Meter() = default;
+            // explicit Meter(double dval) : m_val{dval} {} // WAY - I
+            
+            // WAY - II
+            struct PreventUsage{};
+            Meter(PreventUsage, double dval) : m_val{dval} {}
+            
+            void print()const { std::cout << m_val << "\n"; }
+        private:
+            double m_val{};
+        };
+
+        Meter operator""_Mt(long double val){
+            return Meter{ Meter::PreventUsage{}, static_cast<double>(val) };
+        }
+
+        int main()
+        {
+            Meter m;
+            m = 4.67_Mt;
+            m.print(); // 4.67
+        }
+
+> "Raw-String Literal" : Anımsanacağımız üzere "string" içerisinde {", \} karakterlerini kullanabilmek için ve uzun metinleri de
+bölerek alt satırdan devam etmesini sağlamak için '\' karakterini kullanmamız gerekmektedir. 
+    * Örnek 1,
+        #include <iostream>
+
+        int main()
+        {
+            const char* name{
+                "\\Ahmet \"Kandemir\" \
+                Pehlivanli \\" 
+                };
+                
+            std::cout << name << "\n"; // \Ahmet "Kandemir"         Pehlivanli \
+        }
+
+Çıktıdan da görüleceği üzere ilgili "string" i hem yazmak hem de okumak çok yorucu. İşte bu karmaşıklığı gidermek için
+"Raw-String Literal" kavramı geliştirilmiştir ki bu aslında bir notasyondur. 
+    * Örnek 1,
+        #include <iostream>
+        #include <string>
+
+        int main()
+        {
+            const char* name{
+                "\\Ahmet \"Kandemir\" Pehlivanli\\" 
+                };
+                
+            std::cout << name << "\n"; // \Ahmet "Kandemir" Pehlivanli\
+            
+            const char* surname = R"(\Ahmet "Kandemir" Pehlivanli\)";
+            std::cout << surname << "\n"; // \Ahmet "Kandemir" Pehlivanli\
+        }
+
+Eğer yazının kendisinde {"(, )"} karakterlerinin de olmasını istiyorsak, tırnak işareti ile açılan parantez ve kapanan parantez ile 
+tırnak işareti arasında bir ayıraç koymalıyız. 
+    * Örnek 1,
+        #include <iostream>
+        #include <string>
+
+        int main()
+        {
+            auto surname = R"ahmo(Ahmet "(Kandemir)" Pehlivanli)ahmo";
+            std::cout << surname << "\n"; // Ahmet "(Kandemir)" Pehlivanli
+        }
+
+
+
+
+
+
+> Hatırlatıcı Notlar:
+    >> "std::initializer_list" sınıfı: Bu sınıf türünden bir nesne oluştururken derleyici arka planda bir dizi meydana getirmekte,
+    bu sınıfa geçtiğimiz elemanları bu diziye kopyalayarak da ilgili diziyi doldurmaktadır. Dolayısıyla "Copy" fonksiyonları "delete"
+    edilmiş sınıfları, "std::initializer_list" sınıfı için kullanamayız. 
+        * Örnek 1,
+            #include <string>
+            #include <iostream>
+            #include <initializer_list>
+
+            class Myclass{
+                public:
+                    Myclass(const std::string& name = std::string{"Ulya"}) : m_name{name} { std::cout << "Default Ctor.\n"; }
+                    Myclass(const Myclass& other) = delete;
+                    Myclass& operator=(const Myclass& other) = delete;
+                    Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
+                    Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+                    ~Myclass()noexcept { std::cout << "Dtor\n"; }
+                private:
+                    std::string m_name;
+            };
+
+            int main()
+            {
+                /*
+                * Derleyici arka planda bir dizi oluşturup,
+                * dizinin elemanlarını aşağıdaki değerleri kopyalayarak belirlemektedir.
+                */
+                Myclass a, b, c;
+                std::initializer_list<Myclass> myList{ a,b,c }; // Error: error: use of deleted function ‘Myclass::Myclass(const Myclass&)’
+            } 
+
+    Diğer yandan "std::initializer_list" sınıfı içerisinde iki adet gösterici barındırmaktadır. Bu göstericilerden birisi arka 
+    plandaki o dizinin başlangıç noktasını, diğeri ise bitiş noktasını göstermektedir. Fonksiyon parametresi bu sınıf türünden 
+    kendisinin olduğu durumlarda ise bu iki gösterici kopyalanmaktadır. 
+        * Örnek 1, Aşağıdaki örnekte "myList" objesinin kendisi değil, içerisindeki göstericiler kopyalanmıştır.
+            #include <iostream>
+            #include <initializer_list>
+
+            void func(std::initializer_list<int> myList){
+                std::cout << "Address of myList: " << &myList << '\n';
+                std::cout << "Dizi adresi      : " << myList.begin() << '\n';
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Address of myList: 0x7fff7a959680
+                    Dizi adresi      : 0x7fff7a959690
+                    ============================
+                    Address of myList: 0x7fff7a959650
+                    Dizi adresi      : 0x7fff7a959690
+                */
+                
+                std::initializer_list<int> myList{ 2, 4, 6, 8, 10 };
+                
+                std::cout << "Address of myList: " << &myList << '\n';
+                std::cout << "Dizi adresi      : " << myList.begin() << '\n';
+                
+                std::cout << "============================\n";
+                
+                func(myList);
+            } 
+
+    Öte yandan parametresi "std::initializer_list" olan fonksiyonlara geçici nesne de pek tabii gönderebiliriz. Bunun istisnai 
+    durumu, fonksiyon şablonlarıdır. Çünkü fonksiyon şablonlarındaki "T" için yapılan tür çıkarım kuralları ile "auto" kelimesi 
+    için yapılan tür çıkarım kuralları "std::initializer_list" için farklıdır. "Auto Type Deduction" kurallarına göre tür çıkarımı 
+    "std::initializer_list" yönüne doğru yapılırken, "Template Argument Deduction" kurallarına göre durum SENTAKS HATASIDIR. Tür
+    çıkarımı söz konusu olduğunda ikisi arasındaki iki fark da budur. 
+        * Örnek 1,
+            #include <iostream>
+            #include <initializer_list>
+
+            template<typename T>
+            void func(T myList){
+                for(auto value: myList)
+                    std::cout << value << " ";
+                    
+                std::cout << "\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    2 4 6 8 10 
+                */
+                
+                /*
+                * Aşağıdaki "myList" değişkeninin türü "std::initializer_list<int>"
+                * türündendir. Eğer "=" yerine direkt olarak "Direct-list-initialization"
+                * yapılsaydı, sentaks hatası olacaktı. Çünkü bu sefer sadece tek bir 
+                * elemanın olması gerekmektedir.
+                */
+                auto myList = { 2, 4, 6, 8, 10 }; // "myList" is of type "std::initializer_list<int>" 
+                // auto myList{ 2, 4, 6, 8, 10 }; // direct-list-initialization of ‘auto’ requires exactly one element [-fpermissive]
+                func(myList);
+                
+                // func({10, 8, 6, 4, 2}); // "Template Argument Deduction" is failed.
+            } 
+
+    Bütün bunlara ek olarak şu noktaya da dikkat etmeliyiz; "STL" içerisindeki "Container" sınıfların "insert" fonksiyonlarını
+    teker teker çağırmak yerine bu fonksiyonları tek seferde çağırmak daha verimli olacaktır. Bunun için yine ilgili fonksiyonların
+    "std::initializer_list" parametreli "overload" larını kullanabiliriz. 
+        * Örnek 1,
+            #include <iostream>
+            #include <vector>
+            #include <initializer_list>
+
+            std::vector<int> func(int a, int b, int c){
+                std::vector<int> ivec;
+                
+                ivec = {a,b,c};
+                
+                return ivec;
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    31 32 33
+                */
+                
+                auto myVec{ func(31, 32, 33) };
+                
+                for(auto value: myVec)
+                    std::cout << value << " ";    
+            } 
+
+    Son olarak şunu da belirtmekte fayda vardır ki "std::initializer_list" parametreli "Ctor." ile başka parametreli "Ctor." 
+    fonksiyonu aynı seçilebilirliğe sahipse, "std::initializer_list" parametreli olan seçilecektir. 
+        * Örnek 1,
+            #include <iostream>
+            #include <vector>
+            #include <initializer_list>
+
+            class Myclass{
+                public:
+                    Myclass(int) { std::cout << "(int)\n"; }
+                    Myclass(std::initializer_list<int>) { std::cout << "(std::initializer_list<int>)\n"; }
+            };
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    31 32 33
+                */
+                
+                Myclass m{31};    // (std::initializer_list<int>)
+                Myclass mm(32);   // (int)
+                Myclass mmm = 33; // (int)
+
+                Myclass n{31, 32, 33};      // (std::initializer_list<int>)
+                // Myclass nn(31, 32, 33);  // no matching function for call to ‘Myclass::Myclass(int, int, int)’
+                Myclass nnn = {31, 32, 33}; // (std::initializer_list<int>)
+            } 
+
+    >> Sınıfımızın veri elemanlarını "init." ederken birden farklı yönteme başvurabiliriz. Örneğin, parametresi "const-reference"
+    olan bir fonksiyon da yazabiliriz veya parametresi bir sınıf türünden olup, aldığı argümanları "std::move" eden de. 
+        * Örnek 1,
+            #include <iostream>
+            #include <string>
+            #include <chrono>
+
+            class PersonClassic{
+                public:
+                    PersonClassic(const std::string& name, const std::string& surname)
+                        : m_name{name}, m_surname{surname} {}
+                private:
+                    std::string m_name;
+                    std::string m_surname;
+            };
+
+            class PersonInitMove{
+                public:
+                    PersonInitMove(std::string name, std::string surname)
+                        : m_name{std::move(name)}, m_surname{std::move(surname)} {}
+                private:
+                    std::string m_name;
+                    std::string m_surname;
+            };
+
+            class PersonInitOverload{
+                public:
+                    PersonInitOverload(const std::string& name, const std::string& surname) 
+                        : first{name}, last{surname}{}
+                    PersonInitOverload(const std::string& name, std::string&& surname)
+                        : first{name}, last{std::move(surname)}{}
+                    PersonInitOverload(std::string&& name, const std::string& surname)
+                        : first{std::move(name)}, last{surname}{}
+                    PersonInitOverload(std::string&& name, std::string&& surname)
+                        : first{std::move(name)}, last{std::move(surname)}{}
+                    PersonInitOverload(const char* name, const char* surname) 
+                        : first{name}, last{surname}{}
+                    PersonInitOverload(const char* name, const std::string& surname) 
+                        : first{name}, last{surname}{}
+                    PersonInitOverload(const char* name, std::string&& surname)
+                        : first{name}, last{std::move(surname)}{}
+                    PersonInitOverload(const std::string& name, const char* surname)
+                        : first{name}, last{surname}{}
+                    PersonInitOverload(std::string&& name, const char* surname)
+                        : first{std::move(name)}, last{surname}{}
+                private:
+                    std::string first;
+                    std::string last; 
+            };
+
+            std::chrono::nanoseconds measure(int num);
+
+            constexpr int n = 100'000;
+            const char* pname = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+            const char* psurname = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+
+            //using Person = PersonClassic;
+            using Person = PersonInitMove;
+            //using Person = PersonInitOverload;
+
+            int main()
+            {
+                /*  
+                    # OUTPUT # 
+                    // "Person" is "PersonClassic"
+                        test result for 100000 iterations: 109.701ms
+                        3 inits take on average          : 1097ns
+                        
+                    // "Person" is "PersonInitMove" 
+                        test result for 100000 iterations: 122.841ms
+                        3 inits take on average          : 1228ns
+
+                    // "Person" is "PersonInitOverload" 
+                        test result for 100000 iterations: 64.606ms
+                        3 inits take on average          : 646ns
+                */
+                    
+                measure(20); // Başlangıç maliyetlerini örtbas için. 
+                
+                std::chrono::nanoseconds nanosecond_duration{ measure(n) };
+                std::chrono::duration<double, std::milli> millisecond_duration{ nanosecond_duration };
+                
+                std::cout << "test result for " << n << " iterations: "
+                        << millisecond_duration.count() << "ms\n";
+                        
+                std::cout << "3 inits take on average          : "
+                        << nanosecond_duration.count() / n << "ns\n";
+            } 
+
+            std::chrono::nanoseconds measure(int num)
+            {
+                std::chrono::nanoseconds total_duration{};
+                for(int i = 0; i < num; ++i){
+                    std::string name(1000, 'U');
+                    std::string surname(1000, 'Y');
+                    auto start = std::chrono::steady_clock::now();
+                    Person p1{pname, psurname};
+                    Person p2{name, surname};
+                    Person p3{std::move(name), std::move(surname)};
+                    auto end = std::chrono::steady_clock::now();
+                    total_duration += end - start;
+                }
+                
+                return total_duration;
+            }
+
+    >> Sınıfların "push_back" fonksiyonları iki "overload" a sahiptir. Bunlar "const T&" türünden ve "T&&" türünden "overload"
+    lardır. Bu iki fonksiyonun takribi gösterimi aşağıdaki biçimde olsun;
+
+        template<typename T, typename = Allocator = allocator<T>>
+        class Vector{
+            public:
+                //...
+                void push_back(const T& t){
+                    //...
+                    new T(t); // Bu aşamada "T" bir sınıf türü ise "Copy Ctor." çağrılacaktır. 
+                    //...
+                } 
+                void push_back(T&& t){
+                    //...
+                    new T(std::move(t)); // Bu aşamada "T" bir sınıf türü ise "Move Ctor." çağrılacaktır. 
+                    //...
+                } 
+        };
+
+    Buradan da görüleceği üzere "T" sınıf türünden elemanımız, "Moved From State" halini alabilir. Şöyleki;
+        * Örnek 1,
+            #include <iostream>
+            #include <string>
+            #include <vector>
+
+            int main()
+            {
+                /*  
+                    # OUTPUT # 
+                    Name : Ahmet
+                    List : Ahmet
+                    Name : 
+                    List : Ahmet Ahmet 
+                */
+                
+                std::vector<std::string> svec;
+                std::string name{"Ahmet"};
+                
+                svec.push_back(name);
+                std::cout << "Name : " << name << "\n";
+                std::cout << "List : ";
+                for(auto name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+                
+                svec.push_back(std::move(name));
+                std::cout << "Name : " << name << "\n";   
+                std::cout << "List : ";
+                for(auto name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+            } 
+
+    Bu iki fonksiyona ek olarak birde "emplace_back" isimli fonksiyon vardır ki bu fonksiyon çağrısı ne "Copy Ctor." çağrısına 
+    ne de "Move Ctor." çağrısını yapmaktadır. Direkt olarak ilgili nesneyi yerinde oluşturmaktadır. Bu fonksiyonu da kabaca 
+    şu şekilde gösterebiliriz: 
+
+        template<typename T, typename = Allocator = allocator<T>>
+        class Vector{
+            public:
+                //...
+                template<typename ...Args>
+                constexpr T& emplace_back(Args&& ...args){
+                    new T(std::forward<Args>(args)...);
+                }
+                //...
+        };    
+
+    Buradan da görüleceği üzere argüman olarak aldığı ifadeleri direkt olarak ilgili sınıfın "Ctor." fonksiyonuna geçmektedir.
+    Şöyleki:
+        * Örnek 1,
+            #include <iostream>
+            #include <string>
+            #include <vector>
+
+            class Myclass{
+            public:
+                Myclass(const std::string& name) : m_name{name} { std::cout << "Default Ctor.\n"; }
+                Myclass(const Myclass& other) : m_name{other.m_name} { std::cout << "Copy Ctor.\n"; }
+                Myclass& operator=(const Myclass& other) { m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;}
+                Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+                ~Myclass()noexcept { std::cout << "Dtor\n"; }
+                void show_name()const { std::cout << "Name : " << m_name << "\n"; }
+            private:
+                std::string m_name;
+            };
+                    
+            int main()
+            {
+                /*  
+                    # OUTPUT # 
+                    Default Ctor.
+                    Name : Ulya
+                    ==============
+                    Default Ctor.
+                    Name : Ulya
+                    Name : Yuruk
+                    
+                    Dtor
+                    Dtor
+                */
+                
+                std::vector<Myclass> svec; svec.reserve(3);
+                
+                svec.emplace_back("Ulya");
+                for(auto&& name: svec)
+                    name.show_name();
+                
+                std::cout << "==============\n";
+                
+                svec.emplace_back("Yuruk");
+                for(auto&& name: svec)
+                    name.show_name();
+                std::cout << "\n";
+            } 
+    
+    Artık ne "Move Ctor." ne de "Copy Ctor." çağrısı yapıldı. Dolayısıyla bu iki fonksiyonun getirdiği maliyetten kaçınmış olduk. 
+    Bu da demektir ki "Move Only" sınıfları da kullanabiliriz. Bu fonksiyonun getirdiği bir diğer fayda ise, yerinde hayata
+    getireceğimiz nesnenin "Ctor." fonksiyonu eğer "R-Value" parametreli ise, "emplace_back" e bir "R-Value Expression" geçtiğimiz
+    zaman yine "Move Semantics" işletilmiş olacaktır. Çünkü "R-Value" olan ifadeler yine "R-Value" olarak hedef nesnenin "Ctor." 
+    fonksiyonuna geçilecek.

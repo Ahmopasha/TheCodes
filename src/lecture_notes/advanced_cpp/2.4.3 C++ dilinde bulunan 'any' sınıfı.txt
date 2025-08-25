@@ -1,0 +1,704 @@
+> "std::any" : Sınıf şablonu DEĞİLDİR. "Default Init." edildiğinde bir değer TUTMAMAKTADIR, tıpkı "std::optional"
+gibi.      
+    * Örnek 1,
+        #include <iostream>
+        #include <any>
+
+        class Myclass {
+        public:
+            Myclass() {
+                std::cout << "Myclass\n";
+            }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                false
+                false
+            */
+            
+            std::any x1; std::cout << std::boolalpha << x1.has_value() << "\n";
+            std::any x2{}; std::cout << std::boolalpha << x2.has_value() << "\n";
+        }
+
+    * Örnek 2,
+        #include <iostream>
+        #include <any>
+        #include <vector>
+        #include <string>
+
+        int main()
+        {
+            using namespace std::string_literals;
+            
+            std::any a1(12);
+            std::any a2(1.2);
+            std::any a3("mustafa");
+            std::any a4("mustafa"s);
+            std::any a5(std::vector<int>{ 2, 5, 9, 12, 56 });
+        }
+
+    * Örnek 3, "std::any" nesnesinin tuttuğu değişken yeteri kadar büyükse, o değişken için dinamik bellek yönetimi 
+    uygulanabilir. Bu durum derleyiciye bağlıdır. Anımsanacağı üzere "std::optional" ve "std::variant" için böyle bir
+    dinamik bellek yönetimi söz konusu değildi.   
+        #include <iostream>
+        #include <any>
+        #include <vector>
+        #include <string>
+
+        void* operator new(std::size_t sz) {
+            std::cout << "operator new called, size: " << sz << "\n";
+            if (!sz)
+                ++sz;
+
+            if (void* ptr = std::malloc(sz))
+                return ptr;
+
+            throw std::bad_alloc{};
+        }
+
+        struct Nec {
+            char buf[256];
+        };
+
+        struct Custom {
+            char buf[5]{};
+        };
+
+        struct CustomLarge {
+            char buf[50]{};
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                --------------------
+                operator new called, size: 4
+                operator new called, size: 256
+                --------------------
+                --------------------
+                operator new called, size: 50
+                --------------------
+            */
+
+            puts("--------------------");
+            {
+                auto p = new int; // operator new called, size: 4
+                auto pp = new Nec; // operator new called, size: 256
+            }
+            puts("--------------------");
+            {
+                std::any a = Custom{};
+            }
+            puts("--------------------");
+            {
+                std::any a = CustomLarge{};
+            }
+            puts("--------------------");
+        }
+
+    * Örnek 4,
+        #include <any>
+        #include <string>
+
+        int main()
+        {
+            std::any a;
+            a = 45;
+            a = 4.5;
+            a = "ulya";
+            a = std::string{"yuruk"};
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        #include <any>
+        #include <string>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                void
+                int
+                double
+                const char*
+                std::string
+                int*
+            */
+
+            std::any a; std::cout << (a.type() == typeid(void) ? "void" : "ELSE") << "\n";
+            a = 45;	std::cout << (a.type() == typeid(int) ? "int" : "ELSE") << "\n";
+            a = 4.5; std::cout << (a.type() == typeid(double) ? "double" : "ELSE") << "\n";
+            a = "ulya"; std::cout << (a.type() == typeid(const char*) ? "const char*" : "ELSE") << "\n";
+            a = std::string{"yuruk"}; std::cout << (a.type() == typeid(std::string) ? "std::string" : "ELSE") << "\n";
+            int arr[10];
+            a = arr; std::cout << (a.type() == typeid(int*) ? "int*" : "ELSE") << "\n";
+        }
+
+    * Örnek 6,
+        #include <iostream>
+        #include <any>
+        #include <string>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+
+            int arr[10] = { 10, 9, 8, 7, 6 };
+            std::any a = arr; 
+            std::cout << "&: " << std::any_cast<int*>(a) << ", *&: " << *std::any_cast<int*>(a) << "\n";
+            
+            puts("---------------");
+            
+            a = 3.4;
+            std::cout << std::any_cast<double>(a) << "\n";
+
+            puts("---------------");
+
+            a = 34;
+            try {
+                std::cout << std::any_cast<float>(a) << "\n";
+            }
+            catch (const std::bad_any_cast& ex /* const std::bad_cast& ex */) {
+                std::cout << "Hata: " << ex.what() << "\n";
+            }
+
+            puts("---------------");
+
+            a = 4.3;
+            std::cout << std::any_cast<double>(a) << "\n";
+
+            // std::any_cast<double>(a) = 6.9; // ERROR : left operand of ('=') must be l-value. 
+            std::any_cast<double&>(a) = 6.9;
+
+            std::cout << std::any_cast<double>(a) << "\n";
+
+            puts("---------------");
+        }
+
+    * Örnek 7,
+        #include <iostream>
+        #include <any>
+
+        class Myclass {
+        public:
+            Myclass() = default;
+            Myclass(int) { std::cout << "Myclass(int)\n"; }
+            Myclass(int, int) { std::cout << "Myclass(int, int)\n"; }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                ---------------
+                Myclass(int, int)
+                ---------------
+                Myclass(int, int)
+                ---------------
+            */
+
+            puts("---------------");
+
+            std::any a{ std::in_place_type<Myclass>, 3, 6 };
+
+            puts("---------------");
+
+            auto aa = std::make_any<Myclass>(6, 3);
+
+            puts("---------------");
+        }
+
+    * Örnek 8,
+        #include <iostream>
+        #include <any>
+        #include <string>
+
+        class Myclass {
+        public:
+            Myclass() = default;
+            Myclass(int) { std::cout << "Myclass(int)\n"; }
+            Myclass(int, int) { std::cout << "Myclass(int, int)\n"; }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                ---------------
+                true
+                false
+                ---------------
+                Myclass(int)
+                true
+                ---------------
+            */
+
+            puts("---------------");
+
+            auto a = std::make_any<std::string>(5, 'u');
+            std::cout << std::boolalpha << a.has_value() << "\n";
+            a.reset();
+            std::cout << std::boolalpha << a.has_value() << "\n";
+
+            puts("---------------");
+
+            a.emplace<Myclass>(9);
+
+            std::cout << std::boolalpha << a.has_value() << "\n";
+            
+            puts("---------------");
+        }
+
+    * Örnek 9,
+        #include <iostream>
+        #include <any>
+        #include <string>
+        #include <utility>
+
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                ---------------
+                ulya
+                fena
+                ---------------
+                Size: 0
+                Size: 4
+                ---------------
+            */
+
+            using namespace std::string_literals;
+
+            puts("---------------");
+            std::any a{ "ulya"s };
+            std::cout << std::any_cast<std::string&>(a) << '\n';
+            auto& ra = std::any_cast<std::string&>(a);
+            ra[0] = 'f';
+            ra[1] = 'e';
+            ra[2] = 'n';
+            std::cout << std::any_cast<std::string const&>(a) << '\n';
+            puts("---------------");
+            auto str = std::any_cast<std::string&&>(std::move(a));
+            static_assert(std::is_same_v<decltype(str), std::string>);
+            std::cout << "Size: " << std::any_cast<std::string>(&a)->size() << '\n';
+            std::cout << "Size: " << str.size() << '\n';
+            puts("---------------");
+        }
+
+    * Örnek 10,
+        #include <iostream>
+        #include <any>
+        #include <string>
+        #include <utility>
+        #include <vector>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                --------------------
+                int
+                int : 12
+                --------------------
+                --------------------
+                double
+                double : 1.23
+                --------------------
+                --------------------
+                char const *
+                const char* : ulya
+                --------------------
+                --------------------
+                long
+                long : 34
+                --------------------
+                --------------------
+                class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> >
+                std::string : yuruk
+                --------------------
+            */
+
+            using namespace std::string_literals;
+            
+            std::vector<std::any> avec{ 12, 1.23, "ulya", 34L, "yuruk"s };
+            for (const auto& i : avec) {
+                puts("--------------------");
+                // Alternative - I
+                std::cout << i.type().name() << '\n';
+                
+                // Alternative - II
+                if (auto ptr = std::any_cast<int>(&i)) {
+                    std::cout << "int : " << *ptr << '\n';
+                }
+                else if (auto ptr = std::any_cast<double>(&i)) {
+                    std::cout << "double : " << *ptr << '\n';
+                }
+                else if (auto ptr = std::any_cast<const char*>(&i)) {
+                    std::cout << "const char* : " << *ptr << '\n';
+                }
+                else if (auto ptr = std::any_cast<long>(&i)) {
+                    std::cout << "long : " << *ptr << '\n';
+                }
+                else if (auto ptr = std::any_cast<std::string>(&i)) {
+                    std::cout << "std::string : " << *ptr << '\n';
+                }
+                puts("--------------------");
+            }
+        }
+
+    * Örnek 11,
+        #include <iostream>
+        #include <any>
+        #include <string>
+        #include <utility>
+        #include <vector>
+        #include <iomanip>
+
+        using tv_pair = std::pair<std::string, std::any>;
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                name            ulya yuruk
+                year            1998
+                month           11
+                day             22
+                wage            87.67
+                town            ordu
+                gender          female
+                country         Turkiye
+            */
+
+            using namespace std::string_literals;
+
+            std::vector<tv_pair> vec;
+            vec.emplace_back("name", "ulya yuruk"s);
+            vec.emplace_back("year", 1998);
+            vec.emplace_back("month", 11);
+            vec.emplace_back("day", 22);
+            vec.emplace_back("wage", 87.67);
+            vec.emplace_back("town", "ordu"s);
+            vec.emplace_back("gender", "female"s);
+            vec.emplace_back("country", "Turkiye"s);
+
+            std::cout << std::left;
+
+            for (const auto& [property, value] : vec) {
+                if (value.type() == typeid(int)) {
+                    std::cout << std::setw(16) << property << std::any_cast<int>(value) << '\n';
+                }
+                else if (value.type() == typeid(double)) {
+                    std::cout << std::setw(16) << property << std::any_cast<double>(value) << '\n';
+                }
+                else if (value.type() == typeid(std::string)) {
+                    std::cout << std::setw(16) << property << std::any_cast<std::string>(value) << '\n';
+                }
+            }
+        }
+
+> Hatırlatıcı Notlar:
+    >> "Multiple Inheritence" sırasında "Ambiguity" oluşmaması için:
+        * Örnek 1,
+            #include <iostream>
+
+            struct A{
+            void foo(int){
+                std::cout << "foo(int)\n";
+            }  
+            };
+
+            struct B{
+            void foo(double){
+                std::cout << "foo(double)\n";
+            }  
+            };
+
+            struct Der : A, B{
+                /*
+                // Alternative - II
+                using A::foo;
+                using B::foo;
+                */
+            };
+
+            int main(void)    
+            {                
+                /*
+                * Burada "foo" ismi taban sınıflar içerisinde 
+                * aynı anda aranacağı için ikisinde de bulunacaktır.
+                * Bu da "Ambiguity" e yol açacaktır. Bu problemi 
+                * gidermek için: 
+                * 1-) İlgili fonksiyonu çağırırken, ilgili sınıf ismini 
+                * niteleyerek çağırmak.
+                * 2-) İlgili fonksiyon ismini taban sınıf içerisinde 
+                * "using" bildirimi ile görünür kılmak.
+                */
+                Der myDer;
+                // myDer.foo(1.2); // ERROR: ambiguous
+                
+                // Alternative - I
+                myDer.A::foo(12);
+                myDer.B::foo(1.2);
+                
+                /*
+                // Alternative - II
+                myDer.foo(12);
+                myDer.foo(1.2);
+                */
+                return 0;
+            }
+
+        * Örnek 2,
+            #include <iostream>
+
+            template<typename ...Args>
+            struct Der : Args ...{
+            // Alternative - I
+            using Args::foo...;
+            };
+
+            struct A{
+                void fA(){
+                    std::cout << "A::fA()\n";
+                }
+                void foo(float){
+                    std::cout << "float\n";
+                }
+            };
+
+            struct B{
+                void fB(){
+                    std::cout << "B::fB()\n";
+                }
+                void foo(int){
+                    std::cout << "int\n";
+                }
+            };
+
+            struct C{
+                void fC(){
+                    std::cout << "C::fC()\n";
+                }
+                void foo(double){
+                    std::cout << "double\n";
+                }
+            };
+
+            int main(void)    
+            {
+                {
+                    Der<A> x;
+                    x.fA();
+                    
+                    Der<A,B> y;
+                    y.fA();
+                    y.fB();
+                    
+                    Der<A,B,C> z;
+                    z.fA();
+                    z.fB();
+                    z.fC();
+                }
+                puts("********");
+                {
+                    Der<A,B,C> myDer;
+                    
+                    /*
+                    * Aşağıdaki "foo" çağrısı da yine sentaks 
+                    * hatasına yol açacaktır. Çözümler: 
+                    * 1-) "Der" sınıfı içerisinde "using"
+                    * bildirimleri ile "foo" ismini görünür kılmak. 
+                    * 2-) İlgili "foo" fonksiyonunu, sınıfının
+                    * ismini de niteleyerek çağırmak. 
+                    */
+                    myDer.foo(1.2); 
+                    
+                    /*
+                    // Alternative - II
+                    myDer.C::foo(1.2);
+                    */
+                }
+
+                return 0;
+            }
+
+    >> "Aggregate Init." : 
+        * Örnek 1,
+            struct A{
+            A(int) {}  
+            };
+
+            struct B{
+            B(float) {}  
+            };
+
+            struct C{
+            C(double) {}  
+            };
+
+            struct Der : A, B, C{};
+
+            int main(void)    
+            {
+                Der myDer = {11, 1.1f, 1.1}; // Aggregate Init. 
+
+                return 0;
+            }
+
+    >> C++20 ile "Stateless-Lambda-Expression" olan ifadelerin türlerini tür bildirimlerinde kullanamıyorduk çünkü 
+    bu türlerin "Default Ctor." ve "Copy Assignment" fonksiyonları "delete" edilmişlerdir. 
+        * Örnek 1,
+            #include <variant>
+            #include <iostream>
+            #include <string>
+            #include <typeinfo>
+
+            int main(void)    
+            {
+                auto fn = [](int x){ return x+x; };
+                
+                /*
+                * İlgili "lambda expression" bir "stateless"
+                * ise yani dışarıdan bir değişken yakalmıyorsa,
+                * aşağıdaki biçimde kullanabiliriz. Tabii C++20
+                * ve sonrasında. Fakat öncesinde "Default Ctor." 
+                * ve "Copy Assignment" fonksiyonları "delete"
+                * edildiği için sentaks hatası oluşacaktır. 
+                */
+                decltype(fn) fx; // Legal since C++20
+
+                /*
+                * Aşağıdaki ise C++17 öncesinde de geçerlidir
+                * çünkü burada "Copy Ctor." fonksiyonu çağrılır.
+                * Aşağıdaki kullanım için ilgili "lambda" ifadesinin 
+                * "stateless" olup olmamasınnı bir önemi yoktur.  
+                */
+                decltype(fn) fy(fn);
+                return 0;
+            }
+
+        * Örnek 2, Aşağıdaki örnekte "stateless-lamda" ifadeleri ile arka planda oluşturulan 
+        sınıfın "Default Ctor." ve "Copy Assignment" fonksiyonları C++20 öncesinde "delete" 
+        edildiği için, "Copy Ctor." çağrısı yapmak durumundaydık. 
+            #include <iostream>
+            #include <set>
+
+            int main(void)    
+            {
+                auto fn = [](int i, int j){ return std::abs(i) < std::abs(j); };
+                
+                // Until C++20: 
+                //std::set<int, decltype(fn)> mySet(fn);
+                
+                // Since C++20:
+                std::set<int, decltype(fn)> mySet;
+                
+                return 0;
+            }
+
+        * Örnek 3, Aşağıdaki kod ise C++20 itibariyle geçerlidir çünkü bir "lambda" ifadesinin "Unevaluated Context"
+        içerisinde bulunabilmesi C++20 ile mümkün kılınmıştır. Bu kural ile yukarıdaki kural farklıdır. 
+            #include <iostream>
+            #include <set>
+
+            int main(void)    
+            {
+                std::set<
+                    int, 
+                    decltype(
+                        [](int i, int j){ return std::abs(i) < std::abs(j); }
+                        )
+                > mySet;
+                
+                return 0;
+            }
+
+    >> "Lambda" ifadelerini kalıtım mekanizmasında kullanabiliriz:
+        * Örnek 1,
+            #include <iostream>
+
+            auto fn1 = [](int x){ return x+x; };
+            auto fn2 = [](float x){ return x+x+x; };
+            auto fn3 = [](double x){ return x+x+x+x; };
+
+            struct A : decltype(fn1), decltype(fn2), decltype(fn3){
+                using decltype(fn1)::operator();
+                using decltype(fn2)::operator();
+                using decltype(fn3)::operator();
+            };
+
+            int main(void)    
+            {
+                /* 
+                    # OUTPUT #
+                    i: 2
+                    f: 3.3
+                    d: 4.4
+                */
+                
+                A a;
+                
+                int i = 1;
+                std::cout << "i: " << a(i) << "\n";
+                
+                float f = 1.1f;
+                std::cout << "f: " << a(f) << "\n";
+                
+                double d = 1.1;
+                std::cout << "d: " << a(d) << "\n";
+
+                return 0;
+            }
+
+        * Örnek 2,
+            #include <iostream>
+            #include <set>
+
+            template<typename ...Args>
+            struct Der : Args...{
+                
+            };
+
+            int main(void)    
+            {
+                auto f1 = [](){};
+                auto f2 = [](){};
+                auto f3 = [](){};
+                Der<decltype(f1),decltype(f2),decltype(f3)> myDer;
+                return 0;
+            }
+
+        * Örnek 3,
+            #include <iostream>
+
+            template<typename ...Args>
+            struct Overload : Args...{
+                
+            };
+
+            int main(void)    
+            {
+                /*
+                * Aşağıda "CTAT" mekanizmasından faydalanılmıştır. C++20 ile 
+                * artık sentaks hatası değildir fakat C++17 için "deduction guide"
+                * mekanizmasından da faydalanmamız gerekmektedir. 
+                */
+                Overload x{
+                    [](int a){ return a*1; },
+                    [](int a){ return a*2; },
+                    [](int a){ return a*3; },
+                    [](int a){ return a*4; },
+                };
+                
+                return 0;
+            }

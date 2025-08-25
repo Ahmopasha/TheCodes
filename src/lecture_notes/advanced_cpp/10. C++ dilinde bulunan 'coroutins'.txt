@@ -1,0 +1,1340 @@
+> "coroutines" : "coroutins" dediğimiz şeyler aslında birer fonksiyonlardır. Fakat öyle fonksiyonlardır ki belirli bir noktada çalışmasını
+istediğimiz zaman durdurabilir, yine istediğimiz zaman devam ettirebiliriz. Tabii durdurulma esnasında programın akışı, çağıran
+fonksiyona geri dönmektedir. Durdurma-tekrar çalıştırma mekanizması defalarca tekrar edebilir. C++20 ile dile eklenen bir araçtır.
+Karşımıza üç adet anahtar sözcük çıkmaktadır:
+
+    "co_await", "co_yield", "co_return"
+
+Şimdi bu operatörleri detaylı incelemeye başlayalım:
+    >> "co_await" : C++20 ile birlikte "operator co_await" isimli bir operatör fonksiyonu daha tanımlar olduk. Bu operatör
+    iki farklı yerde kullanılır. Ya bizler bu operatöre kendimiz bir operand geçeriz ya da derleyicinin "coroutine" gördüğü
+    yerde, o ifadeden yola çıkarak bir takım kodlar yazması halinde. Burada derleyicinin "co_await" operatörünü görmesinden
+    hareketle yazılacak kod temsili olarak aşağıdaki gibidir:
+
+        //...
+        {
+            promise_type promise /* { Ctor. Arguments }  */;
+
+            try {
+                co_await promise.initial_suspend();
+
+                //... ---> COROUTINE FUNCTION'S BODY 
+            } 
+            catch(...) {
+                if (/* !initial-await-resume-called */)
+                    throw;
+
+            promise.unhandled_exception();
+            }
+
+            final-suspend:
+                co_await promise.final_suspend();    
+        }
+
+    Diğer yandan "co_await" operatörün operandı bir "awaitable" olmak zorundadır. Dolayısıyla bu operatörü sadece "coroutine"
+    için kullanabiliriz.
+        >>> "awaitable" türü: Bir sınıf türüdür. Bu sınıfı kendimiz de yazabileceğimiz gibi standart kütüphanede hazır olarak
+        da mevcuttur. Örneğin, "std::suspend_never" ve "std::suspend_always" isimli sınıflar, birer "awaitable" türündendir.
+            
+        >>> Derleyici bu operatörü gördüğünde "awaiter" türünden bir nesne elde etmek isteyecektir. Bunun için,
+            >>>> İlk olarak derleyici "promise_type" sınıfının "await_transform" isimli bir üye fonksiyona sahip olup olmadığını sınar. Eğer böyle bir
+            fonksiyona sahipse, direkt o fonksiyona çağrı yapar ve elde ettiği geri dönüş değerini de iş bu "co_await" operatörüne operand olarak geçer.
+            Fonksiyona da argüman olarak, bizim "co_await" için kullandığımız ifadeyi geçer. Eğer böyle bir fonksiyon mevcut değilse, "co_await" operatörünün
+            operand olarak kullandığımız ifade dikkate alınacaktır. Yani fonksiyon varsa bizim "co_await" için kullandığımız operandı "await_transform"
+            fonksiyonuna gönderiyor ve elde ettiği değeri ise "co_await" için kullanıyor. Aksi halde bizim "co_await" için kullandığımızı kullanıyor. Böylelikle
+            bir "awaitable" türünden bir nesne elde etmiş olacağız. Şimdi bu nesneden hareketle "awaiter" türünden bir başka nesne elde etmek isteyelim.
+                
+            >>>> İşte gerek "await_transform" çağrısı ile bir "awaiter" elde edilmesi gerek bizim direkt olarak bir "awaitable" türünden ifade kullandıktan 
+            sonra derleyici, bir "awaiter" türünden nesne elde edebilmek adına,
+                
+                -> İlgili "awaitable" türünün "operator co_await" isimli fonksiyonuna sahip olup olmadığını bakar. Eğer o sınıfta bu isimde bir üye fonksiyon varsa,
+                ona çağrı yapılacak.
+                
+                -> Eğer öyle bir üye fonksiyon yoksa, aynı isimde global isimde bir fonksiyon olup olmadığına bakacak. Eğer varsa, ona çağrı yapacak.
+                
+            Bu fonksiyonların çağrılması sonucunda "awaiter" türünden bir nesne elde edilmeye çalışılır. Eğer o isimde bir fonksiyon hiç yoksa ilgili "awaitable" türünden
+            nesne zaten "awaiter" türündendir denilir. Dolayısıyla şu tespit doğrudur:
+
+                Her "awaiter" aslında bir "awaitable" dır. FAKAT HER "awaitable" IN BİR "await" OLMASI GEREKMİYOR.
+                
+            Dolayısıyla yukarıdaki "std::suspend_never" ve "std::suspend_always" isimli sınıflar aslında birer "awaiter" sınıflardır.  
+                >>>>> "awaiter" : Niyahet böyle bir sınıf türü elde ettik. Pekiyi bu nasıl bir sınıf olmalıdır? İşte bu sınıf "await_ready", "await_suspend" ve
+                "await_resume" isimli fonksiyonlara sahip olması ve çağrılabilir olması GEREKMEKTEDİR. Bu fonksiyonlardan,
+                    >>>>>> "await_ready" : "bool" türünden değer döndürür. Ekseriyetle "false" değerini döndürdüğünü görürüz. "false" olması halinde "suspend" 
+                    teklifi kabul edilecektir. Yani "suspend" edilebilmesi için bu fonksiyonun "false" değer döndürmesi gerekmektedir.
+                    
+                        "IT IS NOT READY YET, SO SUSPEND IT".
+                        
+                    Eğer "true" döndürürse, "suspend" edilme maaliyetinden kaçınılacağı için, "suspend" edilemeyecektir. Bir diğer deyişle "suspend" HİÇ VUKU BULMAYACAKTIR.
+                    YANİ "std::suspend_never" sınıfının "await_ready" fonksiyonu "true" değer döndürmektedir. Bu fonksiyon durdurulmadan HEMEN ÖNCE ÇAĞRILMAKTADIR. 
+
+                    >>>>>> "await_suspend" : Bu fonksiyonun parametresi "std::coroutine_handle" türündendir. Bu fonksiyon derleyici tarafından "suspend" vuku bulması halinde
+                    çağrılır. 
+                        >>>>>>> "coroutine_handle" : Aslında bu kavram, aşağıda kabaca değineceğimiz, "Return Object" nesnesini tutan kavramdır. Bünyesinde 
+                        ilgili "coroutine" nin devam ettirilmesini, akıbetinin sorgulanması vb. işleri yapmamızı sağlayan fonksiyonları barındırır. Standart bir kavramdır. Bu
+                        sınıf bünyesinde bir takım fonksiyonlar barındırır. En önemlileri ise
+
+                            "resume", "done" ve "destroy"
+
+                        isimli fonksiyonlardır. Bu fonksiyonlardan,
+
+                            -> "resume" : 
+
+                            -> "done" : 
+
+                            -> "destroy" : 
+
+                    Fonksiyonun geri dönüş değeri "void", "bool" ya da "std::coroutine_handle" türünden birisi olabilir. Eğer,
+
+                        -> "void" olması halinde "suspend" vuku bulacak ve programın akışı çağıran koda dönecektir. 
+
+                        -> "bool" olması halinde "suspend" işlemi bir şarta bağlanır. "true" değer dönerse "suspend" gerçekleşecek, "false" dönerse gerçekleşmeyecektir. Bir diğer
+                        deyişle "bool" olması halinde "await_ready" fonksiyonundaki işleyişin tam tersi bir mekanizma işletilecektir. 
+
+                    >>>>>> "await_resume" : Bu fonksiyon ise "std::suspend_never" vuku bulması halinde çağrılır. Programın akışı "suspend" edildiği noktadan tekrar 
+                    başlamasından hemen evvel çağrılır. 
+
+            C++20 standardı ile elimizde iki adet standart bir "awaiter" sınıfı vardır. Bunlar "std::suspend_never" ve
+            "std::suspend_always" isimli sınıflardır. Bu sınıflardan "std::suspend_never" kullanılması durumunda "suspend"
+            EDİLMEYECEK, "std::suspend_always" kullanılması durumunda ise "suspend" EDİLECEKTİR. Bu fonksiyonların temsili
+            tanımlaması ise,
+
+                    struct suspend_always {
+                        constexpr bool await_ready() const noexcept { return false; }
+                        constexpr void await_suspend(std::coroutine_handle<>) const noexcept {  }
+                        constexpr void await_ready() const noexcept {  }
+                    };
+
+                    struct suspend_never {
+                        constexpr bool await_ready() const noexcept { return true; }
+                        constexpr void await_suspend(std::coroutine_handle<>) const noexcept {  }
+                        constexpr void await_ready() const noexcept {  }
+                    };
+
+            şeklindedir. 
+        
+        >>> Bu operatör "coroutine" in akışının "suspend" edilmesini sağlar. 
+
+    >> "co_yield : 
+        >>> Bu operatör "coroutine" in akışının "suspend" edilmesini sağlar. "co_await" operatöründen farkı "suspend"
+        oluştuğunda kendisini çağıran koda bir değer de döndürmesini sağlar. Bunu da "promise_type" sınıfının "yield_value"
+        isimli fonksiyonu çağırır ve onun geri dönüş değerini argüman olarak alır. Böylelikle "co_yield" karşılığı olan ifade
+        için "coroutine" çağıran koda bir değer döndürmüş olur. 
+
+Bu tip fonksiyonların diğer özellikleri ise şunlardır:
+    >> "coroutines" tip fonksiyonların geri dönüş değeri kavramı da pekala vardır fakat esasında "coroutines" tip fonksiyonların bize 
+    sunduğu "interface" kavramıdır. İşte böylesi fonksiyonların, kendisine sunduğu "interface" yi kullanabilmek için, fonksiyonun geri 
+    döndürdüğü "Return Object" i kullanmamız gerekmektedir. İş bu "Return Object" hem "coroutines" tip fonksiyon ile haberleşmemizi 
+    hem de onun döndürdüğü değerin ne olduğunu anlamamıza olanak sağlamaktadır. 
+        >>> İş bu geri dönüş değeri olan sınıf(lar)ın tanımları henüz standart kütüphaneye ekli olmadığı için (C++20 itibariyle), bu 
+        sınıfları ya bizler yazmalı ya da üçüncü parti kütüphanelerden faydalanmalıyız. 
+
+    >> "coroutines" tip fonksiyonlar, içsel mekanizmaları için pekala bellek yönetimi kullanmaktadırlar. Çünkü kaldıkları yerden devam 
+    edebilmeleri için "Resume Point" dediğimiz verinin saklanması gerekmektedir. Buna ilave olarak "coroutines" tip fonksiyonlarda 
+    kullanılan yerel değişkenlerin, iş bu fonksiyonların parametre değişkenlerinin vb. değerlerin de pekala saklanmış olması gerekmektedir. 
+    İşte bu mekanizmaya ise "Coroutine State" veya "Coroutine Frame" denmektedir. Genel olarak burada kullanılan mekanizma için Dinamik Bellek
+    Yöntemleri kullanılır fakat özel durumlarda derleyiciler optimizasyon yaparlar ve Dinamik Bellek Yöntemlerinin maliyetini elimine ederler. 
+
+    >> "coroutines" tip fonksiyonlar aslında birer "opaque" biçimindedir. Yani arka planda işlenen şeyler, kendisini çağırandan direkt
+    gizlenmiştir. Sadece bir takım "Coroutine Handle" araçları kullanarak dış dünyaya açılmaktadır. 
+
+    >> Aynı "coroutine" fonksiyonu farklı "thread" ler ile kullanabiliriz. Yani bir "thread" ile durdurulan, başka bir "thread" ile tekrar 
+    çalışmaya devam ettirilebilir. 
+
+    >> "coroutine" başlık dosyasının eklenmesi gerekmektedir.
+
+    >> Derleyicinin bir fonksiyonu "coroutine" olarak ele alması için,
+        >>> Fonksiyonun tanımında yukarıdaki üç anahtar sözcükten("co_await", "co_yield" yada "co_return") birisinin olması gerekmektedir.
+        
+        >>> Geri dönüş değerinin bir sınıf türünden olması gerekmektedir. Öyle bir sınıf ki bu sınıf aşağıdaki şartları da sağlamalıdır: 
+            >>>> "promise_type" türünden bir "nested_type" ı bünyesinde barındırması gerekmektedir. Bu türü sınıfımız içerisinde tanımlamak 
+            zorunda değiliz. Sadece bildirimini sınıf içerisinde bulundurup, tanımını başka yerde de yapabiliriz. 
+                * Örnek 1,
+                    //...
+                    #include <iostream>
+                    #include <coroutine>
+
+                    struct CoroFace{
+
+                        //...
+
+                        struct promise_type {
+
+                        };
+
+                    };
+
+                    CoroFace foo() {
+                        std::cout << "Hello Coroutine!\n";
+                        co_return;
+                    }
+
+            >>>> İş bu "promise_type" türünden sınıf sırasıyla;
+                
+                "initial_suspend", "get_return_object", "final_suspend", "return_void"/"return_value", "unhandled_exception"
+            
+            isimli fonksiyonlarına sahip olması gerekmektedir. Bu fonksiyonlardan,
+                >>>>> "initial_suspend" : "coroutine" çalışmaya başlar başlamaz "suspend" edilsin mi edilmesin mi diye belirlemede bulunmak için 
+                kullanılır. Eğer "suspend" edilsin şeklinde bir belirleme yapılırsa, "coroutine" çağrılır fakat "suspend" edilir ve programın 
+                akışı geri döner. Ta ki "resume" edilene kadar. Aksi halde, yani "suspend" edilmesin şeklinde bir belirleme yapılırsa, programın
+                akışı yukarıdaki üç anahtar sözcükten birine gelene kadar akar. O noktada "suspend" edilir. Bu fonksiyonun geri dönüş değerinin
+                türü ise "awaiter" türündendir. Dolayısıyla geri dönüş değeri ya "std::suspend_always" ya da "std::suspend_never" türünden birisi
+                olur. 
+                    * Örnek 1, Fonksiyonun tipik kullanımı:
+                        //...
+                        #include <iostream>
+                        #include <coroutine>
+
+                        struct CoroFace{
+
+                            //...
+
+                            struct promise_type {
+                                auto initial_suspend() {
+                                    return std::suspend_never{};    // Buradaki "suspend_never" in türü "awaiter" biçiminde olup, bu geri dönüş değeri ise 
+                                                                    // "co_await" operatörüne operand olacaktır. 
+                                }
+                            };
+
+                        };
+
+                        CoroFace foo() {
+                            std::cout << "Hello Coroutine!\n";
+                            co_return;
+                        }
+
+                    * Örnek 1.1, 
+                        //...
+                        #include <iostream>
+                        #include <coroutine>
+
+                        struct CoroFace{
+
+                            //...
+
+                            struct promise_type {
+                                std::suspend_never initial_suspend() {
+                                    return {};    
+                                }
+                            };
+
+                        };
+
+                        CoroFace foo() {
+                            std::cout << "Hello Coroutine!\n";
+                            co_return;
+                        }
+
+                İleride detaylarına gireceğimiz üzere; bu fonksiyonun geri dönüş değerinin türü için "awaiter" türü demiştik. İşte bu tür ise aslında 
+                "co_await" operatörüne operand olmaktadır.  
+
+                >>>>> "get_return_object" : Bu fonksiyon işte "coroutine" ile onu çağıran kod arasında bir "interface" olarak kullanılmak
+                gereken "Return Object" isimli nesneyi döndürmektedir. Dolayısıyla bu fonksiyonun geri dönüş değerinin türü, "coroutine"
+                fonksiyonunun geri dönüş değeri olan sınıf türünden olmalıdır. 
+                    * Örnek 1, Fonksiyonun tipik kullanımı:
+                        //...
+                        #include <iostream>
+                        #include <coroutine>
+
+                        struct CoroFace{
+
+                            //...
+
+                            struct promise_type {
+                                auto initial_suspend() {
+                                    return std::suspend_never{};
+                                }
+
+                                CoroFace get_return_object() {
+                                    return {}; // This will return a default constructed CoroFace object. 
+                                }
+                            };
+                        };
+
+                        CoroFace foo() {
+                            std::cout << "Hello Coroutine!\n";
+                            co_return;
+                        }
+
+                >>>>> "final_suspend" : Tıpkı "initial_suspend" gibi "suspend" oluşsun mu oluşmasın mı diye 
+                belirleme yapmak için kullanılır. Tek farkı "coroutine" fonksiyonunun çalışmasının bitmesinden 
+                bu belirlemenin kullanılacak olmasıdır. Yani yapılacak belirlemeye göre ya fonksiyon işini bitirdikten
+                sonra "suspend" olacak ya da olmadan sonlanacaktır. Ek olarak bu fonksiyonun "noexcept" olma 
+                zorunluluğu vardır. 
+                    * Örnek 1, Fonksiyonun tipik kullanımı:
+                        //...
+                        #include <iostream>
+                        #include <coroutine>
+
+                        struct CoroFace{
+
+                            //...
+
+                            struct promise_type {
+                                auto initial_suspend() {
+                                    return std::suspend_never{};
+                                }
+
+                                CoroFace get_return_object() {
+                                    return {};
+                                }
+
+                                auto final_suspend() noexcept {
+                                    return std::suspend_never{};
+                                }
+                            };
+                        };
+
+                        CoroFace foo() {
+                            std::cout << "Hello Coroutine!\n";
+                            co_return;
+                        }
+
+                >>>>> "return_void" / "return_value" : Bu fonksiyonlardan yalnızca bir tanesini tanımlayabiliriz. Programın akışı "co_return" çağrısına
+                geldiğinde yalın bir şekilde dönüş yapmak istiyorsak, "co_return" operatörünün bir operandı yoksa, "return_void" fonksiyonunu 
+                tanımlamalıyız. Eğer "co_return" operatörüne bir operand vermişsek, "return_value" fonksiyonunu tanımlamalıyız. 
+                    * Örnek 1,
+                        //...
+                        #include <iostream>
+                        #include <coroutine>
+
+                        struct CoroFace{
+
+                            //...
+
+                            struct promise_type {
+                                auto initial_suspend() {
+                                    return std::suspend_never{};
+                                }
+
+                                CoroFace get_return_object() {
+                                    return {};
+                                }
+
+                                auto final_suspend() noexcept {
+                                    return std::suspend_never{};
+                                }
+
+                                void return_void () {
+
+                                }
+                            };
+                        };
+
+                        CoroFace foo() {
+                            std::cout << "Hello Coroutine!\n";
+                            co_return;
+                        }
+
+    >> "unhandled_exception" : Aslında bizim "coroutine" fonksiyonumuz derleyici tarafından "try-catch" bloğu içine alınır. İşte "catch-all"
+    fonksiyonunda da bu fonksiyon çağrılır. İşte "Exception" mekanizmasının işletilebilmesi için bu fonksiyon da gereklidir. 
+        * Örnek 1,
+            //...
+            #include <iostream>
+            #include <coroutine>
+
+            struct CoroFace{
+
+                //...
+
+                struct promise_type {
+                    auto initial_suspend() {
+                        return std::suspend_never{};
+                    }
+
+                    CoroFace get_return_object() {
+                        return {};
+                    }
+
+                    auto final_suspend() noexcept {
+                        return std::suspend_never{};
+                    }
+
+                    void return_void () {
+
+                    }
+
+                    void unhandled_exception() {
+
+                    }
+                };
+            };
+
+            CoroFace foo() {
+                std::cout << "Hello Coroutine!\n";
+                co_return;
+            }
+
+    >> Şu fonksiyonları "coroutine" fonksiyon olamazlar:
+        >>> "main" fonksiyonu,
+        >>> C dilindeki "variadic" fonksiyonlar,
+        >>> Sınıfların "ctor" ve "dtor" fonksiyonları,
+        >>> "constexpr" ve C++20 ile dile eklenen "consteval" anahtar sözcüğü ile nitelenen fonksiyonlar,
+        >>> Geri dönüş değeri türü için çıkarım mekanizması kullanılamayacağından, o fonksiyonların geri dönüş değeri türü "auto" olamaz. 
+        >>> Bünyelerinde "regular return statemen" bulunduramazlar.         
+    
+Şimdi de bütün bunları kullanarak ilk "coroutine" örneğimizi yapalım:   
+    * Örnek 1.0,
+        #include <iostream>
+        #include <coroutine>
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                auto initial_suspend() {
+                    return std::suspend_never{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+
+                }
+
+                void unhandled_exception() {
+                    
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            co_return;
+        }
+
+        int main()
+        {
+            foo(); // Hello Coroutine!
+        }
+
+    * Örnek 1.1,
+        #include <iostream>
+        #include <coroutine>
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+
+                }
+
+                void unhandled_exception() {
+                    
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            co_return;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                CoroFace::promise_type::initial_suspend()
+                Hello Coroutine!
+                CoroFace::promise_type::final_suspend()
+            */
+            
+            foo(); 
+        }
+
+    * Örnek 2, 
+        #include <iostream>
+        #include <coroutine>
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return std::suspend_always{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+
+                }
+
+                void unhandled_exception() {
+                    
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            co_return;
+        }
+
+        int main()
+        {
+            foo(); // CoroFace::promise_type::initial_suspend()
+
+            std::cout << "Main continues!\n"; // Main continues
+        }
+
+    * Örnek 3,
+        #include <iostream>
+        #include <coroutine>
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+                    std::cout << "CoroFace::promise_type::return_void()\n";
+                }
+
+                void unhandled_exception() {
+                    
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            co_return;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                CoroFace::promise_type::initial_suspend()
+                Hello Coroutine!
+                CoroFace::promise_type::return_void()
+                CoroFace::promise_type::final_suspend()
+            */
+            
+            foo(); 
+        }
+
+    * Örnek 4,
+        #include <iostream>
+        #include <coroutine>
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                promise_type() {
+                    std::cout << "CoroFace::promise_type default ctor. \n";
+                }
+                    
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+                    std::cout << "CoroFace::promise_type::return_void()\n";
+                }
+
+                void unhandled_exception() {
+                    
+                }
+                
+                ~promise_type() {
+                    std::cout << "CoroFace::promise_type dtor\n";
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            co_return;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                CoroFace::promise_type default ctor. 
+                CoroFace::promise_type::initial_suspend()
+                Hello Coroutine!
+                CoroFace::promise_type::return_void()
+                CoroFace::promise_type::final_suspend()
+                CoroFace::promise_type dtor
+            */
+            
+            foo(); 
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        #include <coroutine>
+
+        void* operator new(std::size_t sz) {
+            std::cout << "operator new called. size : " << sz << "\n";
+            
+            if (sz == 0)
+                ++sz;
+                
+            if (void* ptr = std::malloc(sz))
+                return ptr;
+                
+            throw std::bad_alloc{};
+        }
+
+        void operator delete(void* ptr) noexcept {
+            std::cout << "operator delete called. addresss : " << ptr << "\n";
+            
+            std::free(ptr);
+        }
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                promise_type() {
+                    std::cout << "CoroFace::promise_type default ctor. \n";
+                }
+                    
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+                    std::cout << "CoroFace::promise_type::return_void()\n";
+                }
+
+                void unhandled_exception() {
+                    
+                }
+                
+                ~promise_type() {
+                    std::cout << "CoroFace::promise_type dtor\n";
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            co_return;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                operator new called. size : 40
+                CoroFace::promise_type default ctor. 
+                CoroFace::promise_type::initial_suspend()
+                Hello Coroutine!
+                CoroFace::promise_type::return_void()
+                CoroFace::promise_type::final_suspend()
+                CoroFace::promise_type dtor
+                operator delete called. addresss : 0x5b3eb05826c0
+            */
+            
+            foo(); 
+        }
+
+    * Örnek 6,
+        #include <iostream>
+        #include <coroutine>
+
+        void* operator new(std::size_t sz) {
+            std::cout << "operator new called. size : " << sz << "\n";
+            
+            if (sz == 0)
+                ++sz;
+                
+            if (void* ptr = std::malloc(sz))
+                return ptr;
+                
+            throw std::bad_alloc{};
+        }
+
+        void operator delete(void* ptr) noexcept {
+            std::cout << "operator delete called. addresss : " << ptr << "\n";
+            
+            std::free(ptr);
+        }
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                promise_type() {
+                    std::cout << "CoroFace::promise_type default ctor. \n";
+                }
+                    
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+                
+                auto await_transform(int x) {
+                    std::cout << "CoroFace::promise_type::await_transform(" << x << ")\n"; 
+                    return std::suspend_never{};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+                    std::cout << "CoroFace::promise_type::return_void()\n";
+                }
+
+                void unhandled_exception() {
+                    
+                }
+                
+                ~promise_type() {
+                    std::cout << "CoroFace::promise_type dtor\n";
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            
+            co_await 31;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                operator new called. size : 40
+                CoroFace::promise_type default ctor. 
+                CoroFace::promise_type::initial_suspend()
+                Hello Coroutine!
+                CoroFace::promise_type::await_transform(31)
+                CoroFace::promise_type::return_void()
+                CoroFace::promise_type::final_suspend()
+                CoroFace::promise_type dtor
+                operator delete called. addresss : 0x624beff6f6c0
+            */
+            
+            foo(); 
+        }
+
+    * Örnek 7.1, 
+        #include <iostream>
+        #include <coroutine>
+
+        struct SuspendNever{
+            bool await_ready() const noexcept {
+                std::cout << "SuspendNever::await_ready()\n";
+                return true;
+            }
+            
+            void await_suspend(std::coroutine_handle<void>) const noexcept {
+                std::cout << "SuspendNever::await_suspend()\n";
+            }
+            
+            void await_resume() const noexcept {
+                std::cout << "SuspendNever::await_resume()\n";
+            }
+        };
+
+        void* operator new(std::size_t sz) {
+            std::cout << "operator new called. size : " << sz << "\n";
+            
+            if (sz == 0)
+                ++sz;
+                
+            if (void* ptr = std::malloc(sz))
+                return ptr;
+                
+            throw std::bad_alloc{};
+        }
+
+        void operator delete(void* ptr) noexcept {
+            std::cout << "operator delete called. addresss : " << ptr << "\n";
+            
+            std::free(ptr);
+        }
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                promise_type() {
+                    std::cout << "CoroFace::promise_type default ctor. \n";
+                }
+                    
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return std::suspend_never{};
+                }
+
+                void return_void () {
+                    std::cout << "CoroFace::promise_type::return_void()\n";
+                }
+
+                void unhandled_exception() {
+                    
+                }
+                
+                ~promise_type() {
+                    std::cout << "CoroFace::promise_type dtor\n";
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            
+            co_await std::suspend_never{};
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                operator new called. size : 40
+                CoroFace::promise_type default ctor. 
+                CoroFace::promise_type::initial_suspend()
+                Hello Coroutine!
+                SuspendNever::await_ready()
+                SuspendNever::await_resume()
+                CoroFace::promise_type::return_void()
+                CoroFace::promise_type::final_suspend()
+                CoroFace::promise_type dtor
+                operator delete called. addresss : 0x61ded9f3c6c0
+            */
+            
+            foo(); 
+        }
+
+    * Örnek 7.2,
+        #include <iostream>
+        #include <coroutine>
+
+        struct SuspendAlways{
+            bool await_ready() const noexcept {
+                std::cout << "SuspendAlways::await_ready()\n";
+                return false;
+            }
+            
+            void await_suspend(std::coroutine_handle<void>) const noexcept {
+                std::cout << "SuspendAlways::await_suspend()\n";
+            }
+            
+            void await_resume() const noexcept {
+                std::cout << "SuspendAlways::await_resume()\n";
+            }
+        };
+
+
+        void* operator new(std::size_t sz) {
+            std::cout << "operator new called. size : " << sz << "\n";
+            
+            if (sz == 0)
+                ++sz;
+                
+            if (void* ptr = std::malloc(sz))
+                return ptr;
+                
+            throw std::bad_alloc{};
+        }
+
+        void operator delete(void* ptr) noexcept {
+            std::cout << "operator delete called. addresss : " << ptr << "\n";
+            
+            std::free(ptr);
+        }
+
+        struct CoroFace{
+
+            //...
+
+            struct promise_type {
+                promise_type() {
+                    std::cout << "CoroFace::promise_type default ctor. \n";
+                }
+                    
+                auto initial_suspend() {
+                    std::cout << "CoroFace::promise_type::initial_suspend()\n";
+                    return SuspendAlways{};
+                }
+
+                CoroFace get_return_object() {
+                    return {};
+                }
+
+                auto final_suspend() noexcept {
+                    std::cout << "CoroFace::promise_type::final_suspend()\n";
+                    return SuspendAlways{};
+                }
+
+                void return_void () {
+                    std::cout << "CoroFace::promise_type::return_void()\n";
+                }
+
+                void unhandled_exception() {
+                    
+                }
+                
+                ~promise_type() {
+                    std::cout << "CoroFace::promise_type dtor\n";
+                }
+            };
+        };
+
+        CoroFace foo() {
+            std::cout << "Hello Coroutine!\n";
+            
+            co_await SuspendAlways{};
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                operator new called. size : 40
+                CoroFace::promise_type default ctor. 
+                CoroFace::promise_type::initial_suspend()
+                SuspendNever::await_ready()
+                SuspendNever::await_suspend()
+            */
+            
+            foo(); 
+        }
+
+    * Örnek 8,
+        #include <iostream>
+        #include <coroutine>
+
+        class CrtTask {
+        public:
+            struct promise_type;    
+            using CoroutineHandle = std::coroutine_handle<promise_type>;
+        private:
+            CoroutineHandle m_handle;
+        public:
+            CrtTask(auto h): m_handle{ h } {}
+            ~CrtTask() 
+            {
+                if (m_handle) {
+                    m_handle.destroy();
+                }
+            }
+            
+            CrtTask(const CrtTask&) = delete;
+            CrtTask& operator=(const CrtTask&) = delete;
+
+            bool resume() const 
+            {
+                if (!m_handle || m_handle.done()) {
+                    return false;
+                }
+                m_handle.resume();
+                return !m_handle.done();
+            }
+        };
+
+
+        struct CrtTask::promise_type {
+            CrtTask get_return_object() 
+            {
+                return CrtTask{ CoroutineHandle::from_promise(*this) };
+            }
+            
+            auto initial_suspend() 
+            {
+                return std::suspend_always{};
+            }
+
+            void unhandled_exception() 
+            {
+                std::terminate();
+            }
+
+            void return_void() {}
+
+            auto final_suspend() noexcept 
+            {
+                return std::suspend_always{};  
+            }
+        };
+
+
+        CrtTask crfunc(int n)
+        {
+        std::cout << "         crfunc " << n << " start\n";
+
+        for (int i{ 1 }; i <= n; ++i) {
+            std::cout << "         crfunc " << i << '/' << n << '\n';
+
+            co_await std::suspend_always();    
+        }
+
+        std::cout << "         crfunc " << n << " end\n";
+        }
+
+
+        int main()
+        {
+            auto ctask = crfunc(3); 
+            std::cout << "crfunc() started\n";
+            
+            while (ctask.resume()) { 
+                std::cout << "crfunc() suspended\n";
+            }
+            std::cout << "crfunc() done\n";
+        }
+
+    * Örnek 9.0,
+        #include <iostream>
+        #include <coroutine>
+
+        class Coro{
+            public:
+                struct promise_type; 
+                using handle_type = std::coroutine_handle<promise_type>;
+                    
+                void resume() { h_.resume(); }
+                bool done() const { return h_.done(); }
+                
+                struct promise_type {
+                    Coro get_return_object() { return Coro{ handle_type::from_promise(*this) }; }
+                    
+                    auto initial_suspend() { return std::suspend_never{}; }
+                    auto final_suspend() noexcept { return std::suspend_always{}; }
+                    void unhandled_exception() {  }
+                    void return_void() {  }
+                };
+            
+            private:
+                Coro(handle_type h) : h_(h) {}
+                handle_type h_;
+        };
+
+        Coro foo() {
+            std::cout << "foo [1]\n";
+            
+            co_await std::suspend_always{};
+            
+            std::cout << "foo [2]\n";
+        }
+
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                foo [1]
+                Main continues!
+            */
+
+            auto f = foo(); 
+
+            std::cout << "Main continues!\n"; 
+        }
+
+    * Örnek 9.1.0,
+        #include <iostream>
+        #include <coroutine>
+
+        class Coro{
+            public:
+                struct promise_type; 
+                using handle_type = std::coroutine_handle<promise_type>;
+                    
+                void resume() { h_.resume(); }
+                bool done() const { return h_.done(); }
+                
+                struct promise_type {
+                    Coro get_return_object() { return Coro{ handle_type::from_promise(*this) }; }
+                    
+                    auto initial_suspend() { return std::suspend_never{}; }
+                    auto final_suspend() noexcept { return std::suspend_always{}; }
+                    void unhandled_exception() {  }
+                    void return_void() {  }
+                };
+            
+            private:
+                Coro(handle_type h) : h_(h) {}
+                handle_type h_;
+        };
+
+        Coro foo() {
+            std::cout << "foo [1]\n";
+            
+            co_await std::suspend_always{};
+            
+            std::cout << "foo [2]\n";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                foo [1]
+                foo [2]
+                Main continues!
+            */
+            auto f = foo(); 
+            f.resume();
+            std::cout << "Main continues!\n"; 
+        }
+
+    * Örnek 9.1.1,
+        #include <iostream>
+        #include <coroutine>
+
+        class Coro{
+            public:
+                struct promise_type; 
+                using handle_type = std::coroutine_handle<promise_type>;
+                    
+                void resume() { h_.resume(); }
+                bool done() const { return h_.done(); }
+                
+                struct promise_type {
+                    Coro get_return_object() { return Coro{ handle_type::from_promise(*this) }; }
+                    
+                    auto initial_suspend() { return std::suspend_never{}; }
+                    auto final_suspend() noexcept { return std::suspend_always{}; }
+                    void unhandled_exception() {  }
+                    void return_void() {  }
+                };
+            
+            private:
+                Coro(handle_type h) : h_(h) {}
+                handle_type h_;
+        };
+
+        Coro foo() {
+            std::cout << "foo [1]\n";
+            
+            co_await std::suspend_never{};
+            
+            std::cout << "foo [2]\n";
+        }
+
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                foo [1]
+                foo [2]
+                Main continues!
+            */
+            auto f = foo(); 
+            std::cout << "Main continues!\n"; 
+        }
+
+    * Örnek 10,
+        #include <iostream>
+        #include <coroutine>
+
+        class Coro{
+            public:
+                struct promise_type; 
+                using handle_type = std::coroutine_handle<promise_type>;
+                    
+                void resume() { h_.resume(); }
+                bool done() const { return h_.done(); }
+                
+                struct promise_type {
+                    Coro get_return_object() { return Coro{ handle_type::from_promise(*this) }; }
+                    
+                    auto initial_suspend() { return std::suspend_always{}; }
+                    auto final_suspend() noexcept { return std::suspend_always{}; }
+                    void unhandled_exception() {  }
+                    void return_void() {  }
+                };
+            
+            private:
+                Coro(handle_type h) : h_(h) {}
+                handle_type h_;
+        };
+
+        Coro foo() {
+            std::cout << "foo [1]\n";
+            
+            co_await std::suspend_always{};
+            // co_await std::suspend_never{};
+            
+            std::cout << "foo [2]\n";
+        }
+
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Main continues!
+            */
+            auto f = foo(); 
+            std::cout << "Main continues!\n"; 
+        }
+
+    * Örnek 11,
+        #include <iostream>
+        #include <coroutine>
+
+        class Coro{
+            public:
+                struct promise_type; 
+                using handle_type = std::coroutine_handle<promise_type>;
+                    
+                void resume() { h_.resume(); }
+                bool done() const { return h_.done(); }
+                
+                struct promise_type {
+                    Coro get_return_object() { return Coro{ handle_type::from_promise(*this) }; }
+                    
+                    auto initial_suspend() { return std::suspend_always{}; }
+                    auto final_suspend() noexcept { return std::suspend_always{}; }
+                    void unhandled_exception() {  }
+                    void return_void() {  }
+                };
+            
+            private:
+                Coro(handle_type h) : h_(h) {}
+                handle_type h_;
+        };
+
+        Coro foo() {
+            std::cout << "foo [1]\n";
+            
+            co_await std::suspend_always{};
+            
+            std::cout << "foo [2]\n";
+        }
+
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Main starts! [1]
+                foo is NOT done yet.
+                
+                Main continues! [2]
+                foo [1]
+                foo is NOT done yet.
+                
+                Main continues! [3]
+                foo [2]
+                foo is DONE.
+                
+                main is DONE [4]
+            */
+            
+            std::cout << "Main starts! [1]\n"; 
+            auto f = foo(); 
+            if (!f.done())
+                std::cout << "foo is NOT done yet.\n";
+            else
+                std::cout << "foo is DONE.\n";
+            
+            std::cout << '\n';
+            
+            std::cout << "Main continues! [2]\n"; 
+            f.resume();
+            if (!f.done())
+                std::cout << "foo is NOT done yet.\n";
+            else
+                std::cout << "foo is DONE.\n";
+                
+            std::cout << '\n';
+
+            std::cout << "Main continues! [3]\n"; 
+            f.resume();
+            if (!f.done())
+                std::cout << "foo is NOT done yet.\n";
+            else
+                std::cout << "foo is DONE.\n";
+                
+            std::cout << '\n';
+            
+            std::cout << "main is DONE [4]\n";
+        }

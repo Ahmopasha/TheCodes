@@ -1,0 +1,751 @@
+> "std::string_view" sınıfı : Bu sınıf türünden nesneler, bir yazının gözlemcisi olarak kullanılmaktadır. Anımsanacağımız üzere 
+"yazı" ile kastedilen bellekte ardışık bir şekilde tutulan bayt kümesidir. Örneğin, aşağıdaki tanımlar birer yazıyı belirtmektedir:
+    
+    -> "Ahmet" biçimindeki bir "string-literal".
+    -> "char name[150]" biçimindeki bir "C-Style Array".
+    -> "std::string" sınıf türünden nesneler birer yazı tutmaktadır. 
+    -> "std::vector<char>" türünden nesneler bir yazıyı temsil etmektedir.
+    -> "std::array<char, 150>" türünden nesneler yine bir yazıyı temsil etmektedir. 
+
+İşte bütün bu yazılara gözlemci olarak yaklaşabileceğimiz sınıf ise "std::string_view" sınıfıdır. Tıpkı bir pencereden kapının 
+önündeki arabayı izlemek gibidir. Gözlemlediğimiz şeyin sahibinin kim olduğu bizim için önemli değildir. Yani salt okuma amaçlı 
+kullanılan fakat bunun için kopyalama yapmayan sınıf da diyebiliriz. Çünkü bu sınıf öyle bir sınıftır ki veri elemanı olarak ya 
+iki adet göstericiye ya da bir adet gösterici ve uzunluk bilgisi için değişkene sahiptir. Böylelikle arka planda "pointer-arithmetic"
+işlemleri ile argüman olarak aldığı yazı üzerinde gezinmektedir. "std::string_view" sınıfı, "std::string" sınıfının "get" amaçlı 
+arayüzünü kullanmaktadır. 
+    * Örnek 1,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        /* Bu fonksiyona gecilen arguman cok uzun ise kopyalamaya oluşabilir. */
+        void func(const std::string& str)
+        {
+            std::cout << str << "\n";
+        }
+
+        /* Bu fonksiyona ise "std::string" türünden bir nesneyi arguman yapamam. */
+        void foo(const char* p){
+            std::cout << p << "\n";
+        }
+
+        /* Burada kopyalanan, iki göstericiye sahip bir "std::string_view" nesnesi */
+        void MyFoo(std::string_view sv){
+            std::cout << sv << "\n";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Bugun hava cok sicak ve ne yazik ki orman yanginlari hala devam etmektedir.
+                Bugun hava cok sicak ve ne yazik ki orman yanginlari hala devam etmektedir.
+            */
+            func("Bugun hava cok sicak ve ne yazik ki orman yanginlari hala devam etmektedir.");
+            
+            std::string name;
+            //foo(name); // Error
+            
+            MyFoo("Bugun hava cok sicak ve ne yazik ki orman yanginlari hala devam etmektedir.");
+        }
+
+    * Örnek 2, Aşağıdaki örnekten de görüleceği üzere iki adet gösterici barındırılmaktadır. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+        int main()
+        {
+            /*
+                # OUTPUT #
+                sizeof char* : 8
+                sizeof std::string_view : 16
+            */
+            
+            std::cout << "sizeof char* : " << sizeof(char*) << "\n";
+            std::cout << "sizeof std::string_view : " << sizeof(std::string_view) << "\n";
+        }
+
+    * Örnek 3,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+    
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+            
+            std::string str(100'000, 'u');
+            
+            size_t idx{ 10'000 };
+            size_t n{ 50'000 };
+            
+            /*
+            * Bu fonksiyon ilgili aralıktaki yazıyı kullanarak yeni bir "std::string"
+            * nesnesini geri döndürmektedir. Dolayısıyla bizler kendimiz gösterici 
+            * oluşturup, ilgili "range" içerisindekilere bakmamız gerekmektedir. İşte
+            * buradaki maliyetten kaçınmak için "std::string_view" sınıfını kullanabiliriz. 
+            */
+            auto range{ str.substr(idx, n) };
+        }
+
+Fakat bu sınıf türünü kullanırken "dangling-pointer" senaryolarına ÇOK DİKKAT ETMELİYİZ. Yazının sahibi biz olmadığımız için, 
+arka plandaki göstericiler "dangling-pointer" olabilirler. İşte kopyalama maliyetinden kazandığımız maliyet, bu noktada 
+kaybedebiliriz. Diğer yandan dikkat etmemiz gereken nokta ise bu sınıf türünden nesneler "null-terminated" OLMAYAN YAZILAR 
+üzerinde de işlem yapabilmektedir. Böyle yazılar üzerinde işlem yaparken çağıracağımız "get" fonksiyonları, "null-terminated"
+yazı isteyen fonksiyonlara argüman olarak geçmemiz yine bir felakete yol açacaktır. Diğer yandan "remove" eki içeren üye fonksiyonlar 
+ise yine yazının kendisini değil, "range" olan aralığı değiştirmektedir. 
+    * Örnek 1, İçi boş bir nesne. 
+        #include <iostream>
+        #include <string_view>
+        int main()
+        {
+            /*
+                # OUTPUT #
+                size :0
+                length :0
+                true
+                true
+            */
+            
+            std::string_view sv{}; // İçi boş bir nesne.
+            // std::string_view sv; // İçi boş bir nesne.
+            std::cout << "size :" << sv.size() << "\n";
+            std::cout << "length :" << sv.length() << "\n";
+            std::cout << std::boolalpha << sv.empty() << "\n";
+            std::cout << (sv.data() == nullptr) << "\n";
+        }
+
+    * Örnek 2, "C-String" parametreli "Ctor."
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+        int main()
+        {
+            /*
+                # OUTPUT #
+                size :12
+                length :12
+                false
+                false
+                Ulya Yürük
+                ----------
+                size :12
+                length :12
+                false
+                false
+                Ulya Yürük
+                ----------
+                size :12
+                length :12
+                false
+                false
+                Ulya Yürük
+            */
+            
+            {
+                std::string_view sv{"Ulya Yürük"}; 
+                std::cout << "size :" << sv.size() << "\n";
+                std::cout << "length :" << sv.length() << "\n";
+                std::cout << std::boolalpha << sv.empty() << "\n";
+                std::cout << (sv.data() == nullptr) << "\n";
+                std::cout << sv << "\n";
+            }
+            puts("----------");
+            {
+                const char* p = "Ulya Yürük";
+                std::string_view sv{p}; 
+                std::cout << "size :" << sv.size() << "\n";
+                std::cout << "length :" << sv.length() << "\n";
+                std::cout << std::boolalpha << sv.empty() << "\n";
+                std::cout << (sv.data() == nullptr) << "\n";
+                std::cout << sv << "\n";
+            }
+            puts("----------");
+            {
+                const char* p = "Ulya Yürük";
+                std::string_view sv;
+                sv = p;
+                std::cout << "size :" << sv.size() << "\n";
+                std::cout << "length :" << sv.length() << "\n";
+                std::cout << std::boolalpha << sv.empty() << "\n";
+                std::cout << (sv.data() == nullptr) << "\n";
+                std::cout << sv << "\n";       
+            }
+        }
+
+    * Örnek 3, "data" parametreli "Ctor.". Yani "const char*" ve "size" parametreli "Ctor."
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+        #include <array>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Ulya Yürük
+                Ulya Yürük
+                Ulya
+                ----------
+                Ulya Yürük
+                Ulya Yürük
+                ----------
+                Ulya Yuruk
+                Ulya Yuruk
+                Ulya Yuruk
+                Ulya Yuruk
+                ----------
+                Ulya
+                ----------
+                |Ulya|
+                |Ulya
+            */
+            
+            {
+                char str[] = "Ulya Yürük";
+                std::string_view sv1 = str;
+                std::string_view sv2(str, 4);
+                std::cout << str << "\n";
+                std::cout << sv1 << "\n";
+                std::cout << sv2 << "\n";
+            }
+            puts("----------");
+            {
+                char str[] = "Ulya Yürük";
+                std::string_view sv1(str, 4);
+                std::cout << str << "\n";
+                std::cout << sv1.data() << "\n";
+            }
+            puts("----------");
+            {
+                std::array<char, 10> ar{ 'U', 'l','y','a',' ','Y','u','r','u','k' };
+                std::string_view sv(ar.data(), ar.size());
+                std::cout << sv << "\n";
+                std::cout << sv.data() << "\n"; // Bu fonksiyon "null-terminated" yazı istediği için Tanımsız Davranış oluşacaktır. 
+                puts(sv.data());
+                printf("%s\n", sv.data());
+            }
+            puts("----------");
+            {
+                std::string_view sv1 = "Ulya\0\0\0Yürük";
+                puts(sv1.data());
+            }
+            puts("----------");
+            {
+                const char* p = "Ulya\0\0\0Yürük";
+                std::string_view sv(p, 14);
+                std::cout << "|" << sv.data() << "|\n";
+                std::cout << "|" << sv << "|\n";
+            }
+        }
+
+    * Örnek 4, "std::string" parametreli "Ctor." fonksiyonu yoktur. Fakat bünyesindeki "std::string_view" e dönüştürmek operatör 
+    fonksiyonu "explicit" olmadığı için "std::string" türden nesneleri argüman olarak alabilmektedir. Yine aynı şekilde atama için 
+    de geçerlidir. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+            
+            {
+                std::string name{ "Ulya" };
+                std::string_view sv_name{ name };
+                std::cout << name << " | " << sv_name << "\n";
+            }
+            puts("----------");
+            {
+                std::string name{ "Ulya" };
+                std::string_view sv_name;
+                sv_name = name;
+                std::cout << name << " | " << sv_name << "\n";
+            }
+            puts("----------");  
+        }
+
+    * Örnek 5, "const char*" ve "const char*" parametreli "Ctor." fonksiyonu da bulunmaktadır. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Yuruk
+                ----------
+            */
+            
+            {
+                char name[] = "Ulya Yuruk";
+                std::string_view sv{ name + 5, name + 10 };
+                std::cout << sv << "\n";
+            }
+            puts("----------");
+        }
+
+    * Örnek 6, C++10 ile birlikte "range" parametreli "Ctor." da eklendi. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Ulya Yuruk
+                ----------
+            */
+            
+            {
+                std::string name{ "Ulya Yuruk" }; // "std::string" yerine "std::vector<char>" da olabilirdi. 
+                std::string_view sv{ name.begin(), name.end() }; // Since C++20
+                std::cout << sv << "\n";
+            }
+            puts("----------");
+        }
+
+    * Örnek 7, Burada bizler yazının sahibi olmadığını unutmamalıyız. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                |Ulya Yuruk|
+                U
+                k
+                |Mlya Puruk|
+                M
+                k
+            */
+            
+            char str[] = "Ulya Yuruk";
+            std::string_view sv{str};
+            
+            std::cout << "|" << sv << "|" << "\n";
+            std::cout << sv.front() << "\n";
+            std::cout << sv.back() << "\n";
+            
+            str[0] = 'M';
+            str[5] = 'P';
+
+            std::cout << "|" << sv << "|" << "\n";
+            std::cout << sv.front() << "\n";
+            std::cout << sv.back() << "\n";  
+        }
+
+    * Örnek 8, "nullptr" parametreli "Ctor". fonksiyonu var fakat "delete" edilmiştir, C++23 ile birlikte. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Segmentation fault
+            */
+            
+            std::string_view sv = nullptr;
+        }
+
+    * Örnek 9, "std::string" sınıfının "std::string_view" parametreli "Ctor." fonksiyonu mevcuttur. Fakat bu fonksiyon "explicit"
+    olarak nitelenmiştir. Dolayısıyla "std::string_view" türüne ÖRTÜLÜ DÖNÜŞÜM SENTAKS HATASIDIR. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        std::string foo(){
+            std::string_view sv{ "Ulya" };
+            return sv; // Sentaks Hatası 
+        }
+
+        void func(std::string str){
+            //...
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Ulya
+                Ulya
+            */
+            std::string_view sv{ "Ulya" };
+            std::cout << sv << "\n";
+            
+            std::string str{sv};
+            std::cout << str << "\n";
+            
+            // std::string str_str = sv; // ERROR
+            // std::cout << str_str << "\n";
+
+            func(sv); // Sentaks Hatası 
+            auto xxx = foo(); // Sentaks Hatası 
+        } 
+
+    * Örnek 10, "Dangling Pointer" mevzusuna çok dikkat etmeliyiz. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        std::string foo(){
+            return "Ulya Yuruk";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Ulya Yuruk
+                Ulya Yuruk
+                Ulya Yuruk
+                Ulya Yuruk
+            */
+            
+            const std::string& cr_s{ foo() };
+            std::cout << cr_s << "\n"; // Life Extension
+            
+            std::string&& r_s{ foo() };
+            std::cout << r_s << "\n"; // Life Extension
+            
+            auto ptr = foo().c_str();
+            std::cout << ptr << "\n"; // Dangling Pointer
+            
+            std::string_view sv{ foo() };
+            /*
+            * Dangling Pointer: Burada "sv" nesnesi içerisindeki göstericilerin
+            * gösterdiği adres değerleri artık geçersiz hale gelmiştir.  
+            */
+            std::cout << sv << "\n"; 
+        }
+
+    * Örnek 11, Aşağıdaki örnekte fonksiyonun geri döndürdüğü nesnenin ömrü bittiği için "Dangling Pointer" meydana gelmiştir. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        class Person{
+        public:
+            Person(const std::string& other) : m_name{other} {}
+            void print() const { std::cout << m_name << "\n"; }
+            std::string_view get_name() const { return m_name; }
+        private:
+            std::string m_name{};
+        };
+
+        Person create_person(){
+            return Person{ "Ulya Yuruk" };
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                |Ulya Yuruk|
+            */
+            
+            auto name = create_person().get_name(); 
+            std::cout << "|" << name << "|\n"; // Dangling Pointer
+        }
+
+    * Örnek 12, ".append()" fonksiyonunun çağrılmasıyla birlikte "reallocation" gerçekleşeceğinden, "sv" içerisindeki 
+    göstericiler artık "Dangling Pointer" halini almıştır. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                |aaaaaaaaaa|
+                |aaaaaaaaaaxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx|
+                |�
+            */
+            
+            std::string str(10, 'a');
+            std::string_view sv{ str };
+            std::cout << "|" << sv << "|\n";
+            
+            str.append(1000, 'x');
+            std::cout << "|" << str << "|\n";
+            std::cout << "|" << sv << "|\n";
+        }
+
+    * Örnek 13, 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Ulya
+                Ulya
+            */
+            
+            auto p = new std::string{"Ulya"};
+            std::string_view sv{*p};
+            std::cout << sv << "\n";
+            
+            delete p;
+            std::cout << sv << "\n";
+        }
+
+    * Örnek 14,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        std::string operator+(std::string_view sv1, std::string_view sv2){
+            return std::string(sv1) + std::string(sv2);
+        }
+
+        template<typename T>
+        T concat(const T& x, const T& y){
+            return x + y;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                XRPG
+            */
+            
+            std::string_view sv = "Ulya";
+            
+            /*
+            * "concat" çağrısı sonrasında "T" türü için "std::string_view" 
+            * çıkarımı yapılacaktır. Fakat "+" operatörü ile bizler "std::string"
+            * elde etmiş olacağız. Yani;
+            * İlk olarak ".operator+()" ile "std::string" türünden geçici bir 
+            * nesne elde edilecek.
+            * Daha sonra bu geçici nesne ile yine "std::string_view" türünden 
+            * geçici bir nesne "concat" fonksiyonu ile geri döndürülecek. 
+            * Her ne kadar "value" değişkeninin türü "std::string_view" olsa da 
+            * "Life Extension" olmadığı için "value" içerisindeki göstericiler
+            * "Dangling Pointer" olacaklar çünkü gösterdikleri geçici nesnenin 
+            * ömrü bir sonraki satırda bitmiş olacak. Eğer "concat" fonksiyonunun 
+            * geri dönüş değeri "auto" olsaydı, "std::string" türünden açılım 
+            * yapılacağı için herhangi bir problem oluşmayacaktı. 
+            */
+            auto value = concat(sv, sv);
+            std::cout << value << "\n";
+        }
+
+    * Örnek 15,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        std::string_view foo(std::string s){
+            /*
+            * Fonksiyonun parametre değişkeni otomatik ömürlü olduğu için
+            * hayatı bitecektir. Dolayısıyla geri dönüş değeri olan
+            * "std::string_view" içerisinde bulunan göstericiler "Dangling Pointer"
+            * halini alacaktır. 
+            */
+            return s;
+        }
+
+        int main()
+        {
+            //...
+        }
+
+    * Örnek 16, "std::string_view" sınıfının bir çok üye fonksiyonu "constexpr" fonksiyondur. 
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+
+            constexpr std::string_view sv{ "Ulya Yuruk" };
+            constexpr auto len{ sv.length() };
+            constexpr auto cs{ sv.front() };
+            constexpr auto ce{ sv.end() };
+            constexpr auto iter_beg = sv.begin();
+            constexpr auto iter_end = sv.end();
+            
+            constexpr auto idx = sv.find('k');
+            constexpr auto idxx = sv.find_first_not_of("Akhpmt");
+        }
+
+    * Örnek 17,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                [10] => ulya yuruk
+                [10] => ulya yuruk
+                [5] => yuruk
+                [5] => yuruk
+                [4] => yuru
+                [4] => yuruk
+            */
+            
+            std::string_view sv{ "ulya yuruk" };
+            
+            std::cout << "[" << sv.size() << "] => " << sv << "\n";
+            std::cout << "[" << sv.size() << "] => " << sv.data() << "\n";
+            
+            sv.remove_prefix(5);
+            std::cout << "[" << sv.size() << "] => " << sv << "\n";
+            std::cout << "[" << sv.size() << "] => " << sv.data() << "\n";
+            
+            sv.remove_suffix(1);
+            std::cout << "[" << sv.size() << "] => " << sv << "\n";
+            std::cout << "[" << sv.size() << "] => " << sv.data() << "\n";
+        }
+
+    * Örnek 18,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                (     basimda bir bosluk hissi var.)
+                (basimda bir bosluk hissi var.)
+            */
+            
+            std::string str{ "     basimda bir bosluk hissi var." };
+            std::string_view sv{ str };
+            
+            sv.remove_prefix(
+                std::min(
+                    sv.find_first_not_of(" "),
+                    sv.size()
+                )
+            );
+            
+            std::cout << "(" << str << ")\n";
+            std::cout << "(" << sv << ")\n";
+        }
+
+    * Örnek 19,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        void foo(std::string){
+            std::cout << "std::string\n";
+        }
+
+        void foo(std::string_view){
+            std::cout << "std::string_view\n";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+            
+            //foo("Ulya Yuruk"); // Ambiguity
+
+            foo("Ulya Yuruk"s); // std::string
+            
+            foo("Ulya Yuruk"sv);// std::string_view
+        }
+
+    * Örnek 20,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        void foo(const char*){
+            std::cout << "const char*\n";
+        }
+
+        void foo(std::string){
+            std::cout << "std::string\n";
+        }
+
+        void foo(std::string_view){
+            std::cout << "std::string_view\n";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+            
+            foo("Ulya Yuruk");  // const char*
+
+            foo("Ulya Yuruk"s); // std::string
+            
+            foo("Ulya Yuruk"sv);// std::string_view
+        }
+
+    * Örnek 21,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        class Myclass{
+            public:
+                Myclass(const std::string& other) : m_s{other} {}
+                Myclass(std::string_view other) : m_s{other} {}
+                Myclass(std::string other) : m_s{std::move(other)} {}
+            
+            private:
+                std::string m_s;
+        };
+
+        int main()
+        {
+            /*
+                Input Parameter     const std::string&      std::string_view        std::string w/ std::move 
+                const char*         2 allocations           1 allocations           1 allocations + move 
+                const char* SSO     2 copies                1 copy                  2 copies 
+                L-Value             1 allocations           1 allocations           1 allocation + move 
+                L-Value SSO         1 copy                  1 copy                  2 copies 
+                R-Value             1 allocation            1 allocation            2 moves 
+                R-Value SSO         1 copy                  1 copy                  2 copies 
+
+                *SSO : Small String Optimization 
+            */
+        }
+
+    * Örnek 22,
+        #include <iostream>
+        #include <string>
+        #include <string_view>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                true
+                true
+                true
+            */
+            std::string_view sv{"Ulya Yuruk"};
+            std::cout << std::boolalpha << sv.starts_with("Ulya") << "\n"; // C++20
+            std::cout << std::boolalpha << sv.ends_with("Yuruk") << "\n";  // C++20
+            std::cout << std::boolalpha << sv.contains("uru") << "\n";     // C++23
+        }

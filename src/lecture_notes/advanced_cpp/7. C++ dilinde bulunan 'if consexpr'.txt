@@ -1,0 +1,607 @@
+> "if constexpr" : Derleyiciye, derleme zamanında kod seçimi yaptırmaya yarar. "static if" olarak da belirtilir. Argüman 
+olarak "Compiler Time Expression" alır. Şablonlara yönelik bir araçtır ama çalışma zamanında bir fonksiyon içerisinde de 
+kullanabiliriz. Fakat kurallarda farklılık oluşacaktır. "If-Else" merdiveni de oluşturabiliriz. Bu durumda "else-if"
+durumlarında mutlaka "constexpr" belirtecini yazmalıyız. Şimdi de aşağıdaki örnekleri inceleyelim;
+    * Örnek 1,
+        #include <type_traits>
+
+        template<typename T>
+        void func(T tx) {
+            if constexpr (std::is_integral_v<T>) { 
+            // "T" bir tam sayı türü ise bu kısım derlemeye alınacak.
+                if (tx != 0)
+                    func(tx--);
+            }
+            else {
+            // Aksi halde bu kısım. 
+                // Error: error: there are no arguments to ‘undeclared_f’ that depend on a template parameter, 
+                // so a declaration of ‘undeclared_f’ must be available
+                // undeclared_f(); 
+                
+                undeclared(tx); // OK 
+            }
+        }
+
+        int main() {
+            // Gönderilen argümanın ne olduğundan bağımsız; yukarıdaki "else" bloğu da sentaks kurallarına
+            // tabii tutulacaktır. Dolayısıyla "else" bloğundaki "undeclared_f" ismi SENTAKS HATASI
+            // oluşturacaktır. Çünkü ilgili isim "non-dependent on template parameter, it must be dependent
+            // on template parameter".
+            
+            func(2); 
+        }
+
+    * Örnek 2,
+        #include <type_traits>
+
+        struct Neco{};
+
+        int main() {
+            Neco nec;
+            
+            if constexpr (sizeof(int) > 1)
+                ++nec; // no match for ‘operator++’ (operand type is ‘Neco’)
+            else
+                --nec; // no match for ‘operator--’ (operand type is ‘Neco’)
+                
+            // Ortada bir şablon olmadığından, "if" ve "else"
+            // bloklarında sentaks kuralları irdelenir. 
+        }
+
+    * Örnek 3,
+        #include <type_traits>
+        #include <iostream>
+
+        template<typename T>
+        void func(T& tx) {
+            if (tx > 0) { 
+                if constexpr (std::is_integral_v<T>) {
+                    ++tx;
+                }
+                else {
+                    --tx;
+                }
+            }
+        }
+
+        int main() {
+            int ival = 5;
+            double dval = 2.5;
+            func(ival);
+            func(dval);
+            
+            std::cout << "ival: " << ival << ", dval: " << dval << '\n'; // ival: 6, dval: 1.5
+        }
+
+    * Örnek 4,
+        #include <type_traits>
+
+        // Return value is "int", or "double".
+        constexpr auto func() {
+            if constexpr (sizeof(int) > 4u) return 1;
+            else return 0.f;
+        }
+
+        // Return value is "int", or "void".
+        auto foo() {
+            if constexpr (sizeof(int) > 4u) return 1;
+        }
+
+        int main() {
+            //...
+        }
+
+    * Örnek 5,
+        #include <type_traits>
+        #include <iostream>
+        #include <memory>
+
+        template<typename T>
+        auto get_val(T t) {
+            if constexpr (std::is_pointer_v<T>) return *t;
+            else return t;
+        }
+
+
+        int main() {
+            int ival{ 87 }; std::cout << get_val(ival) << '\n'; // 87
+            double dval{ 8.7 }; std::cout << get_val(dval) << '\n'; // 8.7
+            int* ipval{ &ival }; std::cout << get_val(ipval) << '\n'; // 87
+            double* dpval{ &dval }; std::cout << get_val(dpval) << '\n'; // 8.7
+        }
+
+    * Örnek 6,
+        #include <type_traits>
+        #include <iostream>
+        #include <string>
+
+        template<typename T>
+        std::string as_string(T x) {
+            if constexpr (std::is_same_v<T, std::string>) return x;
+            else if constexpr (std::is_arithmetic_v<T>) return std::to_string(x);
+            else return std::string(x);
+        }
+
+        class Myclass {};
+
+        int main() {
+            std::cout << as_string(42) << '\n'; // 42
+            std::cout << as_string(4.2) << '\n'; // 4.200000  
+            std::cout << as_string("Kirkiki") << '\n'; // Kirkiki
+            std::cout << as_string(std::string("kirkIki")) << '\n'; // kirkIki
+            
+            // Error: no matching function for call to ‘std::__cxx11::basic_string::basic_string(Myclass&)’
+            // "std::string" sınıfındaki "ctor." fonksiyonlar "Myclass" türünden argüman almadıklarından, sentaks hatası oluştu.
+            // std::cout << as_string(Myclass{}) << '\n';
+        }
+
+    * Örnek 7.0, "Tag Dispatch": 
+        #include <iterator>
+        #include <iostream>
+        #include <vector>
+        #include <list>
+
+        namespace details{
+            // Implementation for Random Access Iterator 
+            template<typename Iter, typename Dist>
+            void Advance_Impl(Iter& pos, Dist n, std::random_access_iterator_tag) {
+                pos += n;
+            }
+            
+            // Implementation for Random Bi-Directional Iterator 
+            template<typename Iter, typename Dist>
+            void Advance_Impl(Iter& pos, Dist n, std::bidirectional_iterator_tag) {
+                if (n >= 0)
+                    while (n--)
+                        ++pos;
+                else 
+                    while(n++)
+                        --pos;
+            }
+            
+            // Implementation for Input Iterator 
+            template<typename Iter, typename Dist>
+            void Advance_Impl(Iter& pos, Dist n, std::input_iterator_tag) {
+                while(n--) 
+                    ++pos;
+            }
+        }
+
+        template<typename Iter, typename Dist>
+        void Advance(Iter& pos, Dist n) {
+            using Cat = typename std::iterator_traits<Iter>::iterator_category; // Including "C-Array"
+            // using Cat = typename Iter::iterator_category; // Excluding "C-Array"
+            
+            details::Advance_Impl(pos, n, Cat{});
+            // Üçüncü parametrenin türüne göre yukarıdaki uygun olan fonksiyon
+            // seçilecektir. 
+        }
+
+        int main() {
+            std::vector<int> ivec{ 1, 2, 3, 4, 5 };
+            auto viter = ivec.begin();
+            Advance(viter, 3);
+            std::cout << *viter << '\n'; // 4
+            
+            std::list<int> ilist{ 5, 4, 3, 2, 1 };
+            auto liter = ilist.begin();
+            Advance(liter, 4);
+            std::cout << *liter << '\n'; // 1
+        }
+
+    * Örnek 7.1, "Tag Dispatch" mekanizmasının alternatifi olabilir. 
+        #include <iterator>
+        #include <type_traits>
+        #include <vector>
+        #include <list>
+        #include <iostream>
+
+        template<typename Iter, typename Dist>
+        void Advance(Iter& pos, Dist n){
+            using Cat = typename std::iterator_traits<Iter>::iterator_category;
+            
+            if constexpr (std::is_same_v<Cat, std::random_access_iterator_tag>) {
+                pos += n;
+            }
+            else if constexpr (std::is_same_v<Cat, std::bidirectional_iterator_tag>) {
+                if (n > 0)
+                    while(n--)
+                        ++pos;
+                else
+                    while(n++)
+                        --pos;
+            }
+            else {
+                while(n--)
+                    ++pos;
+            }
+        }
+
+        int main() {
+            std::vector<int> ivec{ 1, 2, 3, 4, 5 };
+            auto viter = ivec.begin();
+            Advance(viter, 3);
+            std::cout << *viter << '\n'; // 4
+            
+            std::list<int> ilist{ 5, 4, 3, 2, 1 };
+            auto liter = ilist.begin();
+            Advance(liter, 4);
+            std::cout << *liter << '\n'; // 1
+        }
+
+    * Örnek 8.0, "Recursive" çağrı: 
+        template<int N>
+        constexpr int fibbo() {
+            return fibbo<N - 1>() + fibbo<N - 2>();
+        }
+
+        template<>
+        constexpr int fibbo<1>(){
+            return 1;
+        }
+
+        template<>
+        constexpr int fibbo<0>(){
+            return 0;
+        }
+
+        int main() {
+            constexpr auto x = fibbo<5>(); // 120
+        }
+
+    * Örnek 8.1, "Recursive" çağrılara alternatif olabilir
+        template<int N>
+        constexpr int fibbo() {
+            if constexpr (N >= 0)
+                return fibbo<N - 1>() + fibbo<N - 2>();
+            else 
+                return N;
+        }
+
+        int main() {
+            constexpr auto x = fibbo<5>(); // 120
+        }
+
+    * Örnek 9.0,
+        #include <string>
+        #include <iostream>
+
+        template<typename T>
+        std::string to_str(T t) {
+            return std::to_string(t);
+        }
+
+        std::string to_str(const std::string& t) {
+            return t;
+        }
+
+        std::string to_str(const char* t) {
+            return t;
+        }
+
+        std::string to_str(bool b) {
+            return b ? "true" : "false";
+        }
+
+        int main() {
+            std::cout << to_str("Ulya") << '\n';
+            std::cout << to_str(std::string("Yuruk")) << '\n';
+            std::cout << to_str(13) << '\n';
+            std::cout << to_str(5.9) << '\n';
+            std::cout << to_str(true) << '\n';
+        }
+
+    * Örnek 9.1,
+        #include <string>
+        #include <iostream>
+        #include <type_traits>
+
+        template<typename T>
+        std::string to_str(T t){
+            if constexpr (std::is_convertible_v<T, std::string>) return t;
+            else if constexpr (std::is_same_v<T, bool>) return t ? "True" : "False";
+            else return std::to_string(t);
+        }
+
+        int main() {
+            std::cout << to_str("Ulya") << '\n';
+            std::cout << to_str(std::string("Yuruk")) << '\n';
+            std::cout << to_str(13) << '\n';
+            std::cout << to_str(5.9) << '\n';
+            std::cout << to_str(true) << '\n';
+        }
+
+    * Örnek 10, "print" fonksiyonunun bir diğer versiyonu:
+        #include <string>
+        #include <iostream>
+        #include <type_traits>
+
+        template<typename T, typename... Ts>
+        void print(const T& x, const Ts&... args) {
+            if constexpr (sizeof...(args) == 0)
+                std::cout << x << '\n'; // Paketteki öğe sayısı sıfır ise bu kod;
+            else
+                std::cout << x << ", "; // Aksi halde bu kod. 
+                
+            // Paketteki öğe sayısı sıfır DEĞİL İSE,
+            // derleyici paketteki öğeler bitene kadar
+            // "Compile Time Recursivetly" biçiminde 
+            // "print" fonksiyonunu yazacaktır. 
+            if constexpr (sizeof...(args) != 0) 
+                print(args...);
+        }
+
+        int main() {
+            print(12, 3.4, "Ulya Yuruk"); // 12, 3.4, Ulya Yuruk
+        }
+
+    * Örnek 11, 
+        #include <algorithm>
+        #include <iostream>
+        #include <type_traits>
+
+        template<typename T, std::size_t N>
+        void copy_array(T(&dest)[N], const T(&source)[N]) {
+            // Bu fonksiyona geçilen dizinin türleri ve boyutları
+            // aynı olmak zorundadır.
+            
+            if constexpr (std::is_trivially_copyable_v<T>) // "byte" olarak kopyalanmanın "memcpy" ile mümkün olduğu sorgulanıyor.
+                std::memcpy(dest, source, N * sizeof(T));
+            else
+                std::copy(source, std::end(source)), dest); // Eğer mümkün değilse, buradaki "copy" fonksiyonu çağrılacak.
+        }
+
+    * Örnek 12.0, Kendi sınıflarımı "Structural Binding" ile kullanabilmek için "std::get" arayüzünü 
+    implemente etmemiz gerekiyor. İşte buna da bir alternatif olarak kullanılabilir. 
+        #include <string>
+        #include <vector>
+        #include <iostream>
+
+        class Neco {
+            public:
+                template<std::size_t N>
+                auto get(); // Gerek "explicit specialization" gerek "partial specialization" için fonksiyonun tanımına lüzum YOKTUR.
+                
+                int ival{ 17500 };
+                double dval{ 17.5 };
+                std::string name{ "Ulya Yuruk" };
+                std::vector<std::string> ivec{ "Ulya Yuruk", "Uskudar", "Istanbul" };
+        };
+
+        template<>
+        auto Neco::get<0>() { return ival; }
+
+        template<>
+        auto Neco::get<1>() { return dval; }
+
+        template<>
+        auto Neco::get<2>() { return name; }
+
+        template<>
+        auto Neco::get<3>() { return ivec; }
+
+        int main(){
+            const auto&[age, wage, name, address] = Neco{};
+            std::cout << "Age: " << age << '\n'; // Age: 17500
+            std::cout << "Wage: " << wage << '\n'; // Wage: 17.5
+            std::cout << "Name: " << name << '\n'; // Name: Ulya Yuruk
+            std::cout << "Address: "; // Address: 
+            for(const auto& i : address)
+                std::cout << i << ' '; // Ulya Yuruk Uskudar Istanbul 
+            std::cout << '\n';
+        }
+
+    * Örnek 12.1,
+        #include <string>
+        #include <vector>
+        #include <iostream>
+
+        class Neco {
+            public:
+                template<std::size_t N>
+                auto get() {
+                    if constexpr (N == 0) return ival;
+                    else if constexpr (N == 0) return dval;
+                    else if constexpr (N == 0) return name;
+                    else if constexpr (N == 0) return ivec;
+                }
+                
+                int ival{ 17500 };
+                double dval{ 17.5 };
+                std::string name{ "Ulya Yuruk" };
+                std::vector<std::string> ivec{ "Ulya Yuruk", "Uskudar", "Istanbul" };
+        };
+
+
+        int main(){
+            const auto&[age, wage, name, address] = Neco{};
+            std::cout << "Age: " << age << '\n'; // Age: 17500
+            std::cout << "Wage: " << wage << '\n'; // Wage: 17.5
+            std::cout << "Name: " << name << '\n'; // Name: Ulya Yuruk
+            std::cout << "Address: "; // Address: 
+            for(const auto& i : address)
+                std::cout << i << ' '; // Ulya Yuruk Uskudar Istanbul 
+            std::cout << '\n';
+        }
+
+    * Örnek 13, "if constexpr", kısa devre davranışına NEDEN OLMAZ. Kısa devre davranışı için ya iç içe "if constexpr" 
+    ya da normal "if" deyimi kullanmalıyız. 
+        #include <type_traits>
+        #include <iostream>
+        #include <limits>
+        #include <string>
+
+        template<typename T>
+        void foo(T x, T y) {
+            if constexpr (std::is_integral<T>::value && std::numeric_limits<T>::min() < 10)
+            {
+                std::cout << '(' << typeid(T).name() << ") is integral and minimum numeric limit is less than 10\n";
+            }
+        }
+
+        int main() {
+            foo(13, 31); // (i) is integral and minimum numeric limit is less than 10
+            
+            std::cout << '\n';
+            
+            foo(std::string{"Ulya"}, std::string{"Yuruk"}); // error: numeric_limits are not defined for strings.
+            
+            std::cout << '\n';
+        }
+
+Öte yandan "if constexpr" ile "static_assert" i birlikte kullanırken şöyle bir problem ile karşılaşabiliriz; Diyelim ki 
+"T" için "integral" bir tür olduğunda ayrı bir kod, "floating_point" olduğunda ayrı bir kod parçasının seçilmesini, bu ikisi
+haricindeki durumlar için sentaks hatası oluşmasını isteyelim. Bunu gerçekleştirecek de şöyle bir kod yazmış olalım;
+    * Örnek 1,
+        #include <type_traits>
+        #include <iostream>
+
+        template<typename T>
+        void foo (T x) {
+            if constexpr (std::is_integral_v<T>)
+                std::cout << "integral.\n";
+            else if constexpr (std::is_floating_point_v<T>)
+                std::cout << "floating_point.\n";
+            else
+                static_assert(false, "Either T must be an integral type, or a floating_point type");
+        }
+
+        int main() {
+            // error: static assertion failed: Either T must be an integral type, or a floating_point type
+        }
+
+Örnekte de görüleceği üzere, "foo" fonksiyonunu çağırmamış olmamıza rağmen "static_assert" tutmadı. Diğer yandan 
+bazı derleyiciler söz konusu olduğunda, yukarıdaki KOD DERLENECEKTİR DE. Bizim buradaki nihai amacımız, derleyiciden 
+bağımsız bir şekilde, "static_assert" in ilk parametresinin "always false" olmasını sağlatmaktır. İşte bunun için 
+yukarıdaki kodu aşağıdaki gibi güncelleyebiliriz;
+    * Örnek 1,
+        #include <type_traits>
+        #include <iostream>
+
+        template<typename T>
+        void foo (T x) {
+            if constexpr (std::is_integral_v<T>)
+                std::cout << "integral.\n";
+            else if constexpr (std::is_floating_point_v<T>)
+                std::cout << "floating_point.\n";
+            else
+                static_assert(sizeof(T) != sizeof(T), "Either T must be an integral type, or a floating_point type");
+        }
+
+        int main() {
+            
+        }
+
+Artık derleyiciden bağımsız bir şekilde yukarıdaki kod derlenecektir ve "foo" fonksiyonunu çağırmadığımız 
+müddetçe herhangi bir sentaks hatası ALMAYACAĞIZ. Şimdi de bu kodu, "foo" fonksiyonunu çağırarak test edelim;
+    * Örnek 1,
+        #include <type_traits>
+        #include <iostream>
+
+        template<typename T>
+        void foo (T x) {
+            if constexpr (std::is_integral_v<T>)
+                std::cout << "integral.\n";
+            else if constexpr (std::is_floating_point_v<T>)
+                std::cout << "floating_point.\n";
+            else
+                static_assert(sizeof(T) != sizeof(T), "Either T must be an integral type, or a floating_point type");
+        }
+
+        class Myclass{};
+
+        struct Neco{};
+
+        int main() {
+            foo(31); // integral.
+            
+            foo(3.1); // floating_point.
+            
+            // In instantiation of ‘void foo(T) [with T = Myclass]’:
+            // error: static assertion failed: Either T must be an integral type, or a floating_point type
+            // foo(Myclass{}); 
+            
+            // In instantiation of ‘void foo(T) [with T = Neco]’:
+            // error: static assertion failed: Either T must be an integral type, or a floating_point type
+            // foo(Neco{}); 
+        }
+
+Fakat bu çözüm yolu da kodun okunmasını biraz zorlaştırmaktadır. Yani ilk bakışta neden "sizeof(T) != sizeof(T)"
+sorgulamasının yapıldığı pek net değildir. İşte buna çözüm olarak da şöyle bir yöntem geliştirilmiş;
+    * Örnek 1, 
+        #include <type_traits>
+        #include <iostream>
+
+        template<typename T>
+        struct always_false : std::false_type{};
+
+        template<typename T>
+        constexpr bool always_false_v = always_false<T>::value;
+
+        template<typename T>
+        void foo (T x) {
+            if constexpr (std::is_integral_v<T>)
+                std::cout << "integral.\n";
+            else if constexpr (std::is_floating_point_v<T>)
+                std::cout << "floating_point.\n";
+            else
+                static_assert(always_false_v<T>, "Either T must be an integral type, or a floating_point type");
+        }
+
+        class Myclass{};
+
+        struct Neco{};
+
+        int main() {
+            foo(31); // integral.
+            
+            foo(3.1); // floating_point.
+            
+            // In instantiation of ‘void foo(T) [with T = Myclass]’:
+            // error: static assertion failed: Either T must be an integral type, or a floating_point type
+            foo(Myclass{}); 
+            
+            // In instantiation of ‘void foo(T) [with T = Neco]’:
+            // error: static assertion failed: Either T must be an integral type, or a floating_point type
+            foo(Neco{}); 
+        }
+
+Hatta yukarıdaki örnekteki sınıf şablonu yerine "Variable Template with Template Parameter Pack" kullanabiliriz;
+    * Örnek 1,  
+        #include <type_traits>
+        #include <iostream>
+
+        template<typename...>
+        constexpr bool always_false_v = false;
+
+        template<typename T>
+        void foo (T x) {
+            if constexpr (std::is_integral_v<T>)
+                std::cout << "integral.\n";
+            else if constexpr (std::is_floating_point_v<T>)
+                std::cout << "floating_point.\n";
+            else
+                static_assert(always_false_v<T>, "Either T must be an integral type, or a floating_point type");
+        }
+
+        class Myclass{};
+
+        struct Neco{};
+
+        int main() {
+            foo(31); // integral.
+            
+            foo(3.1); // floating_point.
+            
+            // In instantiation of ‘void foo(T) [with T = Myclass]’:
+            // error: static assertion failed: Either T must be an integral type, or a floating_point type
+            foo(Myclass{}); 
+            
+            // In instantiation of ‘void foo(T) [with T = Neco]’:
+            // error: static assertion failed: Either T must be an integral type, or a floating_point type
+            foo(Neco{}); 
+        }
+
+Sonuç olarak bizim buradaki nihai amacımız "static_assert(false, ...)" yazdığımız zaman bazı derleyiciler direkt 
+sentaks hatası verirken bazılarının vermemesi. İşte buradaki "false" ifadesi yerine alternatif olarak yukarıdaki 
+yaklaşımları kullanabiliriz. 

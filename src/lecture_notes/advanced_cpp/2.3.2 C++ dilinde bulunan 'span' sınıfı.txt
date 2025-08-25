@@ -1,0 +1,680 @@
+> "std::span" : "std::span", "std::string_view" ın genelleştirilmiş halidir. Nasılki "std::string_view" nesneleri bir 
+yazının gözlemcisiyse, "std::span" da "contiguous" olan herhangi bir "range" in öğelerinin gözlemcisidir. Yine bunlar da tıpkı 
+"std::string_view" gibi "light-weight", yani kopyalama maliyeti olmayan nesnelerdir. C++20 ile dile eklenen önemli araçlardan 
+bir tanesidir. Başlık dosyası "span" biçimindedir. Diğer yandan "std::span" ve "std::string_view" sınıfları, "view" konseptini 
+sağlayan sınıflardır. Yine "std::string_view" gibi, "std::span" da "non-owning" dir. Yani gözlemlediği nesnenin hayatı biterse,
+bünyelerindeki gösterici(ler) "dangling" hale gelecektir. Bu sınıf her ne kadar bir "container" olmasa da "container-like" 
+arayüze sahiptirler. Ek olarak "std::span", "extent" kavramına sahiptir. Bu kavramın değeri "static_extent" veya "dynamic_extent"
+değerlerinden birisi olabilir. "std::span" sınıfının ikinci şablon parametresi olan "size" değerine bir rakam geçmezsek, yani 
+varsayılan "size" değerini kullanırsak, iş bu "extent" kavramının değeri "dynamic_extent" olacaktır. Bir rakam geçmemiz durumunda 
+"static_extent" olacaktır. Burada kullanılan varsayılan "size" değeri ise "std::size_t" türünden "-1" dir. Yani "std::size_t" 
+türünün en büyük değeri. Bu Şimdi de aşağıdaki örnekler ile sınıfı daha iyi tanıyalım:
+    * Örnek 1,
+        #include <array>
+        #include <cassert>
+        #include <cstddef>
+        #include <iostream>
+        #include <span>
+        #include <string_view>
+        #include <vector>
+        
+        int main()
+        {
+            auto print = [](std::string_view const name, std::size_t ex)
+            {
+                std::cout << name << ", ";
+                if (std::dynamic_extent == ex)
+                    std::cout << "dynamic extent\n";
+                else
+                    std::cout << "static extent = " << ex << '\n';
+            };
+        
+            int a[]{1, 2, 3, 4, 5};
+        
+            std::span span1{a};
+            print("span1", span1.extent); // span1, static extent = 5
+        
+            std::span<int, std::dynamic_extent> span2{a};
+            print("span2", span2.extent); // span2, dynamic extent
+        
+            std::array ar{1, 2, 3, 4, 5};
+            std::span span3{ar};
+            print("span3", span3.extent); // span3, static extent = 5
+        
+            std::vector v{1, 2, 3, 4, 5};
+            std::span span4{v};
+            print("span4", span4.extent); // span4, dynamic extent
+        }
+
+    * Örnek 2,
+        #include <span>
+        #include <array>
+        #include <iostream>
+
+        int main()
+        {
+            // std::span<int, 5> sp1; 
+            // Error: "extent == 0 || extent == std::dynamic_extent" ise "Default Ctor." çağrılabilir.
+            
+            std::span<int, 0> sp2; 
+            if constexpr (sp2.extent != std::dynamic_extent)
+            {
+                std::cout << "sp2 is a static_extent\n"; // OUTPUT: sp2 is a static_extent
+                std::cout << "sp2.extent: " << sp2.extent << '\n'; // OUTPUT: sp2.extent: 0
+                std::cout << "sp2.size  : " << sp2.size() << '\n'; // OUTPUT: sp2.size  : 0
+            }
+            
+            std::span<int> sp3; 
+            if constexpr (sp3.extent == std::dynamic_extent)
+            {
+                std::cout << "sp3 is a dynamic_extent\n"; // OUTPUT: sp3 is a dynamic_extent
+                std::cout << "sp3.extent: " << sp3.extent << '\n'; // OUTPUT: sp3.extent: 18446744073709551615
+                std::cout << "sp3.size  : " << sp3.size() << '\n'; // OUTPUT: sp3.size  : 0
+            }
+            
+            int a[]{ 1, 2, 3, 4, 5, 6 };
+            std::span<int> sp4{ a };
+            if constexpr (sp4.extent == std::dynamic_extent)
+            {
+                std::cout << "sp4 is a dynamic_extent\n"; // OUTPUT: sp4 is a dynamic_extent
+                std::cout << "sp4.extent: " << sp4.extent << '\n'; // OUTPUT: sp4.extent: 18446744073709551615
+                std::cout << "sp4.size  : " << sp4.size() << '\n'; // OUTPUT: sp4.size  : 6
+            }
+            
+            std::array<int, 3> ar{ 7, 8, 9 };
+            std::span<int> sp5{ ar };
+            if constexpr (sp5.extent == std::dynamic_extent)
+            {
+                std::cout << "sp5 is a dynamic_extent\n"; // OUTPUT: sp5 is a dynamic_extent
+                std::cout << "sp5.extent: " << sp5.extent << '\n'; // OUTPUT: sp5.extent: 18446744073709551615
+                std::cout << "sp5.size  : " << sp5.size() << '\n'; // OUTPUT: sp5.size  : 3
+            }
+            
+            // "CTAT" kullanıldığı için "size" değerine ilişkin şablon parametresi
+            // için de tür çıkarımı yapıldı. 
+            std::span sp6{ ar }; 
+            if constexpr (sp6.extent != std::dynamic_extent)
+            {
+                std::cout << "sp6 is a dynamic_extent\n"; // OUTPUT: sp6 is a dynamic_extent
+                std::cout << "sp6.extent: " << sp6.extent << '\n'; // OUTPUT: sp6.extent: 3
+                std::cout << "sp6.size  : " << sp6.size() << '\n'; // OUTPUT: sp6.size  : 3
+            }
+
+        } 
+
+    * Örnek 3,
+        #include <cassert>
+        #include <span>
+        #include <vector>
+        
+        int main()
+        {
+            std::vector ivec{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            std::span<int, 9> sp9{ ivec }; // OK
+            
+            // "std::span" için "size" değeri olarak 
+            // "9" rakamı geçtiğimizden, "static_extent"
+            // oluyor. Bu durumda ilgili "span" nesnesi
+            // "9" öğelik bir "range" in gözlemcisi 
+            // olacaktır.
+            assert(sp9.size() == ivec.size()); // OK
+            
+            std::span<int, 4> sp4{ ivec.begin(), 4 }; // OK
+            
+            // Tanımsız Davranış oluşturacak durumlar:
+            std::span<int, 10> sp10{ ivec }; // Hem "static_extent" olsun hem de dinamik olarak...
+            std::span<int, 5> sp5{ ivec }; // ..."size" değeri değişebilecek bir öğe kullanmak.
+            std::span<int, 3> sp3{ ivec.begin(), 8 }; // Verdiğimiz aralık değeri uygun değil.
+            std::span<int, 8> sp8{ ivec.begin(), 3 }; // Verdiğimiz aralık değeri uygun değil.
+            
+            // Sentaks Hatası oluşturacak durumlar: No such Ctor. Func.
+            // std::span<int, 7> sp7{ ivec, 7 }; 
+            // std::span<int, 6> sp6{ ivec.begin() }; 
+            
+        }
+
+    * Örnek 4,
+        #include <array>
+        #include <span>
+        
+        int main()
+        {
+            int c_arr[10];
+            std::span<int> sp1{ c_arr };
+            // std::span<int, 5> sp3{ c_arr }; // Invalid: No such Ctor. Func.
+            
+            std::array arr{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            std::span<int> sp2{ arr };
+            // std::span<int, 5> sp4{ arr }; // Invalid: No such Ctor. Func.
+            std::span<int, 5> sp5{ arr.data(), 5 };
+        }
+
+    * Örnek 5,
+        #include <array>
+        #include <span>
+        
+        int main()
+        {
+            int c_arr[10];
+            
+            // "sp1" is a pointer to "int" contiguous values of "c_arr".
+            std::span<int> sp1{ c_arr }; 
+            
+            // "sp2" is a const pointer to "int" contiguous values of "c_arr".
+            // From now on, "sp2" can only observe "c_arr".
+            // Just like "const-pointer to int".
+            const std::span<int> sp2{ c_arr }; 
+            
+            // "sp3" is a pointer to "const-int" contiguous values of "c_arr".
+            // From now on, "sp2" cannot change the observed contiguous values of "c_arr".
+            // Just like "pointer to const-int".
+            std::span<const int> sp3{ c_arr };
+        }
+
+    * Örnek 6,
+        #include <vector>
+        #include <span>
+        
+        int main()
+        {
+            std::vector ivec{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            std::span<const int> sp1{ ivec }; 
+            
+            // Syntax Errors:
+            // std::span<long long> sp2{ ivec };
+            // std::span<int> sp3{ sp1 };
+            // std::span<const long> sp4{ sp1 };
+            
+            /*
+            *   Her ne kadar "long long" türünden "int" türüne
+            *   veya tam tersi yönde örtülü dönüşüm mümkün olsa da,
+            *   "std::span" söz konusu olduğunda sentaks hatası
+            *   oluşmaktadır. 
+            */
+        }
+
+    * Örnek 7,
+        #include <vector>
+        #include <array>
+        #include <span>
+        
+        int main()
+        {
+            std::vector ivec{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            std::array arr{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+            
+            std::span<int> vec_span{ ivec };
+            std::span<int> arr_span{ arr };
+            
+            // Burada "std::span" nesnelerinin türü birbiri ile 
+            // AYNIDIR. 
+            static_assert(std::same_as<decltype(vec_span), decltype(arr_span)>); // True
+        }
+
+    * Örnek 8,
+        #include <vector>
+        #include <array>
+        #include <span>
+        
+        int main()
+        {
+            std::array arr1{ 1, 2, 3, 4, 5 };
+            std::array arr2{ 6, 7, 8, 9, 10 };
+            
+            const std::span<int> c_span{ arr1 }; // "std::span" itself is "const"
+            c_span[0] = 42; // Valid.
+            ++c_span.back(); // Valid
+            c_span = arr2; // ERROR: "c_span" cannot observe any range other than "arr1".
+            
+            std::span<const int> span{ arr1 }; // The observed values are "const", not "std::span" itself.
+            span[0] = 42; // ERROR: The observed values cannot be changed any more.
+            span = arr2; // Valid. 
+        }
+
+    * Örnek 9,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+
+        template<typename T, std::size_t Sz>
+        void print_span(std::span<T, Sz> sp)
+        {
+            std::cout << "Size = " << sp.size() << '\n';
+            
+            if constexpr (Sz == std::dynamic_extent)
+                std::cout << "Dynamic Extent\n";
+            else
+                std::cout << "Fixed/Static Extent\n";
+                
+            for (const auto& i: sp)
+                std::cout << i << ' ';
+            std::cout << '\n';
+        }
+        
+        int main()
+        {
+            int a[]{ 1, 2, 3 };
+            // print_span(a); // ERROR: Cannot deduce!
+            
+            
+            std::cout << "\n================================\n";
+            
+            std::span s1{ a };
+            print_span(s1);
+            /*
+                # OUTPUT #
+                Size = 3
+                Fixed/Static Extent
+                1 2 3 
+            */
+            
+            std::cout << "\n================================\n";
+            
+            print_span(std::span{ a });
+            /*
+                # OUTPUT #
+                Size = 3
+                Fixed/Static Extent
+                1 2 3 
+            */    
+            
+            std::vector vec{ 4, 5, 6 };
+            // print_span(vec); // ERROR: Cannot deduce!
+            
+            
+            std::cout << "\n================================\n";
+            
+            std::span s2{ vec };
+            print_span(s2);
+            /*
+                # OUTPUT #
+                Size = 3
+                Dynamic Extent
+                4 5 6  
+            */ 
+            
+            std::cout << "\n================================\n";
+            
+            print_span(std::span{ vec });
+            /*
+                # OUTPUT #
+                Size = 3
+                Dynamic Extent
+                4 5 6 
+            */ 
+            
+            std::cout << "\n================================\n";
+            
+            std::span<int> s3{ vec };
+            print_span(s3);
+            /*
+                # OUTPUT #
+                Size = 3
+                Dynamic Extent
+                4 5 6 
+            */    
+            
+            std::cout << "\n================================\n";
+            
+            std::span<int, 3> s4{ vec };
+            print_span(s4);
+            /*
+                # OUTPUT #
+                Size = 3
+                Fixed/Static Extent
+                4 5 6 
+            */ 
+        }
+
+    * Örnek 10.0,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+
+        std::vector<int> get_vec()
+        {
+            return { 1, 2, 3, 4, 5, 6, 7 };
+        }
+
+        auto get_span()
+        {
+            std::vector ivec{ 1, 2, 3, 4, 5, 6, 7 };
+            
+            return std::span(ivec);
+        }
+        
+        int main()
+        {
+            std::span x{ get_vec().begin(), 5 }; // Tanımsız Davranış
+            for (auto i: x) 
+                std::cout << i << ' '; // OUTPUT: 1652225899 5 1338709025 1000630154 5
+                
+            std::cout << '\n';
+            
+            auto sp = get_span(); // Tanımsız Davranış
+            for (auto i: x) 
+                std::cout << i << ' '; // OUTPUT: 1652225899 5 1338709025 1000630154 5
+                
+            /*
+            *   Tıpkı "std::string_view" da olduğu gibi
+            *   hayatı bitmiş nesnelerin gözlemcisi olursak,
+            *   kullandığımız göstericiler "dangling" hale 
+            *   gelir. 
+            */
+        }
+
+    * Örnek 10.1,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+
+        void print_span(std::span<int> sp)
+        {
+            for (auto i: sp)
+                std::cout << i << ' ';
+            std::cout << '\n';
+        }
+        
+        int main()
+        {
+            std::vector ivec{ 3, 6, 9, 2, 8 };
+            std::cout << "ivec.capacity() : " << ivec.capacity() << '\n'; // ivec.capacity() : 5
+            
+            std::span sp{ ivec };
+            print_span(sp); // 3 6 9 2 8
+            
+            for (auto i = 0; i < 5; ++i)
+                ivec.push_back(i);
+                
+            std::cout << "ivec.capacity() : " << ivec.capacity() << '\n'; // ivec.capacity() : 10
+            print_span(sp); // 1508200307 5 -1362903946 -149923851 8  
+            
+            /*
+            *   Çıktıdan da görüleceği üzere "reallocation",
+            *   Tanımsız Davranışa neden olacaktır. 
+            */
+        }
+
+    * Örnek 10.2,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+
+        void print_span(std::span<int> sp)
+        {
+            for (auto i: sp)
+                std::cout << i << ' ';
+            std::cout << '\n';
+        }
+        
+        int main()
+        {
+            std::vector ivec{ 3, 6, 9, 2, 8 };
+            std::cout << "ivec.capacity() : " << ivec.capacity() << '\n'; // ivec.capacity() : 5
+            
+            std::span sp{ ivec };
+            print_span(sp); // 3 6 9 2 8
+            
+            for (auto i = 0; i < 5; ++i)
+                ivec.push_back(i);
+                
+            std::cout << "ivec.capacity() : " << ivec.capacity() << '\n'; // ivec.capacity() : 10
+            sp = ivec; 
+            print_span(sp); // 3 6 9 2 8 0 1 2 3 4  
+            
+            /*
+            *   Çıktıdan da görüleceği üzere "reallocation" sonrası
+            *   ilgili "span" nesnesine yeniden atama yaptığımızda,
+            *   Tanımsız Davranış ortadan kalkacaktır. 
+            */
+        }
+
+    * Örnek 10.3,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+        
+        int main()
+        {
+            /*
+                # OUTPUT #
+                vec.size() = 9
+                vec.capacity() = 9
+                vec.size() = 12
+                vec.capacity() = 18
+                1697459321
+            */
+            std::vector vec{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            std::cout << "vec.size() = " << vec.size() << '\n';
+            std::cout << "vec.capacity() = " << vec.capacity() << '\n';
+            
+            std::span sp{ vec };
+            
+            vec.insert( vec.end(), { 10, 11, 12 } );
+            std::cout << "vec.size() = " << vec.size() << '\n';
+            std::cout << "vec.capacity() = " << vec.capacity() << '\n';
+            
+            // Yine "reallocation" kaynaklı bir Tanımsız Davranış
+            // söz konusu. 
+            std::cout << sp[0] << '\n';
+        }
+
+    * Örnek 11,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+
+        int main()
+        {
+            std::vector v{ 1, 2, 3, 4, 5 };
+            std::span sp{ v };
+            
+            // sp.size(): 5
+            std::cout << "sp.size(): " << sp.size() << '\n';
+            
+            // sp.size_bytes(): 20
+            std::cout << "sp.size_bytes(): " << sp.size_bytes() << '\n';
+            
+            // sp.extent(): 18446744073709551615
+            std::cout << "sp.extent(): " << sp.extent << '\n';
+            
+            // 1
+            // 100
+            std::cout << sp[0] << '\n'; 
+            sp[0] *= 100; 
+            std::cout << sp[0] << '\n';
+            
+            // 100
+            // 101
+            std::cout << sp.front() << '\n';
+            ++sp.front();
+            std::cout << sp.front() << '\n';
+
+            // 5
+            // 500    
+            std::cout << sp.back() << '\n';
+            sp.back() *= 100;
+            std::cout << sp.back() << '\n';
+            
+            // Is Empty (false) = 101 2 3 4 500
+            std::cout << std::boolalpha << "Is Empty (" << sp.empty() << ") = ";
+            for (auto i{0}; i < sp.size(); ++i)
+                std::cout << *(sp.data() + i) << ' ';
+            std::cout << '\n';
+
+            // Görüleceği üzere "std::span" nesnesi, "non-owning" olması hasebiyle,
+            // gözlemcisi olduğu "range" in son durumu hakkında bilgi sahibi değildir.
+            v.clear();
+            // Is Empty (false) = 101 2 3 4 500
+            std::cout << std::boolalpha << "Is Empty (" << sp.empty() << ") = ";
+            for (auto i{0}; i < sp.size(); ++i)
+                std::cout << *(sp.data() + i) << ' ';
+            std::cout << '\n'; 
+    
+            // İlgili "std::span" nesnesine yeniden atama yaparak, onu güncelleyebiliriz.
+            // Tıpkı "reallocation" sonrası oluşan Tanımsız Davranış senaryolarında 
+            // yaptığımız gibi. 
+            sp = v;
+            // Is Empty (true) =
+            std::cout << std::boolalpha << "Is Empty (" << sp.empty() << ") = ";
+            for (auto i{0}; i < sp.size(); ++i)
+                std::cout << *(sp.data() + i) << ' ';
+            std::cout << '\n';
+        }
+
+    * Örnek 12.0,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+        #include <ranges>
+        
+        int main()
+        {
+            std::vector v{ 1, 2, 3, 4, 5 };
+            std::span sp{ v };
+            
+            // Holds: "std::span" da "view" konseptini 
+            // karşılamaktadır. 
+            static_assert(std::ranges::view<decltype(sp)>);
+        }
+
+    * Örnek 12.1,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+        #include <ranges>
+        
+        int main()
+        {
+            std::span sp{ "Ulya Yuruk" }; // 'T' is "const char", "size" is "13"; static_extent
+            
+            static_assert(std::ranges::view<decltype(sp)>); // Holds
+            
+            // Gözlemlenen dizinin son karakteri olan '\0' karakteri de işlemlere dahildir. 
+            for (auto c: sp | std::ranges::views::drop(5) | std::ranges::views::take(3))
+                std::cout.put(c); // Yur
+        }
+
+    * Örnek 13,
+        #include <vector>
+        #include <span>
+        #include <iostream>
+        #include <ranges>
+        
+        template<typename T, std::size_t n>
+        requires requires (T x) { std::cout << x; }
+        void print_span(std::span<T,n> sp)
+        {
+            for (size_t i{}; i < sp.size(); ++i)
+                std::cout << sp[i] << ' ';
+            std::cout << '\n';
+        }
+        
+        int main()
+        {
+            /*
+                # OUTPUT #
+                [10] => 0 1 2 3 4 5 6 7 8 9 
+                [4] => 3 4 5 6
+                [3] => 7 8 9
+            */
+            
+            int a[10]{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            
+            std::span sp1{ a }; // "T" is "int", "n" is "10"; "static_extent"
+            std::cout << "[" << sp1.size() << "] => ";
+            print_span(sp1);
+            
+            // Starting from the third index, the next four element will be used. 
+            auto sp2 = sp1.subspan(3, 4); 
+            std::cout << "[" << sp2.size() << "] => ";
+            print_span(sp2);
+            
+            // Starting from the seventh index, until the end of the range. 
+            auto sp3 = sp1.subspan(7);
+            std::cout << "[" << sp3.size() << "] => ";
+            print_span(sp3);
+        }
+
+    * Örnek 14,
+        #include <span>
+        #include <iostream>
+        #include <ranges>
+        
+        int main()
+        {
+            int a[10]{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            std::span sp{ a };
+            
+            for (auto i: sp) 
+                std::cout << i << ' '; // 0 1 2 3 4 5 6 7 8 9
+            std::cout << '\n';
+            
+            
+            for (auto i: sp | std::ranges::views::reverse) 
+                std::cout << i << ' '; // 9 8 7 6 5 4 3 2 1 0
+            std::cout << '\n';
+            
+            for (auto iter = sp.begin(); iter != sp.end(); ++iter)
+                std::cout << *iter << ' '; // 0 1 2 3 4 5 6 7 8 9
+            std::cout << '\n';
+            
+            for (auto riter = sp.rbegin(); riter != sp.rend(); ++riter)
+                std::cout << *riter << ' '; // 9 8 7 6 5 4 3 2 1 0
+            std::cout << '\n';    
+        }
+
+    * Örnek 15,
+        #include <span>
+        #include <iostream>
+        #include <ranges>
+        
+        template<typename T, std::size_t n>
+        void print_span(std::span<T,n> sp)
+        {
+            for (size_t i{}; i < sp.size(); ++i)
+                std::cout << sp[i] << ' ';
+            std::cout << '\n';
+        }
+                
+        int main()
+        {
+            int a[10]{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+            std::span sp1{ a };
+            std::cout << "[" << sp1.size() << "] => "; // [10] => 0 1 2 3 4 5 6 7 8 9
+            print_span(sp1);
+            
+            auto sp2 = sp1.first<5>(); // "std::span" is "static_extent"
+            std::cout << "[" << sp2.size() << "] => "; // [5] => 0 1 2 3 4
+            print_span(sp2);
+            
+            auto sp3 = sp1.first(5); // "std::span" is "dynamic_extent"
+            std::cout << "[" << sp3.size() << "] => "; // [5] => 0 1 2 3 4
+            print_span(sp3);
+            
+            auto sp4 = sp1.last<5>(); // "std::span" is "static_extent"
+            std::cout << "[" << sp4.size() << "] => "; // [5] => 5 6 7 8 9 
+            print_span(sp4);
+            
+            auto sp5 = sp1.last(5); // "std::span" is "dynamic_extent"
+            std::cout << "[" << sp5.size() << "] => "; // [5] => 5 6 7 8 9 
+            print_span(sp5);
+        }
+
+    * Örnek 16,
+        #include <span>
+        #include <vector>
+        #include <ranges>
+
+        int main()
+        {
+            std::vector ivec{ 1, 2, 3, 4, 5, 5, 4, 3, 2, 1 };
+            auto sp = std::ranges::views::counted(ivec.begin(), 5); // "counted" returns a "std::span"
+            
+            static_assert(
+                std::same_as<
+                    decltype(sp), 
+                    std::span<int>
+                >
+            ); // Holds True
+        }

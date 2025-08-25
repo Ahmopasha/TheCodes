@@ -1,0 +1,760 @@
+> "Structural Binding" : Bir dizi için, elemanları "public" olan bir sınıfın ve "tuple" benzeri sınıf türünden nesnelerin elemanlarının 
+ayrıştırılmasının daha pratik ve daha yüksek verimlilikle, örneğin gereksiz kopyalamalar yapılmadan, sağlanmasıdır. 
+    * Örnek 1, Burada "auto" anahtar sözcüğünden sonra "&" deklaratörünü de getirerek referans türler olmasını da sağlayabiliriz. 
+        #include <iostream>
+        #include <utility>
+
+        struct Nec{
+            int i{ 31 };
+            double d{ 3.1 };
+            std::string s{ "ulya" };
+        };
+
+        std::pair<int, double> foo()
+        {
+            return std::pair{ 13, 1.3 };
+        }
+
+        int main()
+        {
+            //auto [first, second] = foo();    
+            //auto [first, second]( foo() );
+            auto [first, second]{ foo() }; 
+            std::cout << "<" << first << "," << second << ">\n";    // <13,1.3>
+            
+            int my_array[3]{ 10, 11, 12 };
+            auto [one, two, three] = my_array;
+            std::cout << "<" << one << "," << two << "," << three << ">\n"; // <10,11,12>
+            
+            Nec my_nec;
+            auto [age, wage, name] = my_nec;
+            std::cout << "<" << age << "," << wage << "," << name << ">\n"; // <31,3.1,ulya>
+        }
+
+    * Örnek 2,
+        #include <iostream>
+        #include <utility>
+
+        struct Nec{
+            double d{ 3.1 };
+            int i[4]{ 31 };
+        };
+
+        std::pair<int, double> foo()
+        {
+            return std::pair{ 13, 1.3 };
+        }
+
+        int main()
+        {
+            Nec my_nec;   
+            auto [x,y] = my_nec; 
+            // Buradaki tür çıkarımı "d" ve "x" için değil, "my_nec" içindir. Kabaca şöyledir:
+            /*
+                Nec __abc_tmp_var = my_nec;
+                __abc_tmp_var.x = my_nec.d;
+                __abc_tmp_var.y = my_nec.i;
+            */
+        }
+
+    * Örnek 3,
+        #include <iostream>
+        int main()
+        {
+            int a[ ]{ 10, 20, 30 };
+            for(auto i : a)
+                std::cout << i << " ";  // 10 20 30 
+            std::cout << '\n';
+            
+            auto [m1, m2, m3] = a;
+            ++m1; ++m2; ++m3;
+            for(auto i : a)
+                std::cout << i << " ";  // 10 20 30 
+            std::cout << '\n';
+        }
+
+    * Örnek 4,
+        #include <iostream>
+        int main()
+        {
+            int a[2]{0, 1};
+            for(auto i : a) std::cout << i << " "; // 0 1
+            auto& [x,y] = a;
+            /*
+                int (&__e)[2] = a;
+                #define x   __e[0]
+                #define y   __e[1]
+            */
+            
+            ++x; ++y;
+            for(auto i : a) std::cout << i << " "; // 1 2 
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        int main()
+        {
+            int a[2]{0, 1};
+            auto&& [x,y] = a; // int (&__e0)[2] = a;
+            for(auto i : a) std::cout << i << " "; // 0 1
+            ++x; ++y;
+            for(auto i : a) std::cout << i << " "; // 1 2
+            puts("\n--------");
+            auto&& [i,j] = (int[2]){0, 1}; // int (&__e1)[2] = (int[2]){0, 1};
+            std::cout << i << " " << j << " ";  // 0 1
+            ++i; ++j;
+            std::cout << i << " " << j << " ";  // 1 2
+        }
+
+    * Örnek 6,
+        #include <iostream>
+
+        // Cpp-Style
+        auto get_arrayCpp()->int(&)[3]
+        {
+            static int a[]{ 1, 2, 3 };
+            return a;
+        }
+
+        // Cpp-Style with using
+        using ar3_t = int[3];
+        ar3_t& get_arrayCpp2()
+        {
+            static int a[]{ 1, 2, 3 };
+            return a;  
+        }
+
+        // C-Style
+        int(&get_arrayC())[3]
+        {
+            static int a[]{ 10, 20, 30 };
+            return a;
+        }
+
+        typedef int arr4_t[3];
+
+        arr4_t& get_arrayC2()
+        {
+            static int a[]{ 10, 20, 30 };
+            return a;    
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                10,20,30
+                11,21,31
+                1,2,3
+                2,3,4
+            */
+            
+            {
+                auto [a,b,c] = get_arrayC();
+                std::cout << a << "," << b << "," << c << '\n';
+            }
+            
+            {
+                auto& [d,e,f] = get_arrayC2();
+                std::cout << ++d << "," << ++e << "," << ++f << '\n';
+            }
+            
+            {
+                auto [a,b,c] = get_arrayCpp();
+                std::cout << a << "," << b << "," << c << '\n';
+            }
+            
+            {
+                auto& [d,e,f] = get_arrayCpp2();
+                std::cout << ++d << "," << ++e << "," << ++f << '\n';
+            }
+            
+            
+            return 0;
+        }
+
+    * Örnek 7,
+        class Myclass {
+            int x{ 10 };
+            int y{ 20 };
+            int z{ 30 };
+            friend void foo();
+        };
+
+        void foo() {
+            auto [x, y, z] = Myclass{};
+        }
+
+        int main()
+        {
+            /*
+            *	Buradaki sentaks hatasının yegane sebebi,
+            *	ilgili veri elemanlarının "private" olmasıdır. 
+            */
+            auto [x, y, z] = Myclass{};
+
+
+            /*
+            *	Burada "foo" fonksiyonu sınıfın "private" 
+            *	bölümüne erişebildiği için herhangi bir 
+            *	problem oluşmayacaktır.
+            */
+            foo();
+        }
+
+    * Örnek 8, Taşıma semantiğinden de faydalanabiliriz. 
+        #include <iostream>
+        #include <string>
+
+        class Person {
+        public:
+            std::string m_name{ "murat" };
+            std::string m_surname{ "yilmaz" };
+        };
+
+        int main()
+        {
+            Person p;
+            std::cout << "I.  " << p.m_name << " " << p.m_surname << '\n';
+            auto [name, surname] = std::move(p);
+            std::cout << "II. " << p.m_name << " " << p.m_surname << '\n';
+            std::cout << "III." << name << " " << surname << '\n';
+        }
+
+    * Örnek 9,
+        #include <iostream>
+        #include <string>
+
+        struct Point {
+            int x, y, z;
+        };
+
+        int main()
+        {
+            /*	(1)
+            *	Anımsanacağı üzere aşağıdaki ifade sentaks 
+            *	hatası oluşturacaktır. Çünkü sınıfın veri 
+            *	elemanlarının adedi ile ilgili bağlamda 
+            *	kullandığımız değişkenlerin adedi aynı 
+            *	değildir.
+            */
+            auto [a, b] = Point{};	// ERROR
+
+            /*	(2)
+            *	Bu durumda kullanmak istemeyeceğimiz veri 
+            *	elemanlarına karşılık, ilgili bağlamda
+            *	"dummy" değişken kullanabiliriz. Pek tabii 
+            *	buradaki "_" yerine başka bir şey de yazabilirdik.
+            *	Örneğin, "galib". 
+            */
+            auto [d, e, _] = Point{};	// OK
+
+            /*
+            *	(3)
+            *	Fakat bu durumda da şöyle bir sorun meydana 
+            *	gelmekte; "_" karakterini aynı isim alanı içerisinde 
+            *	tekrar kullanmamız yine sentaks hatası oluşturacaktır.
+            *	Fakat yinede "_" yerine "__" karakterlerini kullanabiliriz.
+            */
+            auto [f, _, g] = Point{};	// ERROR
+            auto [f, __, g] = Point{};	// OK
+        }
+
+    * Örnek 10,
+        #include <iostream>
+        #include <string>
+        #include <tuple>
+
+        std::tuple<std::string, std::string, int> foo()
+        {
+            return { "Ulya", "Yuruk", 1995 };
+        }
+
+        int main()
+        {
+            {	// (1)
+                std::tuple<int, double, std::string> tx(12, 1.2, "oniki");
+                std::tuple<int, double, std::string> ty;
+                ty = tx;
+            
+                /*
+                *	Burada "tx" in öğeleri "ty" ye karşılıklı olarak kopyalanmıştır. 
+                */
+            }
+
+            {	// (2)
+                std::tuple<int, double, std::string> tx(12, 1.2, "oniki");
+                int i; double d; std::string s;
+                std::tuple<int&, double&, std::string&> ty(i, d, s);
+                ty = tx;
+
+                /*
+                *	Burada "ty" nin öğeleri, atama öncesinde çöp değer taşırken atama
+                *	sonrasında, "tx" in öğelerinin değerini almıştır.
+                */
+            }
+
+            {	// (3)
+                std::tuple<int, double, std::string> tx(12, 1.2, "oniki");
+                int i; double d; std::string s;
+                std::tuple<int&, double&, std::string&>(i, d, s) = tx;
+                /*
+                *	Burada ilgili "tuple" nesnesinin öğeleri, "tx" nesnesinin
+                *	öğelerinin değerini almıştır.
+                */
+            }
+
+            {	// (4)
+                /*
+                    # OUTPUT #
+                    0, 0,
+                    12, 1.2, oniki
+                */
+
+                std::tuple<int, double, std::string> tx(12, 1.2, "oniki");
+                int i{}; double d{}; std::string s;
+                std::cout << i << ", " << d << ", " << s << '\n';
+                std::tie(i, d, s) = tx;
+                std::cout << i << ", " << d << ", " << s << '\n';
+                /*
+                *	Burada ilgili "tuple" nesnesinin öğeleri, "tx" nesnesinin
+                *	öğelerinin değerini almıştır. Sadece yukarıdaki gibi isimsiz
+                *	"tuple" nesnesi yerine "std::tie" fonksiyonu kullanılmıştır. 
+                *	Çünkü kendisi de öğeleri referans olan bir "tuple" nesnesi 
+                *	döndürmektedir. 
+                */
+            }
+
+            {	// (5)
+                /*
+                    # OUTPUT #
+                    , , 0
+                    Ulya, Yuruk, 1995
+                */
+                std::string name, surname; int i{};
+                std::cout << name << ", " << surname << ", " << i << '\n';
+                std::tie(name, surname, i) = foo();
+                std::cout << name << ", " << surname << ", " << i << '\n';
+                /*
+                *	"Structural Binding" öncesinde benzer mekanizmayı bu şekilde
+                *	kurmaktaydık. Artık "name", "surname" ve "i" değişkenlerinin
+                *	değerleri, "foo" fonksiyonunun geri döndürdüğü değişkenlerdeki
+                *	öğelerin değerlerine sahiptir. 
+                */
+            }
+
+            {	// (6)
+                /*
+                    # OUTPUT #
+                    , , 0
+                    Ulya, Yuruk, 1995
+                */
+
+                auto&& [name, surname, i] = foo();
+                std::cout << name << ", " << surname << ", " << i << '\n';
+            }
+        }
+
+    * Örnek 11,
+        #include <set>
+
+        int main()
+        {
+            std::set<int> myset{ 12,5,67,90 };
+            if (auto [iter, inserted] = myset.insert(67); inserted) {}
+            /*
+            *	".insert()" fonksiyonunun geri dönüş değeri:
+            *	"std::pair<iterator, bool>". 
+            *	Eğer ekleme işlemi başarısız olmuşsa, bu "pair"
+            *	nesnesinin "second" isimli öğesi "false" değerini
+            *	alacak ve "first" isimli "iterator" nesnesi de 
+            *	"set" içerisinde halihazırda bulunan öğenin
+            *	konumunu tutacak. 
+            *	Eğer ekleme işlemi başarılı olmuşsa, bu "pair"
+            *	nesnesinin "second" isimli öğesi "true" değerini 
+            *	alacak ve "first" isimli öğesi de "set" içerisine
+            *	yeni eklenen öğenin konumunu tutacaktır. 
+            *	İşte yukarıdaki "Structural Binding" ile "iter" 
+            *	isimi değişken "std::pair" nesnesinin "first" 
+            *	isimli öğesini, "inserted" ise o "pair" nesnesinin 
+            *	"second" isimli öğesini gösterir durumda olacaktır. 
+            *	Yukarıdaki "if" deyimi ile de amaçlanan şey şu olmuştur:
+            *	"67" nesnesi "set" içerisine eklenirse, programın akışı 
+            *	"if" bloğuna girsin. 
+            */
+        }
+
+    * Örnek 12,
+        #include <vector>
+        #include <string>
+        #include <algorithm>
+        #include <iostream>
+        #include "MyRandom.h"
+        #include "MyUtility.h"
+
+        int main()
+        {
+            std::vector<std::string> svec;
+            MyUtility::rfill(svec, 20, MyRandom::rname);
+            MyRandom::print(svec);
+
+            if(auto [iter_min, iter_max] = minmax_element(svec.begin(), svec.end()); *iter_min > "ulya" && *iter_max < "yuruk"){
+                std::cout << "Found!..\n";
+            }
+            
+        }
+
+    * Örnek 13,
+        #include <vector>
+        #include <string>
+        #include <tuple>
+        #include <iostream>
+        #include <fstream>
+        #include "MyUtility.h"
+        #include <iomanip>
+
+        using namespace MyUtility;
+
+        using Person = std::tuple<int, std::string, std::string>;
+
+        int main()
+        {
+            std::vector<Person> people;
+            people.reserve(10'000u);
+            for (size_t i = 0; i < 10'000; i++)
+            {
+                people.emplace_back(
+                    Random::Irand{ 0, 100'000 }(), 
+                    Utility::rname() + ' ' + Utility::rfname(),
+                    Utility::rtown()
+                );
+            }
+
+            std::ofstream ofs{ "out.txt" };
+            if (!ofs) {
+                std::cerr << "out.txt could not be created!..\n";
+                exit(EXIT_FAILURE);
+            }
+            ofs << std::left;
+
+            /*
+            *	"std::tuple" nesnelerini karşılaştırırken birinci öğesi
+            *	küçük olan küçüktür. Eğer birinci öğeler eşitse, ikinci
+            *	öğesi küçük olan küçüktür. Eğer o da eşitse, üçüncü öğesi
+            *	küçük olan küçüktür vs. 
+            */
+            std::sort(people.begin(), people.end());
+
+            std::cout << "Size: " << people.size() << '\n';
+            // W/O "Structural Binding" : 
+            for (const auto& person : people) {
+                ofs << std::setw(12) << std::get<0>(person) 
+                    << '\t' << std::setw(32) << std::get<1>(person)
+                    << '\t' << std::setw(4)  << std::get<2>(person)
+                    << '\n';
+            }
+
+            // W/ "Structural Binding" : 
+            for (const auto& [id, name, town] : people) {
+                ofs << std::setw(12) << id
+                    << '\t' << std::setw(32) << name
+                    << '\t' << std::setw(4) << town
+                    << '\n';
+            }
+        }
+
+    * Örnek 14.0,
+        #include <string>
+        #include <tuple>
+        #include <iostream>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                456, ulya
+                456, ulya
+                31, Otuzbir
+                31, Otuzbir
+            */
+
+            std::tuple my_tuple(456, std::string("ulya"));
+            std::cout << std::get<0>(my_tuple) << ", " << std::get<1>(my_tuple) << '\n';
+            auto& [id, name] = my_tuple;
+            std::cout << id << ", " << name << '\n';
+
+            id = 31;
+            name = "Otuzbir";
+            std::cout << std::get<0>(my_tuple) << ", " << std::get<1>(my_tuple) << '\n';
+            std::cout << id << ", " << name << '\n';
+        }
+
+    * Örnek 14.1,
+        #include <string>
+        #include <tuple>
+        #include <iostream>
+
+        int main()
+        {
+            /*	(I)
+            *	Derleyici burada "id" ve "name" isimleri için
+            *	"int" ve "std::string" TÜRÜNDEN NESNE OLUŞTURMUYOR.
+            *	İlk olarak "my_tuple" nesnesine referans gizli bir 
+            *	değişken hayata getiriyor. Çünkü "Structural Binding"
+            *	sırasında bizler referans deklaratörünü kullandık. (a) 
+            *	Daha sonra bu gizli değişkeni kullanarak, ilgili "tuple" 
+            *	nesnesinin öğe sayısını derleme zamanında kontrol ediyor. (b)
+            *	Eğer elde ettiği rakam ile ilgili "tuple" nesnesinin öğe
+            *	sayısı aynı DEĞİLSE, SENTAKS HATASI OLUŞACAK. Aksi halde 
+            *	bir sonraki aşamaya geçilecek. 
+            *	Bir sonraki aşamada ilgili "tuple" nesnesinin öğelerini 
+            *	elde etmek için tekrar tekrar "std::get" fonksiyonunu 
+            *	çağırmak yerine, bu fonksiyonu bir kez çağırıyor ve geri 
+            *	dönüş değerini de yine BİR BAŞKA REFERANS DEĞİŞKENİNDE
+            *	SAKLIYOR. Burada "std::tuple_element_t" meta fonksiyonu
+            *	kullanılıyor. (c)
+            *	Gün sonunda derleyicinin ürettiği kodlar aşağıdaki gibi
+            *	olacaktır. (d)
+            *	Şimdi buradaki "std::get" fonksiyonu "L-Value Reference"
+            *	döndürdüğü için, "a_hidden_id" ve "a_hidden_name" isimli
+            *	gizli değişkenler "L-Value Reference" oldular. Pekala
+            *	"std::get" fonksiyonu "L-Value Reference" döndürmezse, 
+            *	yani "value" döndürürse ne olur? Bu durumda "a_hidden_id"
+            *	ve "a_hidden_name" isimli değişkenler "R-Value Reference" 
+            *	olur ve "Life Extension" oluşur. 
+            *	Pekiyi bizim "Structural Binding" sırasında kullandığımız 
+            *	"id" ve "name" isimli bu işin neresinde? Aslında bu isimler
+            *	"Special Identifiers" olarak geçiyor ve derleyicinin oluşturduğu
+            *	"a_hidden_id" ve "a_hidden_name" isimli değişkenlere bağlanıyor. 
+            *	Fakat yine de bunlar gerçekte değişken değillerdir. Öte yandan 
+            *	"Structural Binding" sırasında "&" deklaratörü kullanmasaydık ne 
+            *	olacaktı? Yine "a_hidden_id" ve "a_hidden_name" isimli değişkenler 
+            *	birer REFERANS OLACAKTI FAKAT "a_hidden_variable" ARTIK BİR REFERANS 
+            *	OLMAYACAKTI. Direkt sınıf türünden olacaktı. 
+            */
+
+            std::tuple my_tuple(456, std::string("ulya"));
+            auto& [id, name] = my_tuple; // (I)
+            // auto& a_hidden_variable = my_tuple; // (a)
+            // ...std::tuple_size_v<std::remove_reference_t<decltype(a_hidden_variable)>>... // (b)
+            // std::tuple_element_t<0, std::remove_reference_t<decltype(a_hidden_variable>>& a_hidden_id = std::get<0>(my_tuple); // (c) 
+            // std::tuple_element_t<1, std::remove_reference_t<decltype(a_hidden_variable>>& a_hidden_name = std::get<1>(my_tuple); // (c)
+            // (d)
+            // std::tuple my_tuple(456, std::string("ulya"));
+            // auto& a_hidden_variable = my_tuple;
+            // int& a_hidden_id = std::get<0>(my_tuple);
+            // std::string& a_hidden_name = std::get<1>(my_tuple);
+
+            id = 31;
+            name = "Otuzbir";
+            std::cout << id << ", " << name << '\n';
+        }
+
+    * Örnek 15,
+        struct Myclass{
+            constexpr Myclass(int x, int y) : mx(x), my(y) {}
+            int mx, my;
+        };
+
+        int main()
+        {
+            constexpr Myclass m(3, 6);  // OK
+            constexpr auto [x,y] = m;   // ERROR: error: structured binding declaration cannot be ‘constexpr’
+        }
+
+    * Örnek 16.0, Aşağıdaki örnekte ise kendi sınıfımız "tuple-like" arayüzü desteklemesi sağlanmıştır. 
+        #include <iostream>
+        #include <string>
+        #include <type_traits>
+        #include <tuple>
+
+        class Person{
+            public:
+                Person(int id, double wage, std::string name) : m_id(id), m_wage(wage), m_name(std::move(name)) {}
+                int get_id()const { return m_id; }
+                double get_wage()const { return m_wage; }
+                std::string get_name()const { return m_name; }
+                
+            private:
+                int m_id;
+                double m_wage;
+                std::string m_name;
+        };
+
+        namespace std{
+            // "tuple_size": 
+                // APPROACH - I
+                template<>
+                struct tuple_size<Person> : std::integral_constant<size_t, 3u>{
+                    
+                };
+                
+                /*  // APPROACH - II
+                    template<>
+                    struct tuple_size<Person>{
+                        constexpr static std::size_t value = 3u;
+                    };    
+                */
+            
+            // "tuple_element": 
+                template<> struct tuple_element<0, Person>{ using type = int; };
+                template<> struct tuple_element<1, Person>{ using type = double; };
+                template<> struct tuple_element<2, Person>{ using type = string; };
+        }
+
+        // "get": 
+        template<size_t N>
+        auto get(const Person& p)
+        {
+            if constexpr (N == 0) return p.get_id(); 
+            else if constexpr (N == 1) return p.get_wage();
+            else return p.get_name();
+        }
+
+        int main()
+        {   
+            Person p1{ 348'975, 245.87, "ruveyda" };
+            auto [ID, WAGE, NAME] = p1;
+            std::cout << "<" << ID << "," << WAGE << "," << NAME << ">\n";
+        }
+
+    * Örnek 16.1,
+        #include <string>
+        #include <utility>
+        #include <iostream>
+
+        class Customer{ 
+            private:
+                std::string first;
+                std::string last;
+                long val;
+            public:
+                Customer(std::string f, std::string l, long v) : first(std::move(f)), last(std::move(l)), val(v) {}
+                const std::string& firstname()const { return first; }   // "const overload"
+                std::string& firstname() { return first; }
+                const std::string& lastname()const { return last; }     // "const overload"
+                std::string& lastname() { return last; }
+                long value()const { return val; }                       // "const overload"
+                long& value() { return val; }
+        };
+
+        // "tuple_size" : 
+            template<> struct std::tuple_size<Customer>{ static constexpr int value = 3; };
+            
+        // "tuple_element" : 
+            template<> struct std::tuple_element<2, Customer>{ using type = long; };                         // "explicit/full specialization"
+            template<std::size_t Idx> struct std::tuple_element<Idx, Customer>{ using type = std::string; }; // "partial specialization"
+            
+        // "std::get" : 
+            template<std::size_t I>
+            decltype(auto) get(Customer& c)
+            {
+                static_assert(I < 3);
+                if constexpr (I==0) return c.firstname();
+                else if constexpr (I==1) return c.lastname();
+                else return c.value();
+            }
+            
+            template<std::size_t I>
+            decltype(auto) get(const Customer& c)
+            {
+                static_assert(I < 3);
+                if constexpr (I==0) return c.firstname();
+                else if constexpr (I==1) return c.lastname();
+                else return c.value();
+            }
+            
+            template<std::size_t I>
+            decltype(auto) get(Customer&& c)
+            {
+                static_assert(I < 3);
+                if constexpr (I==0) return std::move(c.firstname());
+                else if constexpr (I==1) return std::move(c.lastname());
+                else return c.value();
+            }
+
+        int main()
+        {   
+            Customer c1{ std::string("ruveyda"), std::string("celik"), 20082023 };
+            auto [NAME, SURNAME, YEAR] = c1;
+            std::cout << "<" << NAME << "," << SURNAME << "," << YEAR << ">\n";
+        }
+
+> Hatırlatıcı Notlar:
+    >> "for_each" fonksiyonu geri dönüş değeri olarak "Callable" döndürmektedir.
+        * Örnek 1,
+            #include "MyRandom.h"
+            #include "MyUtility.h"
+
+            class Functor{
+                public:
+                    Functor(int val) : m_val{val} {}
+                    void operator()(int val)
+                    {
+                        //...
+                        if(val > m_val) ++m_count;
+                        //...
+                    }
+                    
+                    int get_count()const { return m_val; }
+                
+                private:
+                    int m_val, m_count{};
+            };
+
+            int main()
+            {
+                std::vector<int> ivec;
+                MyUtility::rfill(ivec, 20'000, MyRandom::Irand{0, 100'000});
+                std::cout << "Size: " << ivec.size() << '\n';
+                auto f = std::for_each(ivec.begin(), ivec.end(), Functor{90'000});
+                std::cout << f.get_count() << '\n';
+                return 0;
+            }
+
+    >> Derleyicinin "Template Argument" için nasıl bir çıkarım yaptığını anlamak için:
+        * Örnek 1,
+            template<typename T>
+            class TypeTeller;
+
+            template<typename T>
+            class Myclass{
+                public:
+                    Myclass(const T&)
+                    {
+                        TypeTeller<T> x;
+                    }
+                    
+                private:
+                    T mx;
+            };
+
+            int main()
+            {
+                Myclass m{ "ulya" }; // In instantiation of ‘Myclass<T>::Myclass(const T&) [with T = char [5]]’:
+                return 0;
+            }
+
+        * Örnek 2,
+            template<typename T>
+            class TypeTeller;
+
+            template<typename T>
+            void func(T&&)
+            {
+                TypeTeller<T> x;
+            }
+
+            int main()
+            {
+                func(12); // In instantiation of ‘void func(T&&) [with T = int]’:
+
+                int i;
+                func(i);  // In instantiation of ‘void func(T&&) [with T = int&]’:
+
+                func<int&&>(31); // In instantiation of ‘void func(T&&) [with T = int&&]’:
+                
+                return 0;
+            }
+
+    >> "Aggregate initialization" için "https://en.cppreference.com/w/cpp/language/aggregate_initialization"

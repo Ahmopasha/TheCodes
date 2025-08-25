@@ -1,0 +1,879 @@
+> "std::variant" : C dilindeki "union" yapısının C++ diline uyarlanmış halidir. Tıpkı "std::optional" gibi "std::variant" da bir
+"Value Type" dır. Şablon parametresi olan türlerden birisini tutmaktadır. Buradaki şablon parametreleri aynı tür olabilir fakat 
+bir "t" anında bunlardan sadece bir tanesini tutmaktadır. Doğrudan "nullable" tür değildir, fakat bir takım yöntemler ile "nullable"
+hale getirebiliriz. Kendi bünyesinde tuttuğu nesne için dinamik bellek yönetimi uygulamamaktadır. Fakat o nesne kendi bünyesinde 
+dinamik bellek yönetimi uygulayabilir. Son olarak kalıtıma alternatif olarak da kullanabiliriz. 
+    * Örnek 1,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        class Myclass {
+        public:
+            Myclass(int) {
+                /* "Default Ctor." is not declared!.. */
+            }
+        };
+
+        int main()
+        {
+            {
+                /*
+                * 1-) "Default Init." yapılan "std::variant" nesnesi
+                * daima ilk alternatifi tutacaktır. Bu durumda
+                * ilgili nesnemiz bünyesinde "int" tutmaktadır.
+                */
+                std::variant<int, double, long, std::string> va;
+            }
+
+            {
+                /*
+                * 2-) Eğer ilk alternatif "Default Init." edilemezse,
+                * sentaks hatası oluşacaktır.
+                */
+                std::variant<Myclass, double, long, std::string> va;
+            }
+
+            {
+                /*
+                * 3-) Böylesi durumlar için ilk alternatifi "std::monostate"
+                * türü yapabiliriz.
+                */
+                std::variant<std::monostate, Myclass, double, long, std::string> va;
+            }
+        }
+
+    * Örnek 2,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        class Myclass {
+        public:
+            Myclass(int) {
+                /* "Default Ctor." is not declared!.. */
+            }
+        };
+
+        int main()
+        {
+            {
+                /*
+                * 1-) İlk değer verdiğimiz ifadenin türü ya alternatif 
+                * türlerden birisi ya da o türlere dönüştürülebilir bir 
+                * tür olmalıdır. 
+                */
+                std::variant<int, double, char> va{ 12 };
+                std::variant<int, double, char> vaa{ 1.2 };
+                std::variant<int, double, char> vaaa{ 'a'};
+            }
+
+            {
+                /*
+                * 2-) Fakat bu durumda "ambiguity" meydana gelebilir.
+                */
+                std::variant<int, float, char> va{ 3.4 };
+            }
+
+            {
+                /*
+                * 3-) Diğer yandan, tıpkı "Function Overload Resolution" sırasında 
+                * gerçekleştiği gibi; "float" türünden "double" türüne dönüşüm en 
+                * yüksek öneme sahip olduğundan, ilk değer olarak "double" tutulacaktır.
+                */
+                std::variant<int, double, char> va{ 1.2f };
+            }
+        }
+
+    * Örnek 3,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        void what_is_holded(const std::variant<char, int, double>& va);
+
+        int main()
+        {
+            {
+                /*
+                * 1-) Tabii bünyesinde hangi türün tuttuğunu öğrenmek için 
+                * ".index()" fonksiyonunu çağırmalıyız. 
+                */
+                std::variant<char, int, double> va{};
+                std::cout << "Type: " << va.index() << "\n";
+                va = 12;
+                std::cout << "Type: " << va.index() << "\n";
+                va = 1.2;
+                std::cout << "Type: " << va.index() << "\n";
+                va = 12;
+                std::cout << "Type: " << va.index() << "\n";
+                va = 'a';
+                std::cout << "Type: " << va.index() << "\n";
+            }
+
+            {
+                /*
+                * 2-) Fakat C++20 öncesinde eğer alternatifler "bool" ve "std::string"
+                * ise "bool" olanın indeksi ilgili fonksiyon tarafından geri döndürülmektedir. 
+                * Şüphesiz "vx" nesnesine "ulya" yerine "ulya"s geçilseydi, direkt olarak 
+                * "std::string" olanın indis bilgisini elde edecektik. 
+                */
+                std::variant<bool, std::string> vx("ulya");
+                std::cout << "Index : " << vx.index() << "\n";
+            }
+
+            {
+                /*
+                * 3-) Bir diğer alternatif fonksiyon ise "hold_alternatif()"
+                * fonksiyonudur.
+                */
+                std::variant<char, int, double> va{};
+                what_is_holded(va);
+
+                va = 12;
+                what_is_holded(va);
+
+                va = 1.2;
+                what_is_holded(va);
+            }
+        }
+
+        void what_is_holded(const std::variant<char, int, double>& va) {
+            if (std::holds_alternative<char>(va)) {
+                std::cout << std::boolalpha << "A char is being holded!..\n";
+            }
+            else if (std::holds_alternative<int>(va)) {
+                std::cout << std::boolalpha << "An int is being holded!..\n";
+            }
+            else {
+                std::cout << std::boolalpha << "A double is being holded!..\n";
+            }
+        }
+
+    * Örnek 4,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        int main()
+        {
+            {
+                /*
+                * 1-) İlk değer verirken parametreleri "perfect forward" etmek istiyorsak
+                * "std::in_place_index" nesnesini kullanmalıyız. 
+                */
+                std::variant<int, double, std::string> va{ std::in_place_index<2>, 10, 'a'};
+            }
+
+            {
+                /*
+                * 2-) Bunun bir diğer alternatifi ise "std::in_place_type" nesnesini kullanmaktır.
+                */
+                std::variant<int, double, std::string> va{ std::in_place_type<std::string>, 10, 'a'};
+            }
+
+            {
+                /*
+                * 3-) Bu iki nesnesi kullanarak da "ambiguity" hatasını giderebiliriz. 
+                */
+                std::variant<int, double, long> va{ 34u };							  // Ambiguity
+                std::variant<int, double, long> vaa{ std::in_place_index<2>, 34u };				   // OK
+                std::variant<int, double, long> vaa{ std::in_place_type<long>, 34u };			   // OK
+                std::variant<std::string, int, std::string, int> vb{ 12 };			  // Ambiguity
+                std::variant<std::string, int, std::string, int> vb{ std::in_place_index<1>, 12 }; // OK
+            }
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        class Myclass {
+        public:
+            Myclass() {
+                std::cout << "Default Ctor.\n";
+            }
+            Myclass(const Myclass&) {
+                std::cout << "Copy Ctor.\n";
+            }
+            Myclass(Myclass&&) {
+                std::cout << "Move Ctor.\n";
+            }
+        };
+
+        int main()
+        {
+            {
+                std::variant<int, Myclass, double> vaa;
+                std::variant<int, Myclass, double> vaaa{ std::in_place_index<1> };		// Default Ctor.
+                std::variant<Myclass, int, double> va;									// Default Ctor.
+                std::variant<int, Myclass, double> vb{ Myclass{} };						// Default Ctor. & Move Ctor.
+                std::variant<int, Myclass, double> vbb{ std::in_place_index<1> };		// Default Ctor.
+                std::variant<int, Myclass, double> vbbb{ std::in_place_type<Myclass> }; // Default Ctor.
+            }
+        }
+
+    * Örnek 6,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        struct Nec {
+            int x, y;
+        };
+
+        struct Erg {
+            double x, y;
+        };
+
+        struct Buffer {
+            unsigned char len[256];
+        };
+
+        using var_type = std::variant<int, double, long>;
+        using var_type_custom = std::variant<Nec, Erg, Buffer>;
+
+        int main()
+        {
+            {
+                /* 
+                    # OUTPUT #
+                    Sizeof Nec             : 8
+                    Sizeof Erg             : 16
+                    Sizeof Buffer          : 256
+                    Sizeof var_type        : 16
+                    Sizeof var_type_custom : 264
+                */
+
+                std::cout << "Sizeof Nec             : " << sizeof(Nec) << "\n";
+                std::cout << "Sizeof Erg             : " << sizeof(Erg) << "\n";
+                std::cout << "Sizeof Buffer          : " << sizeof(Buffer) << "\n";
+                std::cout << "Sizeof var_type        : " << sizeof(var_type) << "\n";
+                std::cout << "Sizeof var_type_custom : " << sizeof(var_type_custom) << "\n";
+            }
+        }
+
+    * Örnek 7,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        void what_to_have(const std::variant<int, double, std::string>& va);
+
+        int main()
+        {
+            {
+                /*
+                * 1-) "std::get()" fonksiyonu ile "std::variant"
+                * içerisinde tutulan değere erişebiliriz. 
+                */
+                std::variant<int, double, long> vx{ 4.5 };
+                std::cout << std::get<1>(vx) << "\n";
+            }
+
+            {
+                /*
+                * 2-) Fakat bu fonksiyona geçilen indeks bilgisi 
+                * eğer "std::variant" nesnesinin tuttuğu değere 
+                * ilişkin değilse, bir "exception" gönderilecektir. 
+                */
+                std::variant<int, double, long> vx{ 4.5 };
+                try {
+                    std::cout << std::get<2>(vx) << "\n";
+                }
+                catch (const std::exception& ex) {
+                    std::cout << ex.what() << "\n";
+                }
+            }
+
+            {
+                /*
+                * 3-) Fakat bu fonksiyona geçilen indeks bilgisi
+                * geçersiz bir indeks ise sentaks hatası oluşacaktır.
+                */
+                std::variant<int, double, long> vx{ 4.5 };
+                // std::cout << std::get<4>(vx) << "\n"; // ERROR
+            }
+
+            {
+                /*
+                * 4-) Bu fonksiyon, "std::variant" içerisindeki nesneye 
+                * referans döndürmektedir. 
+                */
+                std::variant<int, double, long> vx{ 4.5 };
+                std::cout << std::get<1>(vx) << "\n";
+                std::get<1>(vx) = 5.4;
+                std::cout << std::get<1>(vx) << "\n";
+            }
+
+            {
+                /*
+                * 5-) "std::get()" fonksiyonunun alternatifi ise "std::get_if()"
+                * fonksiyonudur. Bu fonksiyon "exception" fırlatmıyor ve "pointer"
+                * semantiğiyle birlikte kullanmalıyız. Eğer geçersiz bir indeks 
+                * girersek de "nullptr" değerini döndürmektedir. 
+                */
+                std::variant<int, double, std::string> vx{ "Ulya" };
+                what_to_have(vx);
+
+                vx = 1.2;
+                what_to_have(vx);
+
+                vx = 12;
+                what_to_have(vx);
+            }
+        }
+
+        void what_to_have(const std::variant<int, double, std::string>& va) {	
+            if (va.index() == 0) {
+                std::cout << "Value: " << std::get<0>(va) << "\n";
+            }
+            
+            if (std::holds_alternative<double>(va)) {
+                std::cout << "Value: " << std::get<1>(va) << "\n";
+            }
+
+            if (auto ptr{std::get_if<std::string>(&va)}; ptr) {
+                std::cout << "Value: " << *ptr << "\n";
+            }
+        }
+
+    * Örnek 8,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        int main()
+        {
+            {
+                /*
+                * 1-) Okumayı kolaylaştırmak adına bir takım "using"
+                * bildirimleri de oluşturulmaktadır. 
+                */
+                enum index : size_t {
+                    age,
+                    wage,
+                    name
+                };
+
+                using Age = int;
+                using Wage = double;
+                using Name = std::string;
+
+                std::variant<Age, Wage, Name> vx(45);
+                std::cout << "Age : " << std::get<age>(vx) << "\n";
+
+                vx = 1'000'000.00'987;
+                std::cout << "Wage: " << std::get<wage>(vx) << "\n";
+
+                vx = "Ulya Yuruk";
+                std::cout << "Name: " << std::get<name>(vx) << "\n";
+            }
+        }
+
+    * Örnek 9,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        class Myclass {
+        public:
+            Myclass(int a, double d) {
+                std::cout << "a : " << a << ", d : " << d << "\n";
+            }
+
+            void print(void) const {
+                std::cout << "Myclass::print()\n";
+            }
+
+            ~Myclass() {
+                std::cout << "Dtor.\n";
+            }
+        };
+
+        int main()
+        {
+            {
+                /*
+                * 1-) "std::variant" nesnesine değer atamanın bir diğer
+                * alternatifi ise ".emplace()" fonksiyonunu çağırmaktır. 
+                * Bu fonksiyon da bir şablon olduğundan, şablon parametresini 
+                * belirtmeliyiz. Bu fonksiyon "Perfect Forwarding" yapabildiği 
+                * gibi önceki değeri de silmektedir. 
+                */
+                std::variant<int, double, Myclass> vx;
+
+                vx.emplace<Myclass>(Myclass{5, 5.f});
+                std::get<Myclass>(vx).print();
+
+                vx.emplace<double>(1.2);
+                std::cout << std::get<double>(vx) << "\n";
+
+                vx.emplace<int>(12);
+                std::cout << std::get<int>(vx) << "\n";
+            }
+        }
+
+    * Örnek 10,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+
+        struct A {
+            A(int) {
+                //...
+            }
+        };
+
+        struct B {
+            B(int) {
+
+            }
+        };
+
+        int main()
+        {
+            {
+                /*
+                * 1-) Eğer "std::variant" nesnesinin alternatifleri
+                * "Default Init." yapılamıyorsa sentaks hatası alacağız. 
+                * Eğer alternatifler arasında "std::monostate" sınıfını 
+                * kullanırsak hatayı gidermiş olacağız. Her ne kadar bu 
+                * sınıfın ilk alternatif olması bir zorunluluk değilse de,
+                * tipik kullanımda ilk alternatiftir.
+                */
+                // std::variant<A, B> va; // ERROR
+                // std::variant<B, A> vb; // ERROR
+                std::variant<std::monostate, A, B> vc; // OK
+            }
+
+            {
+                /*
+                * 2-) "std::monostate" sınıfının bir diğer kullanım yeri 
+                * ise "std::variant" sınıfını "nullable" hale getirmektir. 
+                */
+                std::variant<std::monostate, int, double, std::string> vx;
+                if (vx.index() == 0) {
+                    std::cout << "Mono State\n";
+                }
+                if (!vx.index()) {
+                    std::cout << "Mono State\n";
+                }
+                if (std::holds_alternative<std::monostate>(vx)) {
+                    std::cout << "Mono State\n";
+                }
+                if (std::get_if<std::monostate>(&vx)) {
+                    std::cout << "Mono State\n";
+                }
+
+                vx = "Ulya Yuruk";
+                std::cout << std::get<3>(vx) << "\n";
+
+                vx = 1.2;
+                std::cout << std::get<2>(vx) << "\n";
+
+                vx = 12;
+                std::cout << std::get<1>(vx) << "\n";
+
+                vx = std::monostate{};
+                // vx = {};
+                // vx.emplace<std::monostate>();
+                // vx.emplace<0>();
+                if (vx.index() == 0) {
+                    std::cout << "Mono State\n";
+                }
+            }
+        }
+
+    * Örnek 11,
+        #include <iostream>
+        #include <string>
+        #include <variant>
+        #include <bitset>
+
+        struct PrintVisitor {
+            void operator()(int x)const {
+                std::cout << "int   : " << x << "\n";
+            }
+            void operator()(double x)const {
+                std::cout << "double: " << x << "\n";
+            }
+            void operator()(const std::string& x)const {
+                std::cout << "string: " << x << "\n";
+            }
+        };
+
+        struct PrintVisitorTemp {
+            // Alternative Way - I
+            template<typename T>
+            void operator()(T x)const {
+                std::cout << "[" << x << "]\n";
+            }
+
+            template<>
+            void operator()(const std::string& x) const {
+                std::cout << "[" << x << "]\n";
+            }
+
+            // Alternative Way - II, Since C++20
+            /*
+                void operator()(const auto& x)const{
+                    std::cout << "[" << x << "]\n";
+                }
+            */
+
+            // Alternative Way - III
+            /*
+                template<typename T>
+                void operator()(const T& x) {
+                    if constexpr (std::is_same_v<T, int>) {
+                        std::cout << "int, [" << x << "]\n";
+                    }
+                    else if constexpr (std::is_same_v<T, double>) {
+                        std::cout << "double, [" << x << "]\n";
+                    }
+                    else if constexpr (std::is_same_v<T, std::string>) {
+                        std::cout << "string, [" << x << "]\n";
+                    }
+                }	
+            */
+        };
+
+        struct IncVisitor {
+            template<typename T>
+            void operator()(T& x) {
+                ++x;
+            }
+
+            template<>
+            void operator()(std::string& x) {
+                x += x;
+            }
+        };
+
+        class Myclass {};
+
+        struct MyCustomCallable {
+            void operator()(char)const {
+                std::cout << "char\n";
+            }
+            void operator()(int)const {
+                std::cout << "int\n";
+            }
+            void operator()(double)const {
+                std::cout << "double\n";
+            }
+            void operator()(Myclass)const {
+                std::cout << "Myclass\n";
+            }
+            void operator()(auto)const {
+                std::cout << "Others\n";
+            }
+        };
+
+        int main()
+        {
+            {
+                /*
+                * 1-) Şimdi de "std::visit" fonksiyonunu inceleyelim. Bu fonksiyon
+                * bir "callable" alıyor ve her bir alternatif için bu "callable" ı 
+                * çağırıyor. Dolayısıyla ilgili "callable" nesnesi içerisinde,
+                * alternatiflerin türleri parametre olarak alan fonksiyonlar olması 
+                * gerekmektedir. Aksi halde sentaks hatası alacağız. 
+                */
+            
+                std::variant<int, double, std::string> vx("Ulya Yuruk");
+                std::visit(PrintVisitor{}, vx);
+
+                vx = 1.2;
+                PrintVisitor pv;
+                std::visit(pv, vx);
+
+                vx = 12;
+                std::visit(PrintVisitor{}, vx);
+            }
+            puts("#########################");
+            {
+                /*
+                * 2-) Eğer bu fonksiyonların yaptıkları şey de aynı ise ilgili 
+                * fonksiyonu şablon olarak da yazabiliriz.
+                */
+                std::variant<int, double, std::string> vx("Ulya Yuruk");
+                std::visit(PrintVisitorTemp{}, vx);
+
+                vx = 1.2;
+                PrintVisitorTemp pv;
+                std::visit(pv, vx);
+
+                vx = 12;
+                std::visit(PrintVisitorTemp{}, vx);
+            }
+            puts("#########################");
+            {
+                /*
+                * 3-) Tabii bu fonksiyona her defasında farklı bir işi yapan 
+                * "callable" da geçilebilir. 
+                */
+
+                std::variant<int, double, std::string> vx("Ulya Yuruk");
+                std::visit(PrintVisitorTemp{}, vx);
+                std::visit(IncVisitor{}, vx);
+                std::visit(PrintVisitorTemp{}, vx);
+
+                vx = 1.2;
+                PrintVisitor pv;
+                IncVisitor ic;
+                std::visit(pv, vx);
+                std::visit(ic, vx);
+                std::visit(pv, vx);
+
+                vx = 12;
+                std::visit(PrintVisitorTemp{}, vx);
+                std::visit(IncVisitor{}, vx);
+                std::visit(PrintVisitorTemp{}, vx);
+            }
+            puts("#########################");
+            {
+                /*
+                * 4-) Bize bir "callable" lazım olduğundan, "lambda" ifadelerini 
+                * de kullanabiliriz. Fakat burada bizim "f" ismini kullanmamıza 
+                * gerek yoktur. İlgili "lambda" ifadesini fonksiyona direkt olarak 
+                * da gönderebiliriz. 
+                */
+
+                auto f = [](const auto& x) { std::cout << "(" << x << ")\n"; };
+                std::variant<int, double, std::string> vx("Ulya Yuruk");
+                std::visit(f, vx);
+                vx = 1.2;
+                std::visit(f, vx);
+                vx = 12;
+                std::visit(f, vx);
+            }
+            puts("#########################");
+            {
+                /*
+                * 5-) Pek tabii iş bu "callable" sınıfını istediğimiz şekilde organize
+                * edebiliriz.
+                */
+                std::variant<char, int, double, Myclass, std::bitset<16>> vx;
+                std::visit(MyCustomCallable{}, vx);
+                vx = 12;
+                std::visit(MyCustomCallable{}, vx);
+                vx = 1.2;
+                std::visit(MyCustomCallable{}, vx);
+                vx = Myclass{};
+                std::visit(MyCustomCallable{}, vx);
+                vx = std::bitset<16>(56u);
+                std::visit(MyCustomCallable{}, vx);
+            }
+        }
+
+    * Örnek 12,
+        #include <variant>
+        #include <iostream>
+        #include <string>
+        #include <typeinfo>
+
+        struct MyVisitor{
+            /*
+            // Alternative - I
+            template<typename T, typename U>
+            void operator()(const T& t, const U& u){
+                std::cout << typeid(T).name() << ", " << typeid(U).name() << " => ";
+                std::cout << "(" << t << ", " << u << ")\n";
+            }
+            */
+            
+            /*
+            // Alternative - II (C++20)
+            void operator()(const auto& t, const auto& u){
+                std::cout << typeid(t).name() << ", " << typeid(u).name() << " => ";
+                std::cout << "(" << t << ", " << u << ")\n";        
+            }
+            */
+            
+            // Alternative - III 
+            void operator()(int t, int u){
+                std::cout << typeid(t).name() << ", " << typeid(u).name() << " => ";
+                std::cout << "(" << t << ", " << u << ")\n";         
+            }
+            void operator()(const auto& t, const auto& u){
+                std::cout << "Other types!..\n";        
+            }
+        };
+
+        int main(void)    
+        {
+            {
+                std::variant<int, double, std::string> vx{3.4};
+                std::variant<long, int, float> vy{34};
+                std::visit(MyVisitor{}, vx, vy);
+                
+                vx = "Ulya Yuruk";
+                vy = 4.3f;
+                std::visit(MyVisitor{}, vx, vy);
+            }
+            
+            {
+                auto fn = [](const auto& t, const auto& u){
+                    std::cout << typeid(t).name() << ", " << typeid(u).name() << " => ";
+                    std::cout << "(" << t << ", " << u << ")\n";                
+                };
+                std::variant<int, double, std::string> vx{3.4};
+                std::variant<long, int, float> vy{34};
+                std::visit(fn, vx, vy);
+                
+                vx = "Ulya Yuruk";
+                vy = 4.3f;
+                std::visit(fn, vx, vy);
+            }
+            
+            return 0;
+        }
+
+    * Örnek 13,
+        #include <variant>
+        #include <iostream>
+        #include <string>
+        #include <typeinfo>
+
+        class Nec : public std::variant<int, std::string>{
+            //...  
+        };
+
+        int main(void)    
+        {
+            Nec nec{ "Ulya Yuruk" };
+            std::cout << "Index : " << nec.index() << ", ";
+            std::cout << std::get<1>(nec) << "\n";
+            
+            nec.emplace<0>(31);
+            std::cout << "Index : " << nec.index() << ", ";
+            std::cout << std::get<0>(nec) << "\n";
+            
+            return 0;
+        }
+
+    * Örnek 14, Aşağıdaki örnekte ise ilgili "variant" nesnesinin alternatif eklenirken bir hata 
+    gönderilmiştir. Dolayısıyla ilgili alternatif oluşturulamamıştır. İşte bu durumu tespit eden ise 
+    ".valueless_by_exception()" isimli fonksiyondur. Bu durumda artık ".index()" fonksiyonu ise artık 
+    "std::variant_npos" konumunu döndürecektir. 
+        #include <iostream>
+        #include <variant>
+        #include <stdexcept>
+
+        struct S {
+            operator int() const{
+                /*
+                * 2-) Sonrasında bu fonksiyon çağrılacaktır fakat programın akışı
+                * "return" deyimine girmeyecektir. Dolayısıyla ilgili alternatif 
+                * OLUŞTURULMAMIŞ OLACAKTIR. 
+                */
+                throw std::runtime_error{ "hata"};
+                return 1;
+            }
+        };
+
+        int main()
+        {
+            using namespace std;
+            variant<double, int> var{ 12.2 };
+            try {
+                /*
+                * 1-) "int" yerine yeni bir alternatif eklenmek istenmiştir. 
+                */
+                var.emplace<1>(S{});
+            }
+            catch (const exception& ex) {
+                /*
+                * 3-) Bu durumda "std::variant" nesnesi geçersiz durumda olacaktır. 
+                */
+                cout << "hata yakalandi: " << ex.what() << "\n";
+                cout << boolalpha << var.valueless_by_exception() << "\n";
+                cout << "Index: " << var.index() << "\n";
+                cout << (var.index() == variant_npos) << "\n";
+            }
+        }
+
+    * Örnek 15,
+        #include <iostream>
+        #include <variant>
+        #include <stdexcept>
+
+        using v_type = std::variant<int, double, long, char, std::string>;
+
+        int main()
+        {
+            {
+                constexpr auto n{ std::variant_size<v_type>::value };
+                // constexpr auto n{ std::variant_size_v<v_type> };
+
+                std::cout << "Total of <" << n << "> different types in the variant object\n";
+            }
+
+            {
+                std::variant_alternative<0, v_type>::type i; // int i;
+                // std::variant_alternative_t<0, v_type> i; // int i;
+                
+                std::variant_alternative<1, v_type>::type d; // double d;
+                // std::variant_alternative_t<1, v_type> d; // double d;
+                
+                std::variant_alternative<2, v_type>::type l; // long l;
+                std::variant_alternative<3, v_type>::type c; // char c;
+                std::variant_alternative<4, v_type>::type s; // std::string s;
+            }
+        }
+
+    * Örnek 16,
+        #include <iostream>
+        #include <variant>
+
+        struct Data {
+            //...
+        };
+
+        enum ErrorType {
+            System,
+            Archieve,
+            Log
+        };
+
+        std::variant<Data, ErrorType> foo() {
+            /*
+            * Bir hata durumunda ilgili "std::variant"
+            * nesnesi "ErrorType" türünü tutarken, hata 
+            * olmadığında ise "Data" türünü tutacaktır. 
+            */
+
+            //...
+        }
+
+        int main()
+        {
+            //...
+        }
+
+    * Örnek 17, İşin başında toplamda kaç adet türemiş sınıf olacağı belliyse ve daha sonra ekleme yapılmayacağı 
+    kesinse, "std::variant" sınıfını kalıtıma alternatif olarak da kullanabiliriz. Böylesi durumlara ise
+    "Closed Inheritence" denir. 
+        #include <iostream>
+        #include <variant>
+
+        class Xls {};
+        class Pdf {};
+        class Txt {};
+        class Word {};
+
+        using Document = std::variant<Xls, Pdf, Txt, Word>;
+
+        int main()
+        {
+            //... 
+        }
+
+
+> Hatırlatıcı Notlar:
+    >> "Value Type" : Her nesnenin değeri kendine demektir. Yani ortada paylaşılan bir alan/değer söz konusu değildir. Yani kopyalama 
+    yapıldığında "Deep Copy" yapılmakta, "Shallow Copy" yapılmamaktadır.  
+

@@ -1,0 +1,923 @@
+> Formatlı Çıkış İşlemleri: Anımsayacağınız üzere C dilinden gelen üç adet çıkış akımına yazı yazmada kullanılan fonksiyon bulunmaktadır.
+Bunlar "printf", "sprintf" ve "fprintf". Bu fonksiyonların prototipleri ise aşağıdaki gibidir:
+
+    int printf(const char* p, ...);
+    int sprintf(char* b, const char* p, ...);
+    int fprintf(FILE* f, const char* p, ...);
+
+Buradaki üç fonksiyonun geri dönüş değeri, yazdığı toplam karakter adedidir. "print" direkt olarak "stdout" akımına yazarken "sprintf" ve 
+"fprintf" ise birinci parametrelerine geçilen adrese yazmaktadır. Şimdi de bu fonksiyonların dezavantajlarına bakalım:
+    
+    -> Bu üç fonksiyonun, daha doğrusu bu fonksiyonlar gibi "variadic" fonksiyonların, en büyük dezavantajı "type-safe" olmamalarıdır. Çünkü
+    bu fonksiyonlar argüman olarak hangi türden argüman alacaklarını biliyor ve programcının da bu türden argüman göndereceğine güvenmektedir.
+    
+    -> C dilindeki "variadic" fonksiyonların bir diğer problemi de ilgili fonksiyona toplamda kaç adet argüman gönderildiğini yine bir şekilde
+    fonksiyona argüman göndererek belirtmem gerekmektedir. Örneğin, ilk argüman olarak toplam öğe sayısının argüman olarak gönderilmesi veya
+    "variadic" argümanlar içerisine "sentinel" bir argüman da göndererek bu argüman ile karşılaşıldığında işlemlerin durmasını sağlatabiliriz.
+
+    -> Diğer yandan bu fonksiyonlar "custom" türler için "extendable" değiller, yani bu fonksiyonları "custom" türler için düzeltemiyoruz. 
+
+Bu fonksiyon grubunun avantajları ise şunlardır:
+    
+    -> Bu fonksiyon grubu, C++ dilindeki diğer formatlı giriş çıkış fonksiyonlarına nazaran daha hızlı çalışmaktadır.
+
+    -> Argümanlar ile formatlama özelliklerini birbirinden ayırabiliyoruz. Örneğin, "print" fonksiyonunda "Conversion Specifier" ile argümanları 
+    ayrı ayrı görürüz. 
+
+Şimdi de C++ dilindekilere bakalım: 
+    
+    -> En büyük dezavantaj, "iostream" kütüphanesinin hantal ve kullanımının "verbose" olmasıdır. Fakat "custom" türler için ilgili fonksiyonlar
+    özelleştirilebiliyor ve fonksiyonların "type-safe" dir. 
+
+Dolayısıyla C dilinden kazanacağımız hıza karşılık C++ dilinde güvenlilik ve işlevsellik gelmektedir. İşte bu iki dünyanın güzel taraflarını 
+bünyesinde barındıran sınıf ise "std::format" sınıfıdır. C++20 ile dile eklenmiştir. Bu kütüphanedeki ilk fonksiyon "std::format" fonksiyonudur. 
+Bu fonksiyon argüman olarak "std::string_view" türünden bir nesne alır ve "std::string" türünden nesne döndürür. Ancak bu fonksiyonun aldığı ifadenin 
+değeri derleme zamanında hesaplanabilir bir değer olmalıdır (değeri çalışma zamanında hesaplanacak olan nesneler için başka bir fonksiyon kullanacağız). 
+Bu fonksiyonu kullanırken "format specifier" için "{}" karakterlerini kullanmalıyız. Tıpkı C dilindeki "printf" fonksiyonunda kullandığımız "%" ile başlayan 
+karakterler gibi. Pekiyi nasıl formatlama yapacağız? İşte bunun için şu bileşimi kullanabiliriz:
+
+    [[fill]align] [sign][#][0][width][.precision][type]
+        ^    ^       ^   ^  ^    ^        ^         ^
+        I   II     III  IV  V    VI       VII       VIII 
+
+    -> I:       Doldurma karakterini belirtmektedir. Yazma alanı genişliği, yazılacak alandan büyükse, o boş kalan alana yazılacak
+                karakterler için burada belirtilen karakter kullanılacaktır. Varsayılan değer boşluk karakteridir. 
+    -> II:      Sağa dayalı, sola dayalı ya da merkezi konumlandırma bilgisini belirtmektedir. 
+    -> IIII:    Tam sayıların yazılmasında işaretin yazılıp yazılmayacağını belirtmektedir. 
+    -> IV:      "Number Sign", doğrudan kendisinin bir özelliği yok. En sondaki "type" ile birlikte kullanıldığında onu "modify" etmektedir. 
+    -> V:       "Heading Zero", tam sayıların yazımında yazma alanı genişliği öncesinde yazılacak karakteri belirtmektedir. Yani yazma alanının
+                başlangıç yeri ile yazı arasındaki karakterlerdir. Doldurma karakteri ise yazı ile yazma alanının bittiği yer arasındaki karakterler
+                içindir. 
+    -> VI:      Yazma alanı genişliğini belirtmektedir. 
+    -> VII:     Gerçek sayılar için "." karakterinden sonra kaç basamak yazılacağını belirtmektedir. 
+    -> VIII:    Yazdırılmak istenen sayının tür bilgisini belirtmektedir. Tam sayı mı gerçek sayı mı vs. 
+
+Buradaki bileşenleri "{}" içerisine yazıyoruz fakat bunlardan önce ":" karakterini yazmak zorundayız. Eğer varsayılan değerleri kullanmak istiyorsak, "{}" 
+içerisini boş bırakabiliriz. Eğer formatlamada bir hata oluşursa, bir "exception" gönderilecektir. Pekala formatlama yaparken de "{}" içerisine rakamlar
+yazarak "Positional Placeholder" mekanizmasını işletebiliriz. Şöyleki:         
+    * Örnek 1,
+        #include <format>
+        #include <string>
+        #include <iostream>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            std::string name{ "necati" };
+            int n{ 7 };
+
+            // "formatted_string" is of type "std::string"
+            // The default values to format is used. 
+            auto formatted_string{ std::format("{} bugun {} adet kitap satin aldi.\n", name, n) }; 
+            std::cout << formatted_string;
+
+            // "{0}" refers to "n" 
+            // "{1}" refers to "name"
+            formatted_string = std::format("{1} bugun {0} adet kitabi {1} icin satin aldi.\n", n, name);
+            std::cout << formatted_string;
+
+            for (size_t i = 0; i < 128; i++)
+            {
+                // "{0}" refers to "i"
+                // "{0:#X}" refers to the hexadecimal representation of "i".
+                // "{0:c}" refers to the character representation of "i". 
+                formatted_string = std::format("{0:d} Index => {0:#X} {0:c}\n", i);
+                std::cout << formatted_string;
+            }
+        }
+
+    * Örnek 2,
+        #include <format>
+        #include <string>
+        #include <iostream>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            int x = 4359;
+            auto formatted_string{ std::format("|{{{}}}|", x) };
+            std::cout << formatted_string << '\n'; // |{4359}|
+
+            formatted_string = std::format("|{:12}|", x); // Sadece yazma alanı genişliği "12" karakter olarak
+                                                        // belirlendi. Diğerleri varsayılan değer olarak kullanıldı.
+            std::cout << formatted_string << '\n';		  // |        4359|
+
+            formatted_string = std::format("|{:_>12}|", x); // "fill" olarak "_" karakteri, "align" için de ">" yazıldı.
+                                                            // Böylelikle yazı sağa dayalı olarak yazılacak ve doldurma 
+                                                            // karakteri olarak da "_" karakteri kullanılacak. 
+            std::cout << formatted_string << '\n';			// |________4359|
+
+            formatted_string = std::format("|{:$<12}|", x); // "fill" olarak "$" karakteri, "align" için de "<" yazıldı.
+                                                            // Böylelikle yazı sola dayalı olarak yazılacak ve doldurma 
+                                                            // karakteri olarak da "$" karakteri kullanılacak. 
+            std::cout << formatted_string << '\n';			// |4359$$$$$$$$|
+
+            formatted_string = std::format("|{:*^12}|", x); // "fill" olarak "*" karakteri, "align" için de "^" yazıldı.
+                                                            // Böylelikle yazı ortaya dayalı olarak yazılacak ve doldurma 
+                                                            // karakteri olarak da "*" karakteri kullanılacak.
+            std::cout << formatted_string << '\n';			// |****4359****|
+        }
+
+    * Örnek 3,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <cstdio>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Yazma alani genisligi: 8
+                |   76234|
+                |_76234__|
+                |123456789|
+                |_123456_|
+            */
+
+            int width;
+            std::cout << "Yazma alani genisligi: ";
+            std::cin >> width;
+
+            int x = 76234;
+            auto s{ std::format("|{:{}}|\n", x, width) }; // Burada formatlama varsayılan değerler ile sağlanmıştır. 
+            std::cout << s;								  // |   76234|
+
+            s = std::format("|{:_^{}}|\n", x, width);	  // Burada ise doldurma karakteri olarak "_", hizalama olarak da 
+                                                        // ortalama seçilmiştir. 
+            std::cout << s;								  // |_76234__|
+
+            x = 123456789;
+            s = std::format("|{:_^{}}|\n", x, width);	  // Burada ise doldurma karakteri olarak "_", hizalama olarak da 
+                                                        // ortalama seçilmiştir. Yazma alanının büyüklüğü ilgili yazıdan
+                                                        // küçükse budamaya neden olmaz. 
+            std::cout << s;								  // |123456789|
+
+            x = 123456;
+            s = std::format("|{1:_^{0}}|\n", width, x);   // Burada ise doldurma karakteri olarak "_", hizalama olarak da 
+                                                        // ortalama seçilmiştir. "{0}" için "width", "{1}" için "x" değişkeni
+                                                        // yazılacaktır.  
+            std::cout << s;								  // |_123456_|
+        }
+
+    * Örnek 4,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <cstdio>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                |         345|
+                |XXXXXXXX 345|
+                |        +345|
+                |         345|
+                |        -345|
+                |XXXXXXXX-345|
+                |        -345|
+                |        -345|
+            */
+
+            int x = 345;
+            auto s = std::format("|{:>12}|\n", x); std::cout << s;
+            s = std::format("|{:X> 12}|\n", x); std::cout << s;
+            s = std::format("|{:>+12}|\n", x); std::cout << s;
+            s = std::format("|{:>-12}|\n", x); std::cout << s;
+
+            s = std::format("|{:>12}|\n", -x); std::cout << s;
+            s = std::format("|{:X> 12}|\n", -x); std::cout << s;
+            s = std::format("|{:>+12}|\n", -x); std::cout << s;
+            s = std::format("|{:>-12}|\n", -x); std::cout << s;
+        }
+
+    * Örnek 5,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <cstdio>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {   
+            int x = 26;
+            std::cout << std::format("|{:07d}|", x) << '\n';	// |0000026|
+            std::cout << std::format("|{:+07d}|", x) << '\n';	// |+000026|
+            std::cout << std::format("|{: 07d}|", -x) << '\n';	// |-000026|
+            std::cout << std::format("|{:-07d}|", -x) << '\n';	// |-000026|
+            std::cout << std::format("|{:07X}|", x) << '\n';	// |000001A|
+            std::cout << std::format("|{:#07X}|", x) << '\n';	// |0X0001A|
+        }
+
+Şimdi de "format specifiers" olarak "type" kısmında yazabileceğimiz şeylere bakalım:
+
+    Type    Prefix      Meaning                                                                 
+    b       0b          Binary representation
+    B       0B          Binary representation
+    c                   Single character 
+    d                   Integer or char 
+    o       0           Octal representation
+    x       0x          Hexadecimal representation
+    X       0X          Same as "x", but with upper case letters
+    s                   Copy string to output, or true/false for a bool 
+    a       0x          Print float as hexadecimal representation
+    A       0X          Same as "a", but with upper case letters  
+    e                   Print float in scientific format with precision of "6" as default 
+    E                   Same as "e", just the exponent is indicated with "E" 
+    f                   Fixed formatting of a float with precision of "6"
+    F                   Same as "f", just the exponent is indicated with "E"
+    g                   Standart formatting of a float with precision of "6"
+    G                   Same as "g", just the exponent is indicated with "E"
+    p       0x          Pointer address as hexadecimal representation
+
+Aşağıda bu konuya ilişkin örnek verilmiştir:
+    * Örnek 1,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <cstdio>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            double dval = 234.432;
+            puts("-----------------");
+            std::cout << std::format("|{}|\n", dval) << '\n';	// |234.432|
+            std::cout << std::format("|{:g}|\n", dval) << '\n';	// |234.432|
+            std::cout << std::format("|{:e}|\n", dval) << '\n';	// |2.344320e+02|
+            std::cout << std::format("|{:E}|\n", dval) << '\n';	// |2.344320E+02|
+            std::cout << std::format("|{:F}|\n", dval) << '\n';	// |234.432000|
+            std::cout << std::format("|{:a}|\n", dval) << '\n';	// |1.d4dd2f1a9fbe7p+7|
+            std::cout << std::format("|{:A}|\n", dval) << '\n';	// |1.D4DD2F1A9FBE7P+7|
+            puts("-----------------");
+            std::cout << std::format("|{}|\n", 10 < 56) << '\n';	// |true|
+            std::cout << std::format("|{}|\n", 10 > 56) << '\n';	// |false|
+            std::cout << std::format("|{:b}|\n", 10 < 56) << '\n';	// |1|
+            std::cout << std::format("|{:B}|\n", 10 > 56) << '\n';	// |0|
+            std::cout << std::format("|{:#b}|\n", 10 < 56) << '\n';	// |0b1|
+            std::cout << std::format("|{:#B}|\n", 10 > 56) << '\n';	// |0B0|
+            std::cout << std::format("|{:d}|\n", 10 < 56) << '\n';	// |1|
+            std::cout << std::format("|{:d}|\n", 10 > 56) << '\n';	// |0|
+            std::cout << std::format("|{:x}|\n", 10 < 56) << '\n';	// |1|
+            std::cout << std::format("|{:X}|\n", 10 > 56) << '\n';	// |0|
+            std::cout << std::format("|{:#x}|\n", 10 < 56) << '\n';	// |0x1|
+            std::cout << std::format("|{:#X}|\n", 10 > 56) << '\n';	// |0X0|
+            puts("-----------------");
+            //std::cout << std::format("|{}|\n", &dval);	// ERROR: Göstericiler söz konusu olduğunda varsayılan "specifier" mevcut değildir. 
+            std::cout << std::format("|{}|\n", (void*) &dval); // Adresi "void*" türüne dönüştürmeliyiz. // |0x8ff854|
+            puts("-----------------");
+            int x = 56;
+            std::cout << std::format("|{}|\n", x) << '\n';		// |56|
+            std::cout << std::format("|{:c}|\n", x) << '\n';	// |8|
+            std::cout << std::format("|{:d}|\n", x) << '\n';	// |56|
+            std::cout << std::format("|{:#d}|\n", x) << '\n';	// |56|
+            std::cout << std::format("|{:x}|\n", x) << '\n';	// |38|
+            std::cout << std::format("|{:#x}|\n", x) << '\n';	// |0x38|
+            std::cout << std::format("|{:X}|\n", x) << '\n';	// |d38|
+            std::cout << std::format("|{:#X}|\n", x) << '\n';	// |0X38|
+            std::cout << std::format("|{:o}|\n", x) << '\n';	// |70|
+            std::cout << std::format("|{:#o}|\n", x) << '\n';	// |070|
+            puts("-----------------");
+            std::string name{"tunahan"};
+            std::cout << std::format("|{}|\n", name) << '\n';		// |tunahan|
+            std::cout << std::format("|{:.4}|\n", name) << '\n';	// |tuna|
+            std::cout << std::format("|{:4.2}|\n", name) << '\n';	// |tu  |
+            std::cout << std::format("|{:24}|\n", name) << '\n';	// |tunahan                 |
+            std::cout << std::format("|{:24.4}|\n", name) << '\n';	// |tuna                    |
+            std::cout << std::format("|{:>24}|\n", name) << '\n';	// |                 tunahan|
+            std::cout << std::format("|{:>24.4}|\n", name) << '\n';	// |                    tuna|
+            std::cout << std::format("|{:^24}|\n", name) << '\n';	// |        tunahan         |
+            std::cout << std::format("|{:^24.4}|\n", name) << '\n';	// |          tuna          |
+            puts("-----------------");	
+        }
+
+Şimdi de "std::format" sınıfındaki diğer fonksiyonlara örnekler üzerinden bakalım:
+    * Örnek 1,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <iterator>
+        #include <cstdio>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            int x = 2'435'345;
+            std::format_to(std::ostream_iterator<char>{std::cout}, "|{:^#16X}|\n", x); // |    0X252911    |
+
+            std::string name;
+            std::format_to(std::back_inserter(name), "|{:^#16X}|\n", x);
+            std::cout << "Length: " << name.length() << ", " << name << '\n'; // Length: 19, |    0X252911    |
+        }
+
+    * Örnek 2,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <iterator>
+        #include <list>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            std::string name{ "Ali Aksoy" };
+            int id{ 78945 };
+            double dval{ 54.213455 };
+            std::string str;
+            std::format_to(std::back_inserter(str), "|{} {} {:.2f}|", id, name, dval);
+            std::cout << str << '\n'; // |78945 Ali Aksoy 54.21|
+
+            std::list<char> c_list;
+            std::format_to(std::front_inserter(c_list), "|{} {} {:.2f}|", id, name, dval);
+            for (auto c : c_list)
+                std::cout << c;	// |12.45 yoskA ilA 54987|
+            std::cout << '\n';
+        }
+
+    * Örnek 3,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <iterator>
+        #include <list>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                {A, 65}
+                {B, 66}
+                {C, 67}
+                //...
+                {X, 88}
+                {Y, 89}
+                {Z, 90}
+            */
+
+            std::string str;
+            for (char c = 'A'; c <= 'Z'; ++c) {
+                std::format_to(std::back_inserter(str), "{{{0}, {0:d}}}\n", c);
+            }
+            std::cout << str << '\n';
+        }
+
+Şimdi de "local" bilgisini değiştirerek uygun dillerde metin yazdırabiliriz. 
+    * Örnek 1,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <iterator>
+        #include <list>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            std::cout << 123.96585 << '\n';	// 123.966
+            std::cout << 123 << '\n';		// 123
+            std::cout << std::format("{:L}\n", 123.96585) << '\n';	// 123.96585
+            std::cout << std::format("{:L}\n", 123) << '\n';		// 123
+
+            std::locale::global(std::locale{ "turkish" });
+            std::cout << 123.96585 << '\n';	// 123.966
+            std::cout << 123 << '\n';		// 123
+            std::cout << std::format("{:L}\n", 123.96585) << '\n';	// 123,96585
+            std::cout << std::format("{:L}\n", 123) << '\n';		// 123
+
+            std::cout << std::format(std::locale("turkish"), "{}\n", 123.96585);	// 123.96585
+            std::cout << std::format(std::locale("turkish"), "{:L}\n", 123.96585);	// 123, 96585
+        }
+
+Şimdi de diğer fonksiyonları inceleyelim:
+    * Örnek 1,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <iterator>
+        #include <array>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        int main()
+        {
+            {
+                /*
+                *	Böylelikle format bilgisinin uzunluğu elde edildikten
+                *	sonra dinamik ömürlü bir "buffer" da temin edilebilir.
+                */
+                int x = 435466;
+                auto len{ std::formatted_size("|{:#x}|", x) };
+                std::cout << "Length: " << len << '\n';	// Length: 9
+            }
+            
+            puts("\n---------");
+            
+            {
+                std::string name{ "ahmet kandemir" }, surname{ "pehlivanli" };
+                std::array<char, 15> ar{};
+                auto result = std::format_to_n( // "result" bir yapı türündendir.
+                    ar.data(),		// Tamponun başlangıç adresi
+                    ar.size() - 1,	// Tampona yazılacak karakter adedi. "\0" karakteri için de yer belirtmemiz gerekmektedir. 
+                    "{} {}",		// Formatlama Bilgileri
+                    name, surname	// Formatlama Bilgileri
+                );
+                std::cout << "Length: " << result.size << ", "; // Length: 25,
+                for (auto c : ar)
+                    std::cout << c;	// ahmet kandemir
+                std::cout << '\n';
+            }
+        }
+
+Diğer yandan bu sınıfı kendi sınıflarımızda kullanabilmek için "std::formatter" sınıf şablonuna bir adet 
+"explicit/full specialization" yazmamız gerekmektedir. Daha sonra "parse" ve "format" sınıflarını da
+tanımlamamız gerekmektedir.
+    * Örnek 1,
+        class Always40 {
+        public:
+            int getValue()const
+            {
+                return 40;
+            }
+
+        };
+
+        template<>
+        struct std::formatter<Always40>
+        {
+            // Parse the format string for this type: 
+            constexpr std::format_parse_context::const_iterator parse(std::format_parse_context& ctx)
+            {
+                /*
+                *	Burada bizler "format" içerisindekileri "parse" edeceğiz. 
+                *	Aşağıdaki ".begin()" fonksiyonu ":" karakteri kullanılmışsa "}" karakterinden 
+                *   sonraki konumu döndürecektir. Ekstradan bi' de ".end()" fonksiyonu vardır ki o 
+                *   ise yazının sonunun konumunu verecektir.  
+                */
+                return ctx.begin(); 
+            }
+
+            // Format by always writing its value: 
+            auto format(const Always40& obj, std::format_context& ctx) const
+            {
+                return std::format_to(ctx.out(), "{}", obj.getValue());
+            }
+        };
+
+        int main()
+        {
+            std::cout << std::format("|{{}}|\n", Always40{}); // |{}|
+
+            auto x = Always40{};
+            std::cout << std::format("|{0} {0} {0}|\n", x); // |40 40 40|
+        }
+
+    * Örnek 2,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <iterator>
+        #include <array>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        class Person {
+        public:
+            Person(std::string name, int id) : m_name(std::move(name)), m_id(id) { }
+            std::string get_name()const { return m_name; }
+            int get_id()const { return m_id; }
+        private:
+            std::string m_name;
+            int m_id;
+        };
+
+        template<>
+        struct std::formatter<Person> {
+            constexpr auto parse(auto& context)
+            {
+                auto iter{ context.begin() };
+                const auto iter_end{ context.end() };
+
+                // Eğer "format specifier" belirtilmemişse
+                // varsayılan senaryo işletilecektir. 
+                if (iter == iter_end || *iter == '}') {
+                    m_ftype = FormatType::All;
+                    return iter;
+                }
+
+                switch (*iter)
+                {
+                    case 'n': m_ftype = FormatType::Name; break;
+                    case 'i': m_ftype = FormatType::Id; break;
+                    case 'a': m_ftype = FormatType::All; break;
+                    default: throw std::format_error{ "Person format error!" };
+                }
+
+                ++iter;
+
+                if (iter != iter_end && *iter != '}') {
+                    throw std::format_error{ "Person format error!" };
+                }
+
+                return iter;
+            }
+
+            constexpr auto format(const Person& per, auto& context)
+            {
+                using enum FormatType;
+                switch (m_ftype)
+                {
+                    case Name: return std::format_to(context.out(), "{}", per.get_name());
+                    case Id: return std::format_to(context.out(), "{}", per.get_id());
+                    case All: return std::format_to(context.out(), "[{} {}]", per.get_id(), per.get_name());
+                }
+            }
+        private:
+            enum class FormatType {Name, Id, All};
+            FormatType m_ftype;
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                ahmet
+                678
+                [786 murat]
+            */
+
+            Person p1{ "ahmet", 876 };
+            Person p2{ "harun", 678 };
+            Person p3{ "murat", 786 };
+            std::cout << std::format("{:n}\n{:i}\n{}", p1, p2, p3);
+        }
+
+    * Örnek 3,
+        #include <format>
+        #include <string>
+        #include <iostream>
+        #include <iterator>
+        #include <array>
+
+        // [[fill]align] [sign][#][0][width][.precision][type]
+
+        struct Point {
+            int mx{}, my{};
+        };
+
+        template<>
+        struct std::formatter<Point> {
+            constexpr auto parse(auto& context)
+            {
+                auto iter{ context.begin() };
+                const auto iter_end{ context.end() };
+
+                // Eğer "format specifier" belirtilmemişse
+                // varsayılan senaryo işletilecektir. 
+                if (iter == iter_end || *iter == '}') {
+                    cb_ = false;
+                    return iter;
+                }
+
+                switch (*iter)
+                {
+                case '#': cb_ = true; break;
+                default: throw std::format_error{ "Person format error!" };
+                }
+
+                ++iter;
+
+                if (iter != iter_end && *iter != '}') {
+                    throw std::format_error{ "Person format error!" };
+                }
+
+                return iter;
+            }
+
+            constexpr auto format(const Point& p, auto& context)
+            {
+                switch (cb_)
+                {
+                case true: return std::format_to(context.out(), "<{}, {}>", p.mx, p.my);
+                default: return std::format_to(context.out(), "|{}, {}|", p.mx, p.my);
+                }
+            }
+        private:
+            bool cb_{};
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                <678, 876>, |876, 678|, |786, 786|
+            */
+
+            Point p1{ 678, 876 };
+            Point p2{ 876, 678 };
+            Point p3{ 786, 786 };
+            std::cout << std::format("{:#}, {}, {}", p1, p2, p3);
+        }
+
+Şimdi kendi "custom" sınıflarımızı "std::format" ile nasıl uyumlu hale getirebiliriz, ona dair örneklere bakalım:
+    * Örnek 1,
+        #include <iostream>
+        #include <format>
+
+        class Myint{
+            public:
+                Mint() = default;
+                explicit Mint(int x) : mx{x} {}
+                int get()const { return mx; }
+                
+            private:
+                int mx{};
+        };
+
+        template<>
+        struct std::formatter<Myint> {
+            constexpr auto parse(std::format_parse_context& ctx)  
+            {
+                /*
+                *   "std::format_parse_context" sınıfının ".begin()" fonksiyonu
+                *   formatlamanın başladığı konumu döndürmektedir. Örneğin formatlama 
+                *   "{:123}" biçiminde olsaydı, "1" i gösterecekti;
+                *   "{}" biçiminde olsaydı, "}" i gösterecekti;
+                *   "{ali:<2.f}" biçiminde olsaydı, "<" i gösterecekti.
+                *   "12\n" biçiminde olsaydı, "1" i gösterecekti. Yani ":" varsa ":" den sonraki 
+                *   ilk karakteri, yoksa "{" den sonraki ilk karakteri döndürmektedir. 
+                *   Bu sınıfın ".end()" fonksiyonu ise yazının bittiği konumu döndürmektedir. 
+                *   Örneğin,
+                *   "{:123}" biçimindeki formatlamada "}" den sonraki konumu; 
+                *   "{ali:<2.f}\n" biçimindeki formatlamada "\n" dan sonraki konumunu göstermektedir. 
+                */
+                
+                // formatlamada küme parantezinin içerisinin
+                // boş olduğu varsayıldı. 
+                return ctx.begin();
+            }
+            
+            auto format(const Myint& m, std::format_context& ctx)
+            {
+                std::format_to(ctx.out(), "{}", m.get());
+            }
+            
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            Myint m{ 345 }; std::cout << std::format("|{}|", m) << '\n';
+        }
+
+    * Örnek 2,
+        #include <iostream>
+        #include <format>
+
+        class Myint{
+            public:
+                Mint() = default;
+                explicit Mint(int x) : mx{x} {}
+                int get()const { return mx; }
+                
+            private:
+                int mx{};
+        };
+
+        template<>
+        struct std::formatter<Myint> {
+            constexpr auto parse(std::format_parse_context& ctx)  
+            {
+                auto iter = ctx.begin();
+                
+                // Burada format yazısını geziyor ve kendi belirlediğimiz
+                // kurallara göre işliyoruz. Fakat şimdilik sadece "iter"
+                // ötelendiğini varsayalım. 
+                while(iter != ctx.end() && *iter != '}') ++iter; 
+                
+                // Programın akışı bu "if" deyimine girmesi demek yazının sonuna 
+                // gelindiği fakat '}' ile karşılaşılmadığı demektir. 
+                if(iter == ctx.end()) std::format_error{ "no closing brace\n" };
+                
+                return iter; 
+            }
+            
+            auto format(const Myint& m, std::format_context& ctx)
+            {
+                std::format_to(ctx.out(), "{}", m.get());
+            }
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            Myint m{ 345 }; std::cout << std::format("|{}|", m) << '\n';
+        }
+
+    * Örnek 3,
+        #include <iostream>
+        #include <format>
+
+        class Myint{
+            public:
+                Mint() = default;
+                explicit Mint(int x) : mx{x} {}
+                int get()const { return mx; }
+                
+            private:
+                int mx{};
+        };
+
+        template<>
+        struct std::formatter<Myint> {
+            constexpr auto parse(std::format_parse_context& ctx)  
+            {
+                auto iter = ctx.begin();
+        
+                while(iter != ctx.end() && *iter != '}'){
+                    if(*iter < '0' || *iter > '9') {
+                        // Programın akışı buraya girmişse rakam karakteri 
+                        // haricinde bir karakter kullanılmış demektir. Bu 
+                        // durumunda "exception throw" edebiliriz. 
+                        // throw std::format_error{ "invalid width character\n" }; // Approach - I 
+                        throw std::format_error{ std::format("<invalid width char: {}>", *iter) }; // Approach - II 
+                    }
+                    
+                    // Böylelikle rakam karakteri sayıya dönüşmüş oldu. 
+                    m_width = m_width * 10 + *iter - '0'; 
+                    ++iter;
+                }
+                
+                // Programın akışı bu "if" deyimine girmesi demek yazının sonuna 
+                // gelindiği fakat '}' ile karşılaşılmadığı demektir. 
+                if(iter == ctx.end()) std::format_error{ "no closing brace\n" };
+                
+                return iter; 
+            }
+            
+            auto format(const Myint& m, std::format_context& ctx)
+            {
+                std::format_to(ctx.out(), "{:{}}", m.get(), m_width);
+            }
+            
+            // Yazma alanı genişlik bilgisini tutmak
+            // için bu değişkeni kullanacağız.
+            int m_width{}; 
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            // Burada formatlama biçimi "|{:<15}|" gibi olsaydı, kodumuz yanlış
+            // çalışacaktı. 
+            Myint m{ 345 }; std::cout << std::format("|{:15}|", m) << '\n';
+        }
+
+    * Örnek 4.0, Yukarıdaki örneklerde "parse" işlemini her bir format için ayrı ayrı yapmamız gerekmektedir. 
+    Fakat bunun yerine halihazırda temel türler için yazılmış olan versiyonlarına çağrı yaparak da problemi 
+    çözebiliriz. 
+        #include <iostream>
+        #include <format>
+
+        class Myint{
+            public:
+                Mint() = default;
+                explicit Mint(int x) : mx{x} {}
+                int get()const { return mx; }
+                
+            private:
+                int mx{};
+        };
+
+        template<>
+        struct std::formatter<Myint> {
+            /* mutable */ std::formatter<int> mf; 
+            auto parse(std::format_parse_context& ctx)  
+            {
+                return mf.parse(ctx);
+            }
+            
+            auto format(const Myint& m, std::format_context& ctx) /* const */
+            {
+                return mf.format(m.get(), ctx);    
+            }
+
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            Myint m{ 345 }; std::cout << std::format("|{0:$>15}| |{0:_<15}|", m) << '\n';
+        }
+
+    * Örnek 4.1, Aşağıdaki örnekte ise kalıtım mekanizmasından faydalanılmıştır. 
+        #include <iostream>
+        #include <format>
+
+        class Myint{
+            public:
+                Mint() = default;
+                explicit Mint(int x) : mx{x} {}
+                int get()const { return mx; }
+                
+            private:
+                int mx{};
+        };
+
+        template<>
+        struct std::formatter<Myint> : std::formatter<int> {
+            /* "parse" fonksiyonu taban sınıftan gelmektedir. */
+            
+            auto format(const Myint& m, std::format_context& ctx)
+            {
+                return std::formatter<int>::format(m.get(), ctx);
+            }
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            Myint m{ 345 }; std::cout << std::format("|{0:$>15}| |{0:_<15}|", m) << '\n';
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        #include <string>
+        #include <format>
+
+        enum class Fruit{ Apple, Melon, Orange };
+
+        template<>
+        struct std::formatter<Fruit> : std::formatter<std::string> {
+            auto format(Fruit f, std::format_context& ctx)
+            {
+                switch (f) {
+                    using enum Fruit; // C++20
+                    std::string str;
+                    case Apple: str = "Apple"; break;
+                    case Melon: str = "Melon"; break;
+                    case Orange: str = "Orange"; break;
+                }
+                
+                return std::formatter<std::string>::format(str, ctx);
+            }
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            Fruit f;
+            f = Fruit::Melon; std::cout << std::format("|{:_<16}|\n", f);
+            f = Fruit::Orange; std::cout << std::format("|{:.>16}|\n", f);
+            f = Fruit::Apple; std::cout << std::format("|{:-^16}|\n", f);
+        }
+
+Buraya kadar gördüğümüz bütün örneklerde format yazısı derleme zamanında değeri belli olan ve "std::string_view" sınıfına dönüştürülebilir 
+bir türe ilişkindi. Çalışma zamanında format yazısını belirlemek istediğimizde ise karşımıza "vformat" ve "vformat_to" fonksiyonları 
+çıkmaktadır. 
+    * Örnek 1,
+        #include <iostream>
+        #include <string>
+        #include <format>
+
+        int main()
+        {   
+            /*
+                # INPUT #
+                {:_>20}
+            */
+            
+            char format_string[20]{}; std::cout << "Format String: "; std::cin >> format_string; 
+            int format_value{ 123 };
+            auto formatted_string{ vformat(format_string, make_format_args(123)) }; std::cout << "Formatted String: " << formatted_string << '\n';
+        }

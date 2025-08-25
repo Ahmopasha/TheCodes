@@ -1,0 +1,403 @@
+> "Deduction Guide" : Aşağıdaki örnekleri sırasıyla inceleyelim:
+    * Örnek 1.0, Aşağıdaki örnekte ilgili "ctor." fonksiyonu referans ile parametre almakta fakat bu sefer
+    sentaks hatası meydana gelmektedir. 
+        template<typename T>
+        class Myclass{
+            public:
+                Myclass(T& r) : mx{r}{}
+                
+            private:
+                T mx;
+        };
+
+        int main()
+        {
+            int a[40];
+            
+            Myclass m(a); // In instantiation of ‘Myclass<T>::Myclass(T&) [with T = int [40]]’: (*)
+
+            /* (*)
+            *   Burada "T" türü "int[40]" olarak çıkarım yapılmış. Bunun yegane sebebi ise ilgili "ctor."
+            *   fonksiyonunun parametresinin "T&" olmasından dolayıdır. Burada "T" türü yerine "int[40]"
+            *   geleceğinden, "mx" bir dizi olacaktır. Bir diziye de yukarıdaki şekilde ilk değer 
+            *   verilemeyeceğinden dolayı, sentaks hatası oluşacaktır. 
+            */
+            return 0;
+        }
+
+    * Örnek 1.1, İlgili sentaks hatasını gidermek için ilgili "ctor." fonksiyonunun parametresini referans olmaktan 
+    çıkartabiliriz. Fakat bu durumda da büyük nesnelerin getirdiği kopyalama maliyetini bertaraf etmek için ilgili 
+    nesneleri "ReferanceWrapper" sınıfı ile sarmalamak gerekebilir. 
+        template<typename T>
+        class Myclass{
+            public:
+                Myclass(T r) : mx{r}{}
+                
+            private:
+                T mx;
+        };
+
+        int main()
+        {
+            int a[40];
+            
+            Myclass m(a); // In instantiation of ‘Myclass<T>::Myclass(T&) [with T = int*]’: (*)
+            
+            /* (*)
+            *   Burada "T" türü "int*" olarak çıkarım yapılmış. Bunun yegane sebebi ise ilgili "ctor."
+            *   fonksiyonunun parametresinin "T" olmasından dolayıdır. Fakat burada ilgili "ctor." fonksiyonu 
+            *   bir referans ile parametre almayacağı için, kopyalama maliyetinden kaçınmak adına, bu fonksiyona
+            *   gönderilen nesneleri "ReferenceWrapper" sınıfı ile sarmalamak icab edebilir. 
+            */
+            return 0;
+        }
+
+    * Örnek 1.2, Aşağıdaki örnekteki "Deduction Guide" ile hem "ctor." fonksiyonumuz referans parametreli hem de 
+    tür çıkarımı diziler için "array-decay" oluşturmakta. 
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        class Myclass{
+            public:
+                Myclass(const T& r) : mx{r}{ TypeTeller<T> tx; }
+                
+            private:
+                T mx;
+        };
+
+        // Deduction Guide: 
+        template<typename T>
+        Myclass(T)->Myclass<T>; 
+
+        int main()
+        {
+            int a[40];
+            
+            Myclass m(a); // In instantiation of ‘Myclass<T>::Myclass(const T&) [with T = int*]’: (*)
+
+            /*  (*)
+            *   Artık "T" türü "int*" olarak çıkartım yapılmıştır. Yalnız bardaki "ctor." fonksiyonunun 
+            *   parametrik yapısının "const" olması gerekmektedir. Çünkü "int*" dönüşmesi sonucunda 
+            *   "R-Value" bir ifade oluşmakta. Böylesi bir ifadeyi de "non-const L_Value" referanslara 
+            *   bağlayamayız. 
+            */
+            return 0;
+        }
+
+    * Örnek 2,
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        class Myclass{
+            public:
+            Myclass(T){ TypeTeller<T> tx; }
+        };
+
+        template<typename T>
+        Myclass(T)->Myclass<T&>; 
+
+        int main()
+        {
+            Myclass m(31);
+            
+            /*
+            *   Burada da "T" türü için tür çıkarımı "int&" olarak yapıldı. Fakat
+            *   sol taraf referanslara sağ taraf değeri bağlanamadığı için yine 
+            *   sentaks hatası oluştu. 
+            */
+            
+            int x{};
+            Myclass mm{x}; // In instantiation of ‘Myclass<T>::Myclass(T) [with T = int&]’:
+            
+            return 0;
+        }
+
+    * Örnek 3, İlla da şablon olması gerekmemektedir. 
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        class Myclass{
+            public:
+            Myclass(T){ TypeTeller<T> tx; }
+        };
+
+        Myclass(char)->Myclass<long>;
+        Myclass(short)->Myclass<long>;
+        Myclass(int)->Myclass<long>;
+        Myclass(unsigned)->Myclass<long>;
+
+        int main()
+        {
+            Myclass m1(5.6); // In instantiation of ‘Myclass<T>::Myclass(T) [with T = double]’:
+            Myclass m2('u'); // In instantiation of ‘Myclass<T>::Myclass(T) [with T = long int]’:
+            Myclass m3(23);  // In instantiation of ‘Myclass<T>::Myclass(T) [with T = long int]’:
+            Myclass m4(23u); // In instantiation of ‘Myclass<T>::Myclass(T) [with T = long int]’:
+            
+            return 0;
+        }
+
+    * Örnek 4,
+        #include <concepts>
+
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        class Myclass{
+            public:
+            Myclass(T){ TypeTeller<T> tx; }
+        };
+
+        // "Deduction Guide" : Herhangi bir tam sayı türü söz konusu olduğunda
+        // tür çıkarımı "unsigned long long" türüne yapılacaktır. 
+        template<std::integral T>
+        Myclass(T)->Myclass<unsigned long long>;
+
+        int main()
+        {
+            Myclass m1(234L);   // In instantiation of ‘Myclass<T>::Myclass(T) [with T = long long unsigned int]’:
+            Myclass m2(234);    // In instantiation of ‘Myclass<T>::Myclass(T) [with T = long long unsigned int]’:
+            Myclass m3(234u);   // In instantiation of ‘Myclass<T>::Myclass(T) [with T = long long unsigned int]’:
+            Myclass m4(234LL);  // In instantiation of ‘Myclass<T>::Myclass(T) [with T = long long unsigned int]’:
+            
+            return 0;
+        }
+
+    * Örnek 5,
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        class Myclass{
+            public:
+            Myclass(T){ TypeTeller<T> tx; }
+        };
+        
+        template<typename T>
+        Myclass(T)->Myclass<T*>;
+
+        int main()
+        {
+            Myclass m1(10);
+            
+            /*
+            *   "T" için tür çıkarımı "int*" yönüne yapılacaktır. Fakat 
+            *   ilgili "ctor." fonksiyonuna adres göndermediğimiz için 
+            *   sentaks hatası oluşacaktır. 
+            */
+            return 0;
+        }
+
+    * Örnek 6,
+        #include <string>
+
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        class Myclass{
+            public:
+            Myclass(T){ TypeTeller<T> tx; }
+        };
+        
+        Myclass(const char*)->Myclass<std::string>;
+
+        int main()
+        {
+            Myclass m1("ulya"); // In instantiation of ‘Myclass<T>::Myclass(T) [with T = std::__cxx11::basic_string<char>]’:
+            return 0;
+        }
+
+    * Örnek 7, "std::pair" sınıfının tipik implementasyonu
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T, typename U>
+        class Pair{
+            public:
+            Pair(const T&, const U&){ TypeTeller<T> tx; TypeTeller<U> ty; }
+        };
+
+        template<typename T, typename U>
+        Pair(T,U)->Pair<T,U>;
+
+        int main()
+        {
+            /*
+            *   Görüleceğiz üzere ilgili "ctor." fonksiyonunun parametresi
+            *   bir referans. Fakat ilgili "Deduction Guide" sonucunda tür 
+            *   çıkarımı diziler için dizi olarak değil, gösterici olarak 
+            *   yapılmaktadır.
+            */
+            
+            int a[10]{};
+            double b[15]{};
+            Pair p1(a,b); // In instantiation of ‘Pair<T, U>::Pair(const T&, const U&) [with T = int*; U = double*]’:
+            return 0;
+        }
+
+    * Örnek 8,
+        #include<type_traits>
+        #include<iostream>
+        #include<string>
+
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        struct Sum{
+            T value;
+            
+            template<typename ...Types>
+            Sum(Types&& ...values) : value{ (values + ...) }{} // "(values + ...)" is called "Fold Expression"
+        };
+
+        template<typename ...Types>
+        Sum(Types&& ...ts)->Sum<std::common_type_t<Types...>>;
+
+        int main()
+        {
+            Sum s{ 1u, 2.0, 3, 4.0f };  // "common type" of the arguments of "1u, 2.0, 3, 4.0f" is "double". So, "s" is of type "Sum<double>"
+            Sum str{ std::string{"abcd"}, "ef" }; // "common type" of the arguments of "std::string{"abcd"}, "ef"" is "std::string". So, "s" is of type "Sum<std::string>"
+            std::cout << s.value << " / " << str.value << '\n'; // 10 / abcdef
+            return 0;
+        }
+
+    * Örnek 9,
+        #include<type_traits>
+        #include<iostream>
+        #include<string>
+
+        template<typename T>
+        struct Nec{
+            T str;    
+        };
+
+        // Before C++20
+        template<typename T>
+        Nec(T)->Nec<T>;
+
+        int main()
+        {
+            /*
+            *   "Aggregate" türler için C++20 ve öncesinde "Deduction Guide"
+            *   belirtmemiz gerekmektedir. Fakat C++20 ile birlikte artık 
+            *   gerek kalmamıştır. 
+            */
+            Nec mynec = {23};
+            return 0;
+        }
+
+    * Örnek 10,
+        template<typename T>
+        class TypeTeller;
+
+        template<typename T>
+        class Nec{
+        public:
+            Nec(T param) : mx(param) { TypeTeller<T> tx; }
+            
+        private:
+            T mx;
+        };
+
+        // Deduction Guide
+        template<typename T>
+        Nec(T)->Nec<T>;
+
+
+        int main()
+        {
+            Nec x{ 5 };                 // In instantiation of ‘Nec<T>::Nec(T) [with T = int]’:
+            Nec y( 3.3 );               // In instantiation of ‘Nec<T>::Nec(T) [with T = double]’:
+            auto z = Nec{ 4L };         // In instantiation of ‘Nec<T>::Nec(T) [with T = long int]’:
+                    
+            Nec* p = &x;                // ERROR
+            Nec n1{ 'A' }, n2{ 23 };    // ERROR
+            return 0;
+        }
+
+    * Örnek 11,
+        #include <string>
+
+        template<typename T>
+        struct Nec{
+            T val;  
+        };
+
+        // Deduction Guide
+        explicit Nec(const char*)->Nec<std::string>;
+
+        int main()
+        {
+            Nec n1 = { "neco" };            // (*)
+            Nec n2{ "neco" };               // "n2" is type of "Nec<std::string>" 
+            Nec n3 = Nec{ "neco" };         // "n3" is type of "Nec<std::string>" 
+            Nec n4 = { Nec{"neco"} };       // "n4" is type of "Nec<std::string>" 
+            
+            /*  (*)
+            *   İlgili "Deduction Guide", "explicit" olarak tanımlandığı için ve 
+            *   argüman olan ifade eşitliğin sağ tarafına yazıldığı için "ignore"
+            *   edilecektir. Bu durumda hata meydana gelecektir. 
+            */
+            
+            return 0;
+        }
+
+    * Örnek 12,
+        #include <iostream>
+        template<typename T>
+        struct Nec{
+            // 1
+            Nec(T) { std::cout << "Nec(T)\n"; std::cout << typeid(T).name() << '\n';} 
+            
+            // 2
+            template<typename U>
+            Nec(U) { std::cout << "Nec(U)\n"; std::cout << typeid(*this).name() << '\n'; std::cout << typeid(U).name() << '\n'; }    
+        };
+
+        // Deduction Guide
+        template<typename T>
+        explicit Nec(T)->Nec<T*>;
+
+        int main()
+        {
+            /*
+            *   Burada "Deduction Guide" devreye girecektir çünkü "copy init."
+            *   kullanılmamıştır. Dolayısıyla "T" türü yerine "int*" türü gelecektir. 
+            *   Fakat birinci "ctor." çağrılmayacaktır çünkü gönderdiğimiz argüman olan 
+            *   "42" ise "int" türden. Dolayısıyla ikinci "ctor." çağrılacaktır. Bu
+            *   durumda "U" türü "int" olacaktır, gönderdiğimiz "42" argümanından dolayı.
+            */
+            Nec p1{ 42 };   
+            
+            /*
+            *   Burada "copy init." kullanıldığı için "Deduction Guide" görmezden
+            *   gelinecektir. Dolayısıyla birinci "ctor." fonksiyonu çağrılacak ve 
+            *   "T" türü "int" olarak açılacaktır. 
+            */
+            Nec p2 = 42;    
+            
+            /*
+            *   Burada "Deduction Guide" devreye girecektir çünkü "copy init."
+            *   kullanılmamıştır. Dolayısıyla "T" yerine "int**" türü gelecektir. Bu
+            *   durumda yine birinci "ctor." çağrılmayacaktır çünkü "T" türü "int**"
+            *   iken gönderdiğimiz argümanın olan "i" nin türü "int*" biçiminde. Dolayısıyla
+            *   ikinci "ctor." çağrılacak ve "U" türü "int*" olacaktır. 
+            */
+            int i = 42;
+            Nec p3{ &i };   
+            
+            /*
+            *   Burada "copy init." kullanıldığı için "Deduction Guide" görmezden
+            *   gelinecektir. Dolayısıyla birinci "ctor." fonksiyonu çağrılacak ve 
+            *   "T" türü "int*" olarak açılacaktır. 
+            */
+            int j = 42;
+            Nec p4 = &j;  
+            
+            return 0;
+        }

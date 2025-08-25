@@ -1,0 +1,891 @@
+> "3-Way Comparison Operator" : "compare" başlık dosyasını kullanmalıyız. C++20 öncesinde toplamda altı adet karşılaştırma 
+operatörü mevcuttur. Bunlar ise iki gruba ayrılmıştır; "Equality Operators" ve "Relational Operatos". 
+    >> "Equality Operators" : "==" ve "!=" operatörleridir. 
+    >> "Relational Operators" : "<", "<=", ">" ve ">=" operatörleridir.
+
+Bu operatörlerin hepsi de aynı statüdedir ve hepsinin ürettiği değer "bool" türündendir. "custom" türler için yine bu operatörleri 
+kullanmak istediğimiz zamanda genel olarak "<" ve "==" operatörleri "overload" edilir, diğer dört operatör ise bu "overload" edilmiş 
+fonksiyonları çağırması sağlanır. Örneğin,
+
+    a != b        !(a == b)
+    a > b         b < a 
+    a >= b        !(a < b) 
+    a <= b        !(b < a)        
+    
+şeklinde. Fakat bazı durumlarda bu şekildeki yaklaşım da problemli olabiliyor: 
+    * Örnek 1,
+        #include <iostream>
+        #include <cmath>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                d1 < d2 = false
+                d1 > d2 = false
+                d1 <= d2 = false
+                d1 >= d2 = false
+                d1 == d2 = false
+                d1 != d2 = true
+            */
+            
+            double d1{ NAN };
+            double d2{ 4.56 };
+            std::boolalpha(std::cout);
+            std::cout << "d1 < d2 = " << (d1 < d2) << '\n';
+            std::cout << "d1 > d2 = " << (d1 > d2) << '\n';
+            std::cout << "d1 <= d2 = " << (d1 <= d2) << '\n';
+            std::cout << "d1 >= d2 = " << (d1 >= d2) << '\n';
+            std::cout << "d1 == d2 = " << (d1 == d2) << '\n';
+            std::cout << "d1 != d2 = " << (d1 != d2) << '\n';
+        }
+
+Pekiyi nedir bu "3-Way Comparison Operator"? Bu operatör "<=>" atomu ile temsil edilmektedir. Önceliği diğer karşılaştırma operatörlerinden 
+daha yüksektir. Bu operatörün dile eklenmesi ile operatörler iki gruba ayrılmıştır: "Primary", "Secondary". 
+    >> "Primary" : Argümanları "reverse" edilebilen operatörlerdir. Bunlar "==" ve "<=>" operatörleridir. Yani "a==b" demek ile "b==a" demek 
+    aynıdır. Anımsanacağı üzere sınıfın üye fonksiyonu olarak "overload" edilen ".operator==()" fonksiyonu söz konusu olduğunda, bu fonksiyonun 
+    çağrılabilmesi için "==" operatörünün sol operandının ilgili sınıf türünden OLMASI GEREKİYOR İDİ. 
+
+    >> "Secondary" : Geri kalan dört operatör bu gruptandır. Bu gruptakiler ise "rewritable" operatörlerdir. Yani derleyici bu operatörleri,
+    yukarıdaki "Primary" gruptaki operatörlere çevirebilmektedir. Örneğin, "!=" operatörü bu gruptandır. Derleyici bu operatörü gördüğü yerde 
+    "!(==)" ifadesini yazabilmektedir, tabii bu süreç ise isim arama sırasında gerçekleşmektedir.
+        * Örnek 1,
+            #include <iostream>
+            #include <cmath>
+
+            class Myclass{
+                public:
+                bool operator==(int)const{
+                    //...
+                    return true;
+                }
+            
+            };
+            int main()
+            {   
+                /*
+                    # OUTPUT #
+                */
+                
+                Myclass m;
+                bool b1 = (m == 5); // I
+                bool b2 = (m != 5); // II
+                bool b3 = (5 == m); // III
+                bool b4 = (5 != m); // IV
+                /*  
+                *   C++20 öncesinde sadece "I" nolu ifade doğru, diğerleri sentaks
+                *   hatasına yol açmaktaydı. Bunun yegane sebebi ise şudur:
+                *   II : "!=" operatörü için ilgili fonksiyon "overload" edilmemiştir.
+                *   III: "==" operatörünün sol operandının bir sınıf türünden olması gerek.
+                *   IV : Hem "!=" operatörü için ilgili fonksiyon "overload" değil hem de 
+                *   bu operatörün sol operandı bir sınıf türünden değil. 
+                */
+                
+                /*
+                *   Fakat C++20 ile yukarıdaki dört ifade derleyici tarafından aşağıdaki
+                *   biçimde ele alınmakta: 
+                *   I  :  bool b1 = (m == 5);
+                *   II :  bool b2 = !(m == 5);
+                *   III:  bool b3 = (m == 5);
+                *   IV :  bool b4 = !(m == 5);
+                */
+            }
+   
+Diğer yandan bu operatörün dile eklenmesiyle hem "==" hem de "<=>" operatörleri "default" edilebiliyor. Pekala sadece "<=>" operatörünü "default"
+edersek, derleyici bizim için "==" operatörünü de "default" etmektedir. Fakat sadece "==" operatörünü "default" etmemiz durumunda, "<=>" operatörü
+"default" EDİLMEYECEKTİR. Pek tabii "<=>" operatör fonksiyonunu da hem "global" hem de "member" fonksiyon olarak "overload" edebilmekteyiz. 
+    * Örnek 1,
+        #include <iostream>
+
+        class Myclass{
+            public:
+            Myclass(int x) : mx(x) {}
+            auto operator<=>(const Myclass&)const = default;
+            private:
+            int mx;
+        };
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                m1 < m2  : true
+                m1 > m2  : false
+                m1 <= m2 : true
+                m1 >= m2 : false
+                m1 == m2 : false
+                m1 != m2 : true
+            */
+            
+            std::boolalpha(std::cout);
+            Myclass m1{ 24 }, m2{ 56 };
+            std::cout << "m1 < m2  : " << (m1<m2) << '\n';
+            std::cout << "m1 > m2  : " << (m1>m2) << '\n';
+            std::cout << "m1 <= m2 : " << (m1<=m2) << '\n';
+            std::cout << "m1 >= m2 : " << (m1>=m2) << '\n';
+            std::cout << "m1 == m2 : " << (m1==m2) << '\n';
+            std::cout << "m1 != m2 : " << (m1!=m2) << '\n';
+        }
+
+Tabii gerek "==" gerek "<=>" fonksiyonlarının parametrelerinin "const" olması ve sınıf içerisinde tanımlandığında da yine "const" bir "member function"
+olması gerekmektedir. Eğer bu iki fonksiyonu "default" etmemiz durumunda ise derleyici fonksiyonların kodlarını şu şekilde yazacaktır:  
+
+    -> "==" operatör fonksiyonunu "default" ettiğmiz zaman derleyici, veri elemanlarının bildirim sırasına göre, bütün veri elemanları için "==" 
+    operatör fonksiyonunu çağıracak. Çünkü bu operatör dilin temel sentaks kuralına eklendiği için, temel türler ve standart kütüphanedeki diğer 
+    sınıflar için bu operatör fonksiyonu belirtilmiştir. Bütün fonksiyon çağrılarının sonuçları "true" olduğunda, "default" edilen fonksiyon da "true" 
+    değer döndürecektir. 
+    -> "<=>" operatör fonksiyonunu "default" ettiğmiz zaman derleyici, veri elemanlarının bildirim sırasına göre, bütün veri elemanları için "<=>"
+    operatör fonksiyonunu çağıracak. Çünkü bu operatör dilin temel sentaks kuralına eklendiği için, temel türler ve standart kütüphanedeki diğer 
+    sınıflar için bu operatör fonksiyonu belirtilmiştir. Burada temel türler söz konusu olduğunda karşılaştırma sonucu "strong_ordering", gerçek sayı 
+    türleri için "partial_ordering", standart kütüphanedeki diğer sınıflar için ise ilgili türler olacaktır. Örneğin, "std::string" sınıfı için 
+    "strong_ordering". 
+
+Öte yandan bu operatörün geri dönüş değerinin türü neden "auto" olarak belirlendi? Aslında bakarsanız "<=>" operatörü üç farklı sınıf türünden değer
+döndürmektedir. Bunlar "strong_ordering", "weak_ordering" ve "partial_ordering". 
+    >> "strong_ordering" : Bu sınıf türü ise şu değerlere sahiptir: "std::strong_ordering::equal", "std::strong_ordering::equivalent",
+    "std::strong_ordering::less" ve "std::strong_ordering::greater". Bu sınıf türü şunu temsil etmektedir: "a" ve "b" iki operand olmak şartıyla;
+    ya "a > b" ya "a < b" ya da "a == b". 
+
+    >> "weak_ordering" : Bu sınıf türü ise şu değerlere sahiptir: "std::weak_ordering::equivalent", "std::weak_ordering::less" ve
+    "std::weak_ordering::greater". Bu sınıf türü şunu temsil etmektedir: "a" ve "b" iki operand olmak şartıyla; ya "a > b" ya "a < b" ya da "a" ve "b" 
+    eş değer olabilir ki eş değer olmaları eşit olmaları zorunluluğunu da beraberinde getirmemektedir. Örneğin, "ahmet" ile "AHMET" yazılarının 
+    karşılaştırılması buna bir örnektir. Özünde birbirine eşit değillerdir fakat "incase-sensitive" karşılaştırma yaptığımız zaman bunları eşit kabul 
+    etmekteyiz.  
+
+    >> "partial_ordering" : Bu sınıf türü ise şu değerlere sahiptir: "std::partial_ordering::equivalent", "std::partial_ordering::less",
+    "std::partial_ordering::greater" ve "std::partial_ordering::unordered". Büyük ölçüde gerçek sayı türlerinin karşılaştırılmasına yöneliktir.
+    "weak_ordering" e ilaveten karşılaştırılmasında herhangi bir sıralama olmayan özel değerler de olabilir. Örneğin, "NAN" değerinin karşılaştırılması 
+    gibi. 
+
+Pekala bu operatörün geri döndürdüğü iş bu sınıfları "0" değeri ile de karşılaştırabiliyoruz ki bu işlem de bizlere "bool" türünü geri döndürmektedir. 
+    * Örnek 1,
+        #include <iostream>
+        #include <cmath>
+        template<typename T, typename U>
+        void print_compare(const T& t, const U& u)
+        {
+            using result_type = std::compare_three_way_result_t<T,U>;
+            std::string s_type = typeid(result_type).name();
+            std::cout << "Comare Result Type: " << s_type << '\n';
+            
+            auto result = t <=> u;
+            std::cout << "Result of Comparison: "; 
+            if(result == 0){
+                if(std::is_same_v<result_type, std::strong_ordering>) std::cout << "equal";
+                else std::cout << "equivalent";
+            }
+            else if (result > 0)
+                std::cout << "greater";
+            else if (result < 0)
+                std::cout << "less";
+            else
+                std::cout << "unordered";
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                Comare Result Type: St15strong_ordering
+                Result of Comparison: greaterComare Result Type: St15strong_ordering
+                Result of Comparison: equalComare Result Type: St15strong_ordering
+                Result of Comparison: less
+                -----------------------------------
+                Comare Result Type: St16partial_ordering
+                Result of Comparison: lessComare Result Type: St16partial_ordering
+                Result of Comparison: equivalentComare Result Type: St16partial_ordering
+                Result of Comparison: lessComare Result Type: St16partial_ordering
+                Result of Comparison: unordered
+                -----------------------------------
+            */
+            
+            puts("\n-----------------------------------");
+            
+            print_compare(12, 6);
+            print_compare(12, 12);
+            print_compare(12, 18);
+            
+            puts("\n-----------------------------------");
+
+            print_compare(1.2, 6.);
+            print_compare(1.2, 1.2);
+            print_compare(1.2, 1.8);
+            print_compare(1.2, NAN);
+            
+            puts("\n-----------------------------------");
+        }
+
+Tabii "<=>" operatörünün geri döndürdüğü yukarıdaki sınıf türleri de birbirine dönüşebilmektedir. Şöyleki:
+
+    -> "strong_ordering" türünü, "weak_ordering" ve "partial_ordering" türlerine örtülü olarak dönüştürebiliriz. 
+    -> "weak_ordering" türünü ise "partial_ordering" türlerine örtülü olarak dönüştürebiliriz. 
+
+Diğer yandan kendi sınıflarımız için bu operatör fonksiyonunu nasıl yazardık? Anımsanacağı üzere bu operatör dilin temel sentaks 
+kuralına eklendi. Yani temel türler ve standart kütüphanedeki çoğu fonksiyon bu operatöre ilişkin bir fonksiyonu barındırmaktadır. Dolayısıyla
+kendi sınıflarımız için olan versiyonunu da yine bu operatörü kullanarak yazacağız:
+    * Örnek 1,
+        #include <string>
+        #include <iostream>
+
+        class Person{
+            public:
+                Person(const char* p, int a) : name{p}, age{a} {}
+                auto operator<=>(const Person& other)
+                {
+                    if(auto cmp = name <=> other.name; cmp != 0)
+                        return cmp;
+                        
+                    return age <=> other.age;
+                }
+                
+            private:
+                std::string name;
+                int age;
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                true
+                -----
+                true
+                -----
+                false
+                -----
+                false
+            */
+            
+            {
+                Person p1{"muhittin", 56};
+                Person p2{"ayse", 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';
+                // std::cout << std::boolalpha << (p1 <=> p2 > 0) << '\n';
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 56};
+                Person p2{"ayse", 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';        
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 20};
+                Person p2{"ayse", 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ali", 40};
+                Person p2{"ayse", 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+        }
+
+    * Örnek 2.0, Fakat aşağıdaki kodda sentaks hatası bulunmaktadır. Çünkü ilgili operatör fonksiyonunun geri dönüş değer tür çıkarımı için 
+    farklı çıkarımlarda bulunulmuştur.
+        #include <string>
+        #include <iostream>
+
+        class Person{
+            public:
+                Person(const char* p, double s, int a) : name{p}, salary{s}, age{a} {}
+                auto operator<=>(const Person& other)
+                {
+                    if(auto cmp = name <=> other.name; cmp != 0)
+                        return cmp;
+                        
+                    if(auto cmp = age <=> other.age; cmp != 0)
+                        return cmp;
+                        
+                    return salary <=> other.salary; // inconsistent deduction for auto return type: ‘std::strong_ordering’ and then ‘std::partial_ordering’
+                }
+                
+            private:
+                std::string name;
+                double salary;
+                int age;
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            {
+                Person p1{"muhittin", 5.6, 56};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';
+                // std::cout << std::boolalpha << (p1 <=> p2 > 0) << '\n';
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 5.6, 56};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';        
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 2., 20};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ali", 4., 40};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+        }
+
+    Dolayısıyla bu örnekteki sentaks hatasını gidermek için şu yöntemleri kullanabiliriz:  
+
+        -> Şablonları kullansaydık, "Trailing Return Type" mekanizmasından faydalanabilirdik. Fakat bu örneğimiz için
+        buna gerek yoktur. 
+        -> Bu örnek için "auto" yerine iki farklı tür gelecektir: "strong_ordering" ve "partial_ordering". Bunlardan en 
+        zayıf olanı seçmemiz tavsiye edilmektedir. Dolayısıyla "auto" yerine "std::partial_ordering" yazmamız sorunu 
+        çözecektir. 
+        -> Bir meta fonksiyon olan "std::common_comparison_category" fonksiyonunu kullanmak. Böylelikle derleme zamanında,
+        "n" tane argümanın ortak türünü hesaplamış oluyoruz. Örneğin,
+
+            auto operator<=>(const Person& other) const -> 
+                std::common_comparison_category_t
+                <
+                    decltype(name<=>other.name),
+                    decltype(salary<=>other.salary),
+                    decltype(age<=>other.age)
+                >
+            {
+                if(auto cmp = name <=> other.name; cmp != 0)
+                    return cmp;
+                    
+                if(auto cmp = age <=> other.age; cmp != 0)
+                    return cmp;
+                    
+                return salary <=> other.salary; 
+            }
+
+        -> İlgili operatör fonksiyonunun yazım biçimini uygun biçimde değiştirerek. Örneğin,
+
+            std::strong_ordering operator<=>(const Person& other)const 
+            {
+                if(auto cmp = name <=> other.name; cmp != 0)
+                    return cmp;
+
+                if(auto cmp = age <=> other.age; cmp != 0)
+                    return cmp; 
+
+                auto cmp = salary <=> other.salary;
+
+                // WAY - I
+                // return std::strong_order(salary, other.salary);
+
+                // WAY - II
+                std::assert(cmp != std::partial_ordering::unordered);
+                return cmp == 0 ? std::strong_ordering::equal : 
+                        cmp > 0 ? std::strong_ordering::greater : 
+                        std::strong_ordering::less; 
+            }
+
+    * Örnek 2.1,
+        #include <string>
+        #include <iostream>
+        #include <compare>
+
+        class Person{
+            private:
+                std::string name;
+                double salary;
+                int age;
+                
+            public:
+                Person(const char* p, double s, int a) : name{p}, salary{s}, age{a} {}
+                auto operator<=>(const Person& other) const -> 
+                            std::common_comparison_category_t 
+                            <
+                                decltype(name<=>other.name),
+                                decltype(salary<=>other.salary),
+                                decltype(age<=>other.age)
+                            >
+                        {
+                            if(auto cmp = name <=> other.name; cmp != 0)
+                                return cmp;
+                                
+                            if(auto cmp = age <=> other.age; cmp != 0)
+                                return cmp;
+                                
+                            return salary <=> other.salary; 
+                        }
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                true
+                -----
+                true
+                -----
+                false
+                -----
+                false
+            */
+            
+            {
+                Person p1{"muhittin", 5.6, 56};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';
+                // std::cout << std::boolalpha << (p1 <=> p2 > 0) << '\n';
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 5.6, 56};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';        
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 2., 20};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ali", 4., 40};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+        }
+
+    * Örnek 2.2,
+        #include <string>
+        #include <iostream>
+        #include <cassert>
+
+        class Person{
+            private:
+                std::string name;
+                double salary;
+                int age;
+                
+            public:
+                Person(const char* p, double s, int a) : name{p}, salary{s}, age{a} {}
+                std::strong_ordering operator<=>(const Person& other)const 
+                {
+                    if(auto cmp = name <=> other.name; cmp != 0)
+                        return cmp;
+                
+                    if(auto cmp = age <=> other.age; cmp != 0)
+                        return cmp; 
+                
+                    auto cmp = salary <=> other.salary;
+                
+                    assert(cmp != std::partial_ordering::unordered);
+                
+                    return cmp == 0 ? std::strong_ordering::equal : 
+                            cmp > 0 ? std::strong_ordering::greater : 
+                            std::strong_ordering::less; 
+                }
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                true
+                -----
+                true
+                -----
+                false
+                -----
+                false
+            */
+            
+            {
+                Person p1{"muhittin", 5.6, 56};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';
+                // std::cout << std::boolalpha << (p1 <=> p2 > 0) << '\n';
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 5.6, 56};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';        
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ayse", 2., 20};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+            
+            puts("-----");
+            
+            {
+                Person p1{"ali", 4., 40};
+                Person p2{"ayse", 4., 40};
+                std::cout << std::boolalpha << (p1 > p2) << '\n';                
+            }
+        }
+
+Bu operatör fonksiyonunu tanımladığımız zaman, sınıfımızı kullanacak "client" kodlar yine
+diğer karşılaştırma operatörlerini kullanmaya devam edecekler. Fakat o operatörler bizim "<=>" operatör fonksiyonumuzu çağıracaklar.
+Örneğin, "Date" sınıfını ele alalım. C++20 öncesinde bu sınıf türü karşılaştırma yapabilmek için yukarıdaki zikredilen altı operatör 
+için de fonksiyon tanımlamamız gerekiyordu. Daha sonra "Date" sınıfını kullanacak kişiler yine karşılaştırma yapmak için istediği 
+operatörü kullanabilirmektedir. Fakat C++20 ile birlikte bizler ilgili altı operatör için de ayrı ayrı operatör fonksiyonu 
+yazmamıza gerek kalmadı. Sadece "<=>" operatör fonksiyonunu yazarak bu yazma yükünden kurtulabiliriz. Yine bizim sınıfımızı 
+kullanacak kişiler yine istedikleri karşılaştırma operatörü ile işlerini halledebilirler.  
+    * Örnek 1,
+        // Until C++20:
+            namespace Date
+            {   
+                //... 
+
+                class Date
+                {
+                    //...
+
+                    friend bool operator<(const Date& d1, const Date& d2);
+                    friend bool operator==(const Date& d1, const Date& d2);
+                    friend int operator-(const Date& d1, const Date& d2);
+
+                    //...
+                };
+                
+                //...
+
+                inline bool operator>=(const Date& d1, const Date& d2) { return !(d1 < d2); }
+                inline bool operator<=(const Date& d1, const Date& d2) { return !(d2 < d1); }
+                inline bool operator!=(const Date& d1, const Date& d2) { return !(d1 == d2); }
+                
+                bool operator<(const Date& d1, const Date& d2)
+                {
+                    return d1.y_ != d2.y_ ? d1.y_ < d2.y_ :
+                        d1.m_ != d2.m_ ? d1.m_ < d2.m_ :
+                        d1.d_ < d2.d_;
+                }
+        
+                bool operator==(const Date& d1, const Date& d2)
+                {
+                    return d1.y_ == d2.y_ && d1.m_ == d2.m_ && d1.d_ == d2.d_;
+                }
+        
+                int operator-(const Date& d1, const Date& d2)
+                {
+                    return d1.totaldays() - d2.totaldays();
+                }
+
+                //...
+            }
+
+        // Since C++20: 
+            namespace Date
+            {   
+                //... 
+
+                class Date
+                {
+                    //...
+
+                    auto operator<=>(const Date& date)const = default;
+                };
+            }
+
+    * Örnek 2, Aşağıdaki örnekte ise yine "Date" sınıfımız için "operator<=>()" fonksiyonunu "default" etmemiz halinde
+    derleyicinin yazacağı takribi semantik belirtilmiştir. Burada dikkat etmemiz gereken nokta, veri elemanlarının bildirim 
+    sırası gözetilerek karşılaştırmaya tabii tutulmalarıdır. Dolayısıyla bu noktaya dikkat etmemiz gerekmektedir. 
+        class Date{
+        public:
+            std::strong_ordering operator<=>(const Date& other) const noexcept
+            {
+                if(auto cmp = md <=> other.md; cmp != 0) return cmp;
+                if(auto cmp = mm <=> other.mm; cmp != 0) return cmp;
+                return my <=> other.my;
+            }
+            
+        private:
+            int md, mm, my;
+        };
+
+        //... 
+
+Diğer yandan bu "==" ve "<=>" fonksiyonlarını "default" ederken dikkat etmemiz gereken bir diğer nokta ise bu fonksiyonlar derleyici 
+tarafından yazıldığında "constexpr" ve "noexcept" olacak şekilde yazılırlar. Her ne kadar bu fonksiyonların bildirimlerinde bizler bu 
+kelimeleri yazmasak da. Tabii burada öğelerin karşılaştırılmasının da "noexcept" garantisinin VERMESİ ve fonksiyonun "constexpr" OLMA
+KOŞULLARININ SAĞLAMIŞ OLMASI GEREKMEKTEDİR. Öte yandan sadece "<=>" operatörünü "default" ederken kullandığımız belirteçler de "==" 
+operatörüne aktarılmaktadır. 
+    * Örnek 1.0,
+        #include <iostream>
+
+        class Nec{
+            public:
+                constexpr Nec(int x = 0) : mx{x} {}
+                bool operator==(const Nec& other)const { return true; } // ERROR
+            private:
+                int mx;
+        };
+
+        int main()
+        {   
+            constexpr Nec n1{ 345 };
+            constexpr Nec n2{ 456 };
+            constexpr auto b = n1 == n2; // ERROR: error: call to non-‘constexpr’ function ‘bool Nec::operator==(const Nec&) const’
+            constexpr auto c = noexcept(n1 == b2); // "b" is not "noexcept". 
+        }
+
+    * Örnek 1.1,
+        #include <iostream>
+
+        class Nec{
+            public:
+                constexpr Nec(int x = 0) : mx{x} {}
+                // bool operator==(const Nec& other)const = default; // OK 
+            private:
+                int mx;
+        };
+
+        int main()
+        {   
+            constexpr Nec n1{ 345 };
+            constexpr Nec n2{ 456 };
+            constexpr auto b = n1 == n2; // OK
+            constexpr auto c = noexcept(n1 == b2); // "b" is "noexcept". 
+        }
+
+    * Örnek 2,
+        #include <iostream>
+
+        class Nec{
+            public:
+                constexpr Nec(int x = 0) : mx{x} {}
+                [[nodiscard]] auto operator<=>(const Nec& other)const = default;
+            private:
+                int mx;
+        };
+
+        int main()
+        {   
+            constexpr Nec n1{ 345 };
+            constexpr Nec n2{ 456 };
+            constexpr auto b = n1 == n2;
+            constexpr auto c = noexcept(n1 == n2);
+            n1 == n2; // warning: ignoring return value of ‘constexpr bool Nec::operator==(const Nec&) const’, declared with attribute ‘nodiscard’ [-Wunused-result]
+        }
+
+    * Örnek 3,
+        #include <compare>
+
+        // Bizlerin yazdığı:  
+        template<typename T>
+        class Type{
+            public:
+                [[nodiscard]] virtual std::strong_ordering
+                operator<=>(const Type&) const requires(!std::same_as<T, bool>) = default;
+                //                             ^                              ^
+                //                             Bu kısım "requires closures" olarak
+                //                             geçer. "T" türünün "bool" olmaması 
+                //                             GEREKİYOR.
+            
+        };
+
+        // Derleyicinin yazdığı: 
+        template<typename T>
+        class Type{
+            //...
+            public:
+                [[nodiscard]] virtual std::strong_ordering
+                operator<=>(const Type&) const requires(!std::same_as<T, bool>) = default;
+                
+                [[nodiscard]] virtual bool
+                operator==(const Type&) const requires(!std::same_as<T, bool>) = default;
+        };
+
+        int main()
+        {   
+            /*
+            *   Görüleceği üzere "<=>" operatör fonksiyonunu nasıl bildirdiysek, derleyici de aynı
+            *   şekilde "==" operatör fonksiyonunu bildirmektedir. 
+            */
+        }
+
+Öte yandan "<=>" operatörünü "container" sınıfların karşılaştırılmasında da kullanabiliriz. Anımsayacağınız üzere bu tip sınıfları 
+karşılaştırmanın bir yolu da "std::lexicographical_compare" fonksiyonuna çağrıda bulunmaktır ki bu fonksiyon da "<" operatörüne göre 
+karşılaştırma yapmaktadır. Eğer "<=>" operatörünü kullanmak istersek, "lexicographical_compare_three_way" fonksiyonuna çağrı yapmamız 
+gerekmektedir. 
+    * Örnek 1,
+        #include <algorithm>
+        #include <list>
+        #include <vector>
+        #include <iostream>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                false
+                false
+            */
+            
+            std::list my_list{ 3, 6, 9, 12, 9, 6, 3 };
+            std::vector my_vec{ 3, 6, 9, 12 };
+            std::cout << std::boolalpha << std::lexicographical_compare(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()) << '\n';
+            /*
+            *   Burada karşılaştırma kriteri olarak "std::less" kullanılmıştır.
+            *   Pekala bunun yerine "<=>" operatörünü de karşılaştırma için
+            *   kullanabilirdik. Fakat bu durumda "lexicographical_compare_three_way"
+            *   fonksiyonunu çağırmamız gerekmektedir. Bu fonksiyonun geri dönüş 
+            *   değerinin türü "<=>" operatörünün geri döndürdüğü sınıf türleridir. 
+            */
+            std::cout << std::boolalpha << (std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()) < 0) << '\n';
+        }
+
+    * Örnek 2,
+        #include <algorithm>
+        #include <list>
+        #include <vector>
+        #include <iostream>
+
+        std::ostream& operator<<(std::ostream& os, std::strong_ordering sval)
+        {
+            return os << (
+                sval == 0 ? "equal" : 
+                sval < 0  ? "less"  :
+                            "greater" );
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                greater
+                -------
+                equal
+                -------
+                less
+                -------
+                greater
+            */
+            
+            {
+                std::list my_list{ 3, 6, 9, 12, 9, 6, 3 };
+                std::vector my_vec{ 3, 6, 9, 12 };
+                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+                std::cout << result; 
+            }
+            
+            puts("\n-------");
+            
+            {
+                std::list my_list{ 3, 6, 9, 12 };
+                std::vector my_vec{ 3, 6, 9, 12 };
+                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+                std::cout << result; 
+            }
+            
+            puts("\n-------");
+            
+            {
+                std::list my_list{ 3, 6, 9 };
+                std::vector my_vec{ 3, 6, 9, 12 };
+                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+                std::cout << result; 
+            }
+            
+            puts("\n-------");
+            
+            {
+                std::list my_list{ 3, 6, 9 };
+                std::vector my_vec{ 3, 3, 9 };
+                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+                std::cout << result; 
+            }
+        }
+
+> Hatırlatıcı Notlar:
+    >>  "std::tuple_element_t", "std::tuple_size_v" ve "std::get" fonksiyonlarını "std::tuple", "std::pair" ve "std::array" 
+    sınıfları ile birlikte kullanabiliriz. Dahası, kendi sınıflarımız da "tuple-like interface" sunuyorsa, kendi sınıflarımız 
+    için de kullanabiliriz. Bu durumda "std::get" fonksiyonunu "overload" etmemiz veya "Specialization" yazmamız gerekmektedir. 
+        * Örnek 1,
+            #include <string>
+            #include <tuple>
+            #include <array>
+            #include <iostream>
+
+            using tp_type = std::tuple<int, double, std::string>;
+            using pr_type = std::pair<std::string, std::string>;
+            using ar_type = std::array<double, 20>;
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    100, 100.001, Hundred
+                    Ulya, Yuruk
+                    12...00
+                */
+
+                auto tuple_size{ std::tuple_size_v<tp_type> }; // "tuple_size" is of type "size_t" with value of "3U"
+                std::tuple_element_t<0, tp_type> var0; // "var0" is of type "int".
+                std::tuple_element_t<1, tp_type> var1; // "var1" is of type "double".
+                std::tuple_element_t<2, tp_type> var2; // "var2" is of type "std::string".
+                tp_type my_tuple{ 100, 100.001, "Hundred" };
+                std::cout << std::get<0>(my_tuple) << ", " << std::get<1>(my_tuple) << ", " << std::get<2>(my_tuple) << '\n';
+
+                auto pair_size{ std::tuple_size_v <pr_type> }; // "pair_size" is of type "size_t" with value of "2U"
+                std::tuple_element_t<0, pr_type> var00; // "var00" is of type "std::string".
+                std::tuple_element_t<1, pr_type> var11; // "var11" is of type "std::string".
+                pr_type my_pair{ "Ulya", "Yuruk" };
+                std::cout << std::get<0>(my_pair) << ", " << std::get<1>(my_pair) << '\n';
+
+                auto ar_size{ std::tuple_size_v<ar_type> }; // "ar_size" is of type "size_t" with value of "20U"
+                std::tuple_element_t<0, ar_type> var000; // "var000" is of type "double".
+                ar_type my_array{ 1., 2., 3., };
+                std::cout << std::get<0>(my_array) << std::get<1>(my_array) << "..." << std::get<18>(my_array) << std::get<19>(my_array) << '\n';
+            }
+
+    >> "Lambda Expression" ile "Structural Binding" kullanabilmek için "Lambda Init. Capture" yöntemini kullanmamız gerekiyordu,
+    C++20'ye kadar. C++20 ile direkt olarak "capture" edebiliyoruz. 
+        * Örnek 1,
+            #include <iostream>
+            #include <tuple>
+
+            int main()
+            {
+                auto [x,y] = std::make_tuple(10, 1.0);
+                
+                /*  Until C++20:
+                *   <source>(7): error C2429: language feature 'structured bindings' requires compiler flag '/std:c++17'
+                *   <source>(8): error C2439: 'main::<lambda_301934df6dff3172e3c8f03977487641>::x': member could not be initialized
+                *   <source>(8): note: see declaration of 'main::<lambda_301934df6dff3172e3c8f03977487641>::x'
+                *   <source>(8): error C2439: 'main::<lambda_301934df6dff3172e3c8f03977487641>::y': member could not be initialized
+                *   <source>(8): note: see declaration of 'main::<lambda_301934df6dff3172e3c8f03977487641>::y'
+                */
+                auto f = [x,y]{ return x+y; };  // ERROR 
+                // auto f = [&x = x, &y = y]{ return x+y; }; // SOLUTION: "&x = x, &y = y" is a "Lambda Init. Capture". 
+                
+                // Since C++20
+                auto f = [x,y]{ return x+y; }; // OK
+            }

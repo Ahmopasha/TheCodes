@@ -1,0 +1,419 @@
+> Exceptions & Exception Handling: 
+    >> "std::exception_ptr" : C++11 ile dile eklendi. Amacı bir hatayı yakalamak ancak hatanın işlenmesini başka bir bağlama aktarmak,
+    aktarmasak bile daha sonra işlemek adına bir yerde saklamaktır. Bu sınıf türüyle ilişkili şu fonksiyonlar da vardır;
+        
+        "std::current_exception()", "std::rethrow_exception()", "std::make_exception_ptr".  
+
+    Bu fonksiyonlardan,
+        >>> "std::current_exception" fonksiyonu, en son yakalanan hata nesnesini geri döndürür. Bu fonksiyonun geri döndürdüğü 
+        nesneyi, "std::exception_ptr" türünden bir nesnede saklayabiliriz. 
+
+        >>> "std::rethrow_exception" fonksiyonu, argüman olarak "std::exception_ptr" türündeki nesnenin tuttuğu hata nesnesini 
+        "rethrow" eder. 
+
+        >>> "std::make_exception_ptr" fonksiyonu, bir fabrika fonksiyondur ve bize "std::exception_ptr" türünden nesne döndürür. 
+
+    Bu fonksiyonlar yine dinamik türün korunmasını sağlamaktadır. Şimdi örnekler ile irdeleyelim;
+        * Örnek 1, Aşağıda yakalamış olduğumuz hata nesnesini daha sonra işleme aldık. 
+            #include <exception>
+            #include <iostream>
+            #include <string>
+
+            void handle_exception(std::exception_ptr ex_ptr) {
+                try {
+                    if (ex_ptr)
+                        std::rethrow_exception(ex_ptr);
+                }
+                catch(const std::exception& ex) {
+                    std::cout << "Caught exception: " << ex.what() << '\n';
+                }
+            }
+
+            int main() {
+                
+                /*
+                    # OUTPUT #
+                    main basladi
+                    main devam ediyor
+                    Caught exception: basic_string::at: __n (which is 2005) >= this->size() (which is 4)
+                    main bitecek
+                */
+                
+                std::cout << "main basladi\n";
+                
+                std::exception_ptr ex_ptr{}; // "nullable" type.
+                
+                try {
+                    std::string name{"Ulya"};
+                    auto c = name.at(2005); // An exception'll be thrown. 
+                }
+                catch (...) {
+                    ex_ptr = std::current_exception();
+                }
+                
+                std::cout << "main devam ediyor\n";
+                
+                handle_exception(ex_ptr);
+                
+                std::cout << "main bitecek\n";
+            }
+
+        * Örnek 2, Aşağıdaki örnekte ise "ex_ptr", iki "thread" arasında aracı rolü işlemiştir. 
+            #include <iostream>
+            #include <stdexcept>
+            #include <thread>
+
+            std::exception_ptr ex_ptr = nullptr;
+
+            void func(int x) {
+                std::cout << "func(int x) was called. x = " << x << '\n';
+                
+                try {
+                    if (x % 2 == 0)
+                        throw std::invalid_argument{ "Invalid Argument" };
+                }
+                catch (...) {
+                    ex_ptr = std::current_exception();
+                }
+                
+                std::cout << "func(int x) was ended. x = " << x << '\n';
+            }
+
+            int main() {
+                
+                /*
+                    # OUTPUT #
+                    func(int x) was called. x = 26
+                    func(int x) was ended. x = 26
+                    Exception Caught: Invalid Argument
+                */
+                
+                std::thread t{ func, 26 };
+                t.join();
+                
+                try {
+                    if (ex_ptr)
+                        std::rethrow_exception(ex_ptr);
+                }
+                catch (const std::exception& ex) {
+                    std::cout << "Exception Caught: " << ex.what() << '\n';
+                }
+            }
+
+        * Örnek 3, Aşağıdaki örnekte ise gönderilen hata nesneleri bir "vector" içerisinde toplanmış, daha sonra işlenmiştir.
+            #include <iostream>
+            #include <exception>
+            #include <mutex>
+            #include <vector>
+
+            std::vector<std::exception_ptr> g_ex_ptr_vec;
+
+            std::mutex g_mutex;
+
+            void f1 () { 
+                throw std::exception{ "f1" }; 
+            }
+            void f2 () { 
+                throw std::exception{ "f2" }; 
+            }
+            void f3 () {
+                try {
+                    f1();
+                }
+                catch (...) {
+                    std::lock_guard<std::mutex>{ g_mutex };
+                    g_ex_ptr_vec.push_back(std::current_exception());
+                }
+            }
+            void f4 () {
+                try {
+                    f2();
+                }
+                catch (...) {
+                    std::lock_guard<std::mutex>{ g_mutex };
+                    g_ex_ptr_vec.push_back(std::current_exception());
+                }    
+            }
+
+            int main() {
+                
+                std::thread t1(f3); 
+                std::thread t2(f4);
+                
+                t1.join();
+                t2.join();
+                
+                for(const auto& i: g_ex_ptr_vec) {
+                    try {
+                        if (i)
+                            std::rethrow_exception(i);
+                    }
+                    catch (const std::exception& ex) {
+                        std::cout << "Exception Caught: " << ex.what() << '\n';
+                    }
+                }
+            }
+
+        * Örnek 4.0, "make_exception_ptr" temsili implementasyonu aşağıdaki gibidir.
+            #include <exception>
+            #include <stdexcept>
+            #include <iostream>
+
+            template<typename T>
+            std::exception_ptr MakeExceptionPtr(T ex) noexcept {
+                try {
+                    throw ex;
+                }
+                catch (...) {
+                    return std::current_exception();
+                }
+            }
+
+            int main() {
+                // OUTPUT : Ex: Run Time Error
+                
+                auto ex_ptr = MakeExceptionPtr(std::runtime_error{ "Run Time Error" });
+                
+                try {
+                    std::rethrow_exception(ex_ptr);
+                }
+                catch (const std::exception& ex) {
+                    std::cout << "Ex: " << ex.what() << '\n';
+                }
+            }
+
+        * Örnek 4.1, "make_exception_ptr" kullanımı; 
+            #include <exception>
+            #include <stdexcept>
+            #include <iostream>
+
+            int main() {
+                // OUTPUT : Ex: Run Time Error
+                
+                auto ex_ptr = make_exception_ptr(std::runtime_error{ "Run Time Error" });
+                
+                try {
+                    std::rethrow_exception(ex_ptr);
+                }
+                catch (const std::exception& ex) {
+                    std::cout << "Ex: " << ex.what() << '\n';
+                }
+            }
+
+    >> "Nested Exception" Kavramı: Alt seviyeli fonksiyonlardan gönderilen hata nesnelerini yakalıyoruz, yapabileceğimiz şey(ler)
+    varsa yapıyoruz, yapamadığımız şeyler için de hata nesnesinin türünü değiştirip tekrardan gönderiyoruz. Buna da hata nesnesinin 
+    "translate" edilmesi denmektedir. Fakat bazı durumlarda bu mekanizma bilgi kaybına da neden olabilir. İşte buna çözüm olarak da 
+    alt seviyeden gelen hata nesnesini sarmalayarak üst seviyelere gönderiyoruz. Böylelikle daha dışarıda olanlar üst seviyeyle 
+    ilgiliyken, içeride olanlar alt seviye ile ilgili olacak. 
+        * Örnek 1.0, Aşağıdaki örnekte alt seviyeden gelen hata nesneleri hakkında bilgi üst seviyelere iletilememiştir. 
+            #include <exception>
+            #include <stdexcept>
+            #include <iostream>
+
+            void foo() {
+                //...
+                
+                throw std::runtime_error{ "exception from foo\n" };
+            }
+
+            void bar() {
+                try {
+                    //...
+                    foo();
+                    //...
+                } catch(const std::exception& ex) {
+                    throw std::runtime_error{ "exception from bar\n" };
+                }
+            }
+
+            void baz() {
+                try {
+                    //...
+                    bar();
+                    //...
+                } catch(const std::exception& ex) {
+                    throw std::runtime_error{ "exception from baz\n" };
+                }
+            }
+
+            int main() {
+                // OUTPUT : Ex: exception from Baz
+
+                try {
+                    baz();
+                }
+                catch (const std::exception& ex) {
+                    std::cout << "Ex: " << ex.what() << '\n';
+                }
+            }
+
+        * Örnek 1.1, Aşağıdaki örnekte ise üst seviyelere gönderilen hata mesajlarına bilgi ekleyerek gönderilmiştir. Böylelikle 
+        üst seviyelere daha çok bilgi aktarıldı. 
+            #include <exception>
+            #include <stdexcept>
+            #include <iostream>
+            #include <string>
+
+            void foo() {
+                //...
+                
+                throw std::runtime_error{ "exception from foo" };
+            }
+
+            void bar() {
+                try {
+                    //...
+                    foo();
+                    //...
+                } catch(const std::exception& ex) {
+                    throw std::runtime_error{ std::string{ "exception from bar + " } + ex.what() };
+                }
+            }
+
+            void baz() {
+                try {
+                    //...
+                    bar();
+                    //...
+                } catch(const std::exception& ex) {
+                    throw std::runtime_error{ std::string{ "exception from baz + " } + ex.what() };
+                }
+            }
+
+            int main() {
+                // OUTPUT : Ex: exception from baz + exception from bar + exception from foo
+                
+                try {
+                    baz();
+                }
+                catch (const std::exception& ex) {
+                    std::cout << "Ex: " << ex.what() << '\n';
+                }
+            }
+
+        * Örnek 1.2.0, İşte Modern C++ ile dile eklenen "std::throw_with_nested" ve "std::rethrow_if_nested" gibi araçlar sayesinde 
+        daha modern bir çözüm üretmiş olduk. 
+            #include <exception>
+            #include <stdexcept>
+            #include <iostream>
+            #include <string>
+
+            void foo() {
+                //...
+                
+                throw std::runtime_error{ "exception from foo" };
+            }
+
+            void bar() {
+                try {
+                    //...
+                    foo();
+                    //...
+                } catch(const std::exception& ex) {
+                    std::throw_with_nested(std::length_error{ "exception from bar" });
+                }
+            }
+
+            void baz() {
+                try {
+                    //...
+                    bar();
+                    //...
+                } catch(const std::exception& ex) {
+                    std::throw_with_nested(std::out_of_range{ "exception from baz" });
+                }
+            }
+
+            int main() {
+                /*
+                    # OUTPUT #
+                    Outer Ex: exception from baz
+                    Middle Ex: exception from bar
+                    Inner Ex: exception from foo
+                */
+                
+                try {
+                    baz();
+                }
+                catch (const std::exception& ex) {
+                    std::cout << "Outer Ex: " << ex.what() << '\n';
+                    try { // "Catch for outer shell"
+                        std::rethrow_if_nested(ex);
+                    }
+                    catch (const std::exception& ex) {
+                        std::cout << "Middle Ex: " << ex.what() << '\n';
+                        try { // "Catch for middle shell"
+                            std::rethrow_if_nested(ex);
+                        }
+                        catch (const std::exception& ex) {
+                            std::cout << "Inner Ex: " << ex.what() << '\n';
+                            try { // "Catch for inner shell"
+                                std::rethrow_if_nested(ex);
+                            }
+                            catch (const std::exception& ex) {
+                                std::cout << "Base Ex: " << ex.what() << '\n';
+                            }
+                        }
+                    }
+                }
+            }
+
+        * Örnek 1.2.1, Pekala "main" çağrısındaki iç içe "try-catch" bloklarını "recursive" fonksiyon çağrısıyla da halledebilirdik;
+            #include <exception>
+            #include <stdexcept>
+            #include <iostream>
+            #include <string>
+
+            void print_ex_elements(const std::exception& ex) {
+                std::cout << ex.what() << '\n';
+                try {
+                    // Eğer içi boşsa, hata nesnesi gönderilmeyecek. 
+                    // Böylelikle "recursive" çağrı sonlanacak. 
+                    std::rethrow_if_nested(ex); 
+                } catch (const std::exception& nested) {
+                    std::cout << "Nested Ex: ";
+                    print_ex_elements(nested);
+                }
+            }
+
+            void foo() {
+                //...
+                
+                throw std::runtime_error{ "exception from foo" };
+            }
+
+            void bar() {
+                try {
+                    //...
+                    foo();
+                    //...
+                } catch(const std::exception& ex) {
+                    std::throw_with_nested(std::length_error{ "exception from bar" });
+                }
+            }
+
+            void baz() {
+                try {
+                    //...
+                    bar();
+                    //...
+                } catch(const std::exception& ex) {
+                    std::throw_with_nested(std::out_of_range{ "exception from baz" });
+                }
+            }
+
+            int main() {
+                /*
+                    # OUTPUT #
+                    exception from baz
+                    Nested Ex: exception from bar
+                    Nested Ex: exception from foo
+                */
+                
+                try {
+                    baz();
+                }
+                catch (const std::exception& ex) {
+                    print_ex_elements(ex);
+                }
+            }

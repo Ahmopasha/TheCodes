@@ -1,0 +1,2024 @@
+> "Advanced Lambda Expression" : Anımsanacağı üzere "lambda expression" karşısında derleyici bir sınıf türü oluşturmakta ve ilgili 
+ifadeyi de bu sınıf türünden "PR-Value" olarak ele almaktadır. Yani bir deyişle derleyicinin oluşturduğu sınıf türünden geçici bir 
+nesne olarak ele alınıyor, iş bu "lambda expressions". Burada derleyicinin oluşturduğu bu sınıfa "closure type", bu sınıf türünden 
+oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" ise aşağıdaki bileşenlerden meydana gelmektedir:
+
+    [ ] <tparams> ( ) specifiers exception attr ->ret { /* code; */ } 
+     ^      ^      ^                ^             ^          ^
+     |      |      |                |             |          |
+     |      |      |                |             |          vi. LAMBDA BODY    
+     |      |      |                |             v. Trailing Return Type
+     |      |      |                iv. (optional): mutable, constexpr, consteval, noexcep, attributes 
+     |      |      iii. Parameter List(it is optional when no specifiers added)
+     |      ii. (optional): Template parameter list
+     i. The lambda introducer with an optional capture list 
+
+    -> i. Eğer ilgili "lambda" ifadesi dışarıdan herhangi bir şey "capture" etmiyorsa, o "lamda" için "stateless" 
+    terimi kullanılır. Eğer en az bir şey "capture" ediyorsa da "statefull" ifadesi kullanılır. 
+    -> ii. C++20 ile eklenen bir öğedir. Özetle; derleyicinin yazdığı sınıfın ".operator()()" fonksiyonunu şablon 
+    fonksiyon olarak yazmasını sağlamak içindir. 
+    -> iii. Derleyicinin yazdığı ".operator()()" fonksiyonunun parametrelerini belirtmektedir. Eğer "iv." ve "v." 
+    kısımlar için bir şey yazmazsak ve o fonksiyon da parametre almayacaksa, buradaki parantezleri kullanmaya gerek 
+    yoktur. Öte yandan C++23 ile birlikte, yine "iv." ve "v." kısımlar için bir şey yazmasak fakat o fonksiyon parametre 
+    alsa, yine de buradaki parantezleri kullanmayabiliriz. 
+    -> iv. Belirtilen anahtar sözcükleri yazabileceğimiz kısım. 
+    -> v. Derleyicinin yazdığı ".operator()()" fonksiyonunun geri dönüş değerinin türünü belirttiğimiz kısımdır. Artık tür 
+    çıkarımı yapılmayacaktır, geri dönüş değeri için. 
+    -> vi. Derleyicinin yazdığı ".operator()()" fonksiyonunun ana bloğudur. 
+
+Şimdi de birkaç hatırlatıcı örneklere bakalım:
+    * Örnek 0,
+        #include <iostream>
+        #include <type_traits>
+
+        int g_x = 99;
+        auto fx = [=]{ return g_x + 1; };
+        auto fy = [g_x = g_x] { return g_x + 1; };
+
+        double i{};
+
+        int main()
+        {   
+            {
+                g_x = 500;
+                std::cout << fx() << '\n';
+                std::cout << fy() << '\n';
+            }
+            
+            puts("\n---");
+            
+            {
+                auto x = []{static int x{}; return ++x; };
+                auto y = []{static int x{}; return ++x; };
+                std::cout << x() << x() << x() << '\n';
+                std::cout << y() << y() << y() << '\n';
+            }
+            
+            puts("\n---");
+            
+            {
+                auto x = []{ static int x{}; return ++x; };
+                decltype(x) y;
+                decltype(x) z;
+                std::cout << y() << y() << y() << '\n';
+                std::cout << z() << z() << z() << '\n';
+            }
+            
+            puts("\n---");
+            
+            {
+                const int x = 10;
+                auto f = [x]()mutable{ ++x; };
+                /*        ^       ^
+                *         I       II 
+                *   ERROR: 
+                *   "I" demek "Copy Capture" demektir. Dolayısıyla
+                *   derleyicinin yazdığı sınıfın veri elemanı "const"
+                *   olmuştur. "II" deki "mutable" anahtar sözcüğü ise 
+                *   yine aynı sınıfın ".operator()()" fonksiyonunun 
+                *   "non-const" olması demektir. Sınıfın veri elemanı 
+                *   "const" olduğundan, onu değiştirmeye çalışmak
+                *   sentaks hatası olacaktır. 
+                */
+                
+                auto g = [x = x](){ ++x; };  
+                /*          ^
+                *           I 
+                *   ERROR:
+                *   "I" demek "Lambda Init. Capture" demektir. Derleyici
+                *   yazacağı sınıfa yeni bir veri elemanı koyacak ve onu 
+                *   da yukarıdaki "x" ile hayata getirecek. Burada yeni 
+                *   veri elemanı "const" DEĞİLDİR. Fakat sınıfın üye 
+                *   fonksiyonu olan ".operator()()" fonksiyonu "const"
+                *   olduğu için, "const" üye fonksiyon içerisinde sınıfın
+                *   veri elemanını değiştirmeye çalıştığımız için sentaks
+                *   hatası oluşacaktır. 
+                */
+                
+                auto h = [x = x]()mutable{ ++x; }; // OK 
+            }
+            
+            puts("\n---");
+            
+            {
+                int x = 4;
+                auto y = [x = x+1, &r = x](){
+                    r+=2;
+                    return x*x;
+                }();
+                
+                std::cout << "y : " << y << '\n';
+                std::cout << "x : " << x << '\n';
+            }
+            
+            puts("\n---");
+            
+            {
+                auto f = [](int x = ++g_x){ return x*x; };
+                auto x = f();
+                auto y = f();
+                std::cout << x << ' ' << y << ' ' << g_x << '\n';
+            }
+            
+            puts("\n---");
+            
+            {
+                auto f = [i = 0]()->decltype(i){ return 1; }();
+                std::cout << std::is_same_v<decltype(f), int>;
+            }
+            
+            puts("\n---");
+        }
+
+    * Örnek 1,
+        #include <iostream>
+
+        template<typename T, std::size_t N>
+        void my_lambda_handler(T f)
+        {
+            f(N);
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                961
+                
+                ---
+                961
+                
+                ---
+                169
+                
+                ---
+                false
+                true
+                
+                ---
+                
+                ---
+                
+                ---
+                11
+                11
+                12
+                11
+                12
+                13
+                
+                ---
+                10
+                35
+                
+                ---
+                1225
+                12.25
+                20.2
+            */
+            
+            {
+                [](int x){ std::cout << x*x << '\n'; }(31); // Immediately invoked function expression. 
+            }
+            
+            puts("\n---");
+            
+            {
+                /* const */ auto f = [](int x){ std::cout << x*x << '\n'; }; // Tavsiye edilen, "f" değişkeninin "const" olarak nitelenmesidir. 
+                f(31);
+            }
+            
+            puts("\n---");
+            
+            {
+                auto f = [](int x){ std::cout << x*x << '\n'; }; // Tavsiye edilen, "f" değişkeninin "const" olarak nitelenmesidir. 
+                my_lambda_handler<decltype(f), 13>(f);
+            }
+            
+            puts("\n---");
+            
+            {
+                auto f1 = [](){};
+                auto f2 = [](){};
+                std::cout << std::boolalpha << (std::is_same_v<decltype(f1), decltype(f2)>) << '\n';
+                auto f3 = f2;
+                std::cout << std::boolalpha << (std::is_same_v<decltype(f2), decltype(f3)>) << '\n';
+            }
+            
+            puts("\n---");
+            
+            {
+                auto f = [](int x){ return x*x; };  // "f" is of type "closure"
+                auto x = [](int x){ return x*x; }(45); // "x" is of type "int"
+            }
+            
+            puts("\n---");
+            
+            {
+                auto f = [](int x)->double{
+                    if(x < 10) return 5;
+                    else return 5.6; 
+                };
+                
+                /*
+                *   Eğer burada "Trailing Return Type" kullanmasaydık,
+                *   sentaks hatası oluşacaktı. Çünkü derleyici ilgili 
+                *   operator fonksiyonunun geri dönüş değeri için tür
+                *   çıkarımı yapmak istediğinde "ambiguity" oluşacaktır. 
+                *   Fakat artık fonksiyonun geri dönüş değeri "double"
+                *   türünden olacaktır. Burada "promotion" vs. söz 
+                *   konusu değildir. 
+                */
+            }
+            
+            puts("\n---");
+            
+            {
+                auto f1 = [](){
+                    static int x = 10;
+                    ++x;
+                    std::cout << x << '\n';
+                }; f1();
+                
+                auto f2 = [](){
+                    static int x = 10;
+                    ++x;
+                    std::cout << x << '\n';
+                }; f2(); f2();
+                
+                auto f3 = [](){
+                    static int x = 10;
+                    ++x;
+                    std::cout << x << '\n';
+                }; f3(); f3(); f3();
+            }
+            
+            puts("\n---");
+            
+            {   // Since C++14
+                auto f = [](int x = 10){
+                    std::cout << x << '\n';
+                }; f(); f(35);
+            }
+            
+            puts("\n---");
+            
+            {
+                // Since C++14 
+                auto f = [](auto x){ return x*x; };
+                std::cout << f(35) << '\n';
+                std::cout << f(3.5) << '\n';
+                
+                /*
+                *   Buradaki parantez içerisinde "auto" yazarak aslında derleyiciye
+                *   diyoruz ki ilgili ".operator()()" fonksiyonunu "Member Template"
+                *   olarak yaz. Yani fonksiyon artık bir fonksiyon şablonu olacaktır. 
+                *   Tabii fonksiyonun geri dönüş değeri de yine şablon parametresi "T"
+                *   olacaktır. Pekala bu "auto" anahtar kelimesi ile birlikte "&"
+                *   deklaratörünü ve "const" anahtar kelimesini de kullanabilirdik. 
+                */
+                
+                auto g = [](auto a, auto b){
+                    return a*b;
+                };
+                std::cout << g(10, 2.02) << '\n';
+            }
+        }
+
+    * Örnek 2,
+        #include <iostream>
+
+        int g = 5;
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            {
+                auto f = [](int x){
+                    return x * g;    
+                };
+                
+                std::cout << f(5) << '\n';
+                
+                /*
+                *   Burada "static" ömürlü nesneleri doğrudan yukarıdaki
+                *   gibi kullanabiliriz. Çünkü bu tip nesneleri "capture"
+                *   edemeyiz. Sentaks hatası alıp almamak önemli değildir. 
+                */        
+            }
+            
+            puts("-----\n");
+            
+            {
+                const int val{35};
+                auto f = [](int x){ return val + x; };      
+                
+                /*
+                *   Benzer şekilde "const" olan ve bir sabit ifadesi ile ilk değerini
+                *   alan yerel değişkenleri de "capture" etmeden kullanabiliriz.
+                *   "capture" etmeye kalkmamız durumunda sentaks hatası da oluşmayacaktır. 
+                */  
+            }
+            
+            puts("-----\n");
+            
+            {
+                int val{35};
+                //auto f = [](int x){ return val + x; };
+                
+                /*
+                *   Buradaki "val" değişkeni aslında "capture" EDİLMEMİŞTİR. 
+                */
+            }
+            
+            puts("-----\n");
+            
+            {
+                int a{}; double d{}; char c{}; float f{};
+                auto g = [a,d,c](int temp){ return a+d+c+temp;};
+                std::cout << g(100) << '\n';
+                /*
+                *   Burada sadece "a", "d" ve "c" değişkenleri "capture" edilmiştir. 
+                */
+            }
+            
+            puts("-----\n");
+            
+            {
+                int a{}; double d{}; char c{}; float f{};
+                auto g = [=](int temp){ return a+d+c+temp;};
+                std::cout << g(100) << '\n';
+                /*
+                *   Burada görülür bütün değişkenleri kopyalama yoluyla "capture"
+                *   edilmiştir. Fakat burada dikkatli olmamız gerekmektedir. 
+                */
+            }
+            
+            puts("-----\n");
+            
+            {
+                int a[4]{ 1,2,3,4 };
+                auto f = [a]{
+                    /*
+                    *   Burada "a" ismi bir gösterici değil, diziyi belirtmektedir. 
+                    *   "array-decay" MEYDANA GELMEMEKTEDİR. 
+                    */
+                    for(auto i : a) std::cout << i << ' ';
+                    std::cout << '\n';
+                }; f();
+                
+                // Since C++14
+                auto g = [x = a]{
+                    /*
+                    *   Fakat burada "x" ismi artık bir göstericidir. "x=a" ifadesine
+                    *   de "Lambda Init. Capture" denmektedir. Burada derleyicinin 
+                    *   yazdığı sınıfın veri elemanı olan "x", yukarıda dizi olarak 
+                    *   belirttiğimiz "a" ile ilk değerini almaktadır. 
+                    */
+                    std::cout << *(x + 0) << ' '
+                            << *(x + 1) << ' ' 
+                            << *(x + 2) << ' '
+                            << *(x + 3) << '\n'; 
+                }; g();
+            }
+            
+            puts("-----\n");
+            
+            {
+                int x = 50;
+                auto f = [x]{
+                    // x = 67; // Derleyicinin yazdığı ".operator()()" fonksiyonu bir "const"
+                            // üye fonksiyon olduğundan, bu atama sentaks hatasıdır. 
+                }; f();
+                
+                auto g = [x]()mutable{
+                    x = 67; // Artık derleyicinin yazmış olduğu ".operator()()" fonksiyonu
+                            // "const" bir üye fonksiyon değildir. 
+                }; g();
+                
+            }
+            
+            puts("-----\n");
+            
+            {
+                int x = 10;
+                auto f = [&x]{
+                    ++x;    // Artık burada "capture-by-reference" yöntemi uygulanmıştır.
+                            // Derleyicinin yazdığı sınıfın veri elemanı "int&" türden olup,
+                            // "x" nesnesine bir referanstır. Ayrıca ilgili ".operator()()"
+                            // fonksiyonu hala "const" bir fonksiyondur. Fakat bizler sınıfın 
+                            // veri elemanını değil, onun refere ettiği nesneyi değiştirdiğimiz
+                            // için HERHANGİ BİR SENTAKS HATASI SÖZ KONUSU DEĞİLDİR. 
+                }; f();     // Eğer buradaki çağrı ifadesi olmasaydı, "x" nesnesinin değeri 
+                            // DEĞİŞMEYECEKTİ. 
+            }
+            
+            puts("-----\n");
+            
+            {
+                int a{}; double d{}; char c{}; float f{};
+                auto f1 = [&a, &d, c, f]{
+                    // "a" ve "d" nesneleri "capture-by-reference"
+                    // "c" ve "f" neneleri "capture-by-copy"
+                };
+                
+                auto f2 = [=, &c] {
+                    // "c" nesnesi "capture-by-reference"
+                    // Görünür diğer nesneler "capture-by-copy"
+                }; 
+                
+                auto f3 = [=, &c, &d]{
+                    // "c" ve "d" nesneleri "capture-by-reference"
+                    // Görünür diğer nesneler "capture-by-copy"
+                };
+                
+                auto f4 = [&]{
+                    // Görünür bütün nesneler "capture-by-reference". 
+                };
+                
+                auto f5 = [&, a, d]{
+                    // "a" ve "d" nesneleri "capture-by-copy"
+                    // Görünür diğer nesneler "capture-by-reference"
+                };
+            }
+        }
+
+    * Örnek 3,
+        #include <iostream>
+
+        auto foo(int i)
+        {
+            /*  (I)
+            *   Burada bizler "capture-by-reference" yaptığımız
+            *   için arka plandaki sınıfın veri elemanı "int&"
+            *   olacaktır. 
+            */
+            return [&](int x){ return i*x; };
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("-----\n");
+            
+            {
+                auto f = foo(31);   // (II)
+                                    // Fakat programın akışı buraya geldiğinde 
+                                    // artık ilgili sınıf yok edileceği için 
+                                    // "dangling reference" oluşacaktır. 
+                                    
+                std::cout << f(10) << '\n'; // (III)
+                                            // Artık buradaki çağrı "Tanımsız Davranış"
+                                            // meydana gelecektir. 
+            }
+            
+            puts("-----\n");
+        }
+
+    * Örnek 4,
+        #include <iostream>
+        #include <memory>
+        #include <string>
+
+        struct Nec{
+            int mx{}, my{};
+            void foo()
+            {
+                int z = 5;
+                auto f = [](int val){
+                    return val * z; // "z" ismini "capture" etmemiz gerekiyor. 
+                };
+                
+                auto g = [/* this */](int val){
+                    return val * my; // "my" ismini bir şekilde "capture" etmemiz gerekiyor. 
+                };                   // Direkt olarak "[]" içerisine "my" yazarak da "capture"
+                                    // edemeyiz. Dolayısıyla "this" göstericisini "capture"
+                                    // etmeliyiz. Burada "this" göstericisini "capture-by-copy"
+                                    // veya "capture-by-reference" ile "capture" etmemiz arasında 
+                                    // bir fark yoktur. 
+                
+                auto h = [/* = */](int val){
+                    return val * mx; // "mx" ismini bir şekilde "capture" etmemiz gerekiyor. 
+                                    // Yukarıdaki "this" çözümüne alternatif olarak "capture-by-copy"
+                                    // yönmetini deneyebiliriz fakat bu yöntem C++20 ile "deprecated"
+                                    // edildi. Çünkü aynı zamanda "this" göstericisi de kopyalanacaktır. 
+                                    // Dolayısıyla "++mx" ifadesi ile aslında ben sınıfın veri elemanının 
+                                    // değerini de değiştirmiş olacağım, "this" de kopyalandığı için. Bu 
+                                    // da sınıfın semantik yapısını bozacaktır. Fakat "=" yerine pekala 
+                                    // "&" kullanabiliriz, o "deprecated" EDİLMEDİ. 
+                };
+                
+                /*  Özetle;
+                *   Yukarıdaki "lambda" ifadelerinde "[]" arasında "this" yazmakla "=" ve "&" yazmak
+                *   arasında hiç bir fark yoktur. Hepsinde de "this" göstericisi "capture" edilmektedir. 
+                *   Dolayısıyla "lambda" ifadesinin gövdesinde "mx" veya "my" değişkenlerinin değerini 
+                *   değiştirmek, gerçekten de bu değişkenlerin değerini değiştirecektir. 
+                */
+                
+                auto i = [copy_this = *this](){
+                    copy_this.mx = 100; // Artık buradaki "copy_this", "*this" nesnesinin bir kopyası olacaktır. 
+                                        // Dolayısıyla bizler kopya üzerinde işlem yapmış olacağız. Fakat C++17
+                                        // ile birlikte "copy_this = *this" yerine sadece "*this" yazmamız da 
+                                        // yeterli gelecektir. 
+                };
+            }
+            
+            auto func()
+            {
+                auto f = [/* copy_this = *this */]{
+                    //...
+                };
+                
+                /*
+                *   Şimdi böyle yaparsak, "this" göstericisi "capture" edileceği için
+                *   "Dangling Reference" oluşacaktır. Dolayısıyla bizler doğru bir şekilde
+                *   "capture" yapabilmek için "copy_this = *this" ifadesini kullanmalıyız. 
+                */
+                
+                return f;
+            }
+        };
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+
+                -----
+                dolu
+                bos
+                
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto uptr = std::make_unique<std::string>(10'000, 'a');
+                //auto f = [uptr]{
+                    // "std::unique_ptr" nesneleri kopyalamaya karşı 
+                    // kapalı olması hasebiyle "capture-by-copy" yapılması
+                    // sentaks hatası oluşturacaktır. 
+                //};
+                
+                auto g = [&uptr]{
+                    // "uptr" nesnesi "capture-by-reference" edilmiştir. 
+                }; g();
+                
+                std::cout << ( uptr ? "dolu" : "bos" ) << '\n';
+                
+                auto h = [uptr = std::move(uptr)]{
+                    // Burada ise taşıma semantiği uygulanmıştır. "std::move"
+                    // fonksiyonuna argüman olan isim "std::make_unique"
+                    // fonksiyonunun geri dönüş değerini sakladığımız isim
+                    // olurken, eşitliğin sol tarafındaki isim ise derleyicinin
+                    // yazdığı sınıfın veri elemanının ismi olacaktır.
+                }; h();
+                
+                std::cout << ( uptr ? "dolu" : "bos" ) << '\n';
+            }
+            
+            puts("\n-----");
+            
+            {
+                const int c = 41;
+                auto f = [c = c]()mutable{
+                    ++c; // Yukarıdaki "Lambda Init. Capture" ile artık arka
+                        // plandaki sınıfın veri elemanı "const" DEĞİL.
+                        // "mutable" anahtar sözcüğünden dolayı da yine sınıfın 
+                        // ".operator()()" fonksiyonu da "const" DEĞİL.
+                        // Dolayısıyla böyle bir çağrı sentaks hatası DEĞİLDİR.
+                };
+            }
+            
+            puts("\n-----");
+            
+            {
+                
+            }
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        #include <memory>
+        #include <string>
+
+        auto func()
+        {
+            auto f = [](auto&& ...args){
+                
+            };
+            
+            return f;
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto f = func(); f();
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto f = [](int x){ return x*5; }; // "Lambda" ifadeleri, şartlara sağlıyorsa,
+                                                // "constexpr" olarak betimlenirler velevki 
+                                                // bizler özel olarak "constexpr" anahtar 
+                                                // kelimesini kullanmamış olalım. C++17 ile
+                                                // birlikte bu özellik dile eklenmiştir. 
+                                                
+                constexpr auto val1 = f(12); // "val" değişkeninin değeri derleme zamanında hesap
+                                            // edilmiş olacaktır. 
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto g = [](int x){
+                    static int cnt{};
+                    ++cnt;
+                    return x*cnt;
+                }; // Gövdesinde "static" ömürlü nesne taşıdığı için artık "constexpr" DEĞİL. 
+                
+                constexpr auto val2 = g(12); // Dolayısıyla burada sentaks hatası meydana gelecektir.
+                auto val3 = g(12); // Ama burası hala OK. 
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto g = [](int x)constexpr{
+                    static int cnt{};
+                    ++cnt;
+                    return x*cnt;
+                }; // "constexpr" olma koşulu çiğnendiği için artık sentaks hatası burada meydana gelecektir. 
+                
+                auto val3 = g(12);
+            }
+        }
+
+    * Örnek 6,
+        #include <iostream>
+        #include <array>
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto fsquare = [](auto val){ return val*val; }; // I 
+                std::array<int, fsquare(5)> a1; 
+                std::cout << a1.size() << '\n';
+                
+                auto f1 = [](int x){    // II
+                    static int cnt = 0;
+                    ++cnt;
+                    return x*cnt;
+                };
+                // std::array<int, f1(10)> a2; // ERROR: call to non-‘constexpr’ function
+                std::cout << f1(20) << '\n';
+                
+                auto f2 = [](int x)constexpr{   // III 
+                    static int cnt = 0; // ERROR: ‘cnt’ declared ‘static’ in ‘constexpr’ function
+                    ++cnt;
+                    return x*cnt;
+                };
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 7,
+        #include <iostream>
+        #include <array>
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto f = [](int x){ return x*x; };
+                std::boolalpha(std::cout);
+                constexpr auto b = noexcept(f(345)); // Buradaki "f" bir "constexpr" fakat "noexcept" DEĞİL.
+                                                    // Çünkü varsayılan durumda "noexcept" olarak NİTELENMEMEKTE.
+                std::cout << b << '\n';
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 8,
+        #include <iostream>
+        #include <functional>
+
+        void* operator new(std::size_t sz)
+        {
+            std::cout << "operator new called. size: " << sz << '\n';
+            if(sz == 0) ++sz;
+            if(void* ptr = std::malloc(sz)) return ptr;
+            throw std::bad_alloc{};
+        }
+
+        class Myclass{
+            public:
+            unsigned char buffer[512]{};
+        };
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto fn = [](double d ){ return d*d+3; };
+                std::cout << "Sizeof : " << sizeof(decltype(fn)) << '\n'; // Sizeof: 1
+                std::function f = fn; // After CTAD
+                // std::function<double(double)> f = fn; // Before CTAD
+                std::cout << "Sizeof : " << sizeof(f) << '\n';  // Sizeof : 32
+                std::cout << fn(5.863) << ' ' << f(5.863) << '\n'; // 37.3748 37.3748
+            }
+            
+            puts("\n-----");
+            
+            {
+                Myclass m;
+                auto fn = [m](double d ){ return d*d+.3; };
+                std::cout << "Sizeof : " << sizeof(decltype(fn)) << '\n'; // Sizeof : 512
+            }
+            
+            puts("\n-----");
+            
+            {
+                Myclass m;
+                auto fn = [m](double d ){ return d*d+.3; };
+                std::function f = fn; // // operator new called. size: 512
+                std::cout << "Sizeof : " << sizeof(f) << '\n';  // Sizeof : 32        
+            }
+        }
+
+    * Örnek 9,
+        #include <iostream>
+        #include <vector>
+        #include <list>
+        #include <utility>
+        #include <string>
+        #include <algorithm>
+        #include "MyUtility.h"
+
+        using namespace MyUtility::Utility;
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto get_size = [](const auto& c){
+                    return std::size(c);
+                };
+                
+                std::vector<int> ivec(30);
+                std::list my_list{ 34.43, 56.65 };
+                int ar[20]{ 100 };
+                std::cout << get_size(ivec) << ' ' << get_size(my_list) << ' ' << get_size(ar) << '\n';
+            }
+            
+            puts("\n-----");
+            
+            {
+                std::vector<std::pair<std::string, std::string>> pvec;
+                for(std::size_t i = 0; i < 1000; ++i){
+                    pvec.emplace_back(std::pair{ rname(), rtown() });
+                }
+                
+                std::sort(
+                    pvec.begin(), 
+                    pvec.end(), 
+                    // [](const auto& x, const auto& y) {
+                    [](const std::pair<std::string, std::string>& x, const std::pair<std::string, std::string>& y){ 
+                        return std::pair{x.second, x.first} < std::pair{y.second, y.first}; 
+                    }
+                );
+                
+                for(const auto& [name, town]: pvec){
+                    std::cout << name << ' ' << town << '\n';
+                }
+            }
+        }
+
+    * Örnek 10,
+        #include <iostream>
+        #include <string>
+        #include <memory>
+        #include <algorithm>
+        #include <vector>
+
+        void f1(std::vector<std::shared_ptr<std::string>>& svec)
+        {
+            std::sort(
+                begin(svec), 
+                end(svec), 
+                [](const std::shared_ptr<std::string>& a, const std::shared_ptr<std::string>& b){ return *a < *b; }
+            );
+            for_each(
+                begin(svec), 
+                end(svec), 
+                [](const std::shared_ptr<std::string>& sp){ std::cout << *sp << '\n'; }
+            );
+            std::cout << '\n' << '\n';
+        }
+
+        void f2(std::vector<std::shared_ptr<std::string>>& svec)
+        {
+            std::sort(begin(svec), end(svec), [](const auto& a, const auto& b){ return *a < *b; });
+            for_each(begin(svec), end(svec), [](const auto& sp){ std::cout << *sp << '\n'; });
+            std::cout << '\n' << '\n';
+        }
+
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                std::vector<std::shared_ptr<std::string>> svec;
+                svec.emplace_back(new std::string{"yesim"});
+                svec.push_back(std::make_shared<std::string>("berk"));
+                svec.emplace_back(new std::string{"alican"});
+                
+                f1(svec);
+                f2(svec);
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 11,
+        #include <iostream>
+        #include <string>
+        #include <memory>
+        #include <algorithm>
+        #include <vector>
+
+        void foo(std::string&) { std::cout << "L-Value Reference\n"; }
+        void foo(const std::string&) { std::cout << "const L-Value Reference\n"; }
+        void foo(std::string&&) { std::cout << "R-Value Reference\n"; }
+
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto fn = [](auto&& s){
+                    foo(std::forward<decltype(s)>(s));
+                };   
+                
+                std::string name{"ali"};
+                fn(name);   // L-Value Reference
+                
+                const std::string surname{"veli"};
+                fn(surname);    // const L-Value Reference
+                
+                fn(std::move(name + surname));  // R-Value Reference
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 12,
+        #include <iostream>
+        #include <string>
+        #include <memory>
+        #include <algorithm>
+        #include <vector>
+
+        template<typename ...Args>
+        void print(Args&& ...args)
+        {
+            std::initializer_list<int>{((std::cout << std::forward<Args>(args) << '\n'), 0)...};  
+        }
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                print(2, 5.6, "aylin", std::string{"mustafa"});
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto fn = [](auto&& ...args){
+                    print(std::forward<decltype(args)>(args)...);
+                }; fn(std::string{"mustafa"}, "aylin", 6.5, 2);
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 13,
+        #include <iostream>
+        #include <string>
+        #include <memory>
+
+        struct Baz{
+            std::string m_s;
+            auto foo()const
+            {
+                return [t_s=m_s]{ std::cout << t_s << '\n'; };
+            }
+        };
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                const auto f1 = Baz{"abc"}.foo();
+                const auto f2 = Baz{"xyz"}.foo();
+                
+                f1();
+                f2();
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 14,
+        #include <iostream>
+        #include <string>
+        #include <vector>
+        #include <algorithm>
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                std::vector<std::string> svec(1000);
+                
+                //...
+                
+                std::string name{ "ahmet" };
+                
+                std::find_if(svec.begin(), svec.end(), [&name](const std::string& s){ return s == name + "can"; });
+                /*
+                *   Burada döngünün her bir turu için "name" nesnesi ile "can" toplanacaktır.  
+                */
+                
+                std::find_if(svec.begin(), svec.end(), [name = name + "can"](const std::string& s){ return s == name; });
+                /*
+                *   Burada ise yukarıdaki toplama işlemi sadece bir kez yapılacaktır. Böylelikle ciddi bir verim kaybının
+                *   önüne geçilmiş olabilir. 
+                */
+                
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 15,
+        #include <iostream>
+        #include <string>
+        #include <vector>
+        #include <algorithm>
+        #include <type_traits>
+
+        template<typename F>
+        void func(F&& f)
+        {
+            if constexpr (std::is_nothrow_invocable_v<F, int>)
+                std::cout << "no throw!\n";
+            else
+                std::cout << "may throw!\n";
+        }
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto fn = [](int x){ return x*5; };
+                func(fn);
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto fn = [](int x)noexcept{ return x*5; };
+                func(fn);
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 16,
+        #include <iostream>
+
+        // A C-API 
+        void foo(int(*func_ptr)(int))
+        {
+            std::cout << func_ptr(30) << '\n';
+        }
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto fn = [](int x){ return x*5; }; // It must be a "Stateless Lambda".
+                int(*fn_ptr)(int) = fn; // "Stateless Lambdas" can be converted to function addresses implicitly. 
+                std::cout << fn_ptr(30) << ' ' << fn(30) << '\n'; 
+            }
+            
+            puts("\n-----");
+            
+            {
+                foo([](int x){ return x*5; });
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 17.0, Anımsanacağı üzere işaret operatörü "+", bir ifade içerisinde kullanıldığında o ifade "L-Value" değil,
+    "R-Value" olur. Aynı zamanda bu operatör "integral promotion" a neden olmaktadır. Bir diğer özellik ise bu operatörün 
+    operandı bir gösterici olabilmektedir. Bu da şöyle bir deyimin kapısını aralamaktadır: 
+
+        -> "Stateless Lambda" ifadeler, "function pointer" türüne dönüşmektedir. Eğer bizler "stateless lambda" ifadelerini 
+        işaret operatörü "+" nın operandı yaparsak, derleyici bu durumda "explicit" olmayan tür dönüştürme operatör fonksiyonunu
+        çağırması gerekmektedir.
+        
+    Bu durumda da "stateless lambda" ifadesi karşılığı yazılan sınıfın fonksiyon göstericisine dönüştüren tür dönüştürme operatör
+    fonksiyonu çağrılacaktır. Dolayısıyla işaret operatörünün operandı bir "stateless lambda" olduğunda, arka planda fonksiyon
+    göstericisine dönüştüren tür dönüştürme operatör fonksiyonu çağrılacaktır. 
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                auto fn = [](int x){ return x*5; }; // "fn" is of "closure type". 
+                auto fp = +[](int x){ return x*5; }; // "fp" is a function pointer now. 
+                // int (*fp)(int) = +[](int x){ return x*5; };
+            }
+            
+            puts("\n-----");
+        }
+
+    Böylelikle bir ifadeyi ister "closure type" ister "function pointer" olarak kullanma hakkı elde etmiş oluyoruz. Benzer mekanizma 
+    "template" ler söz konusu olduğunda da işletilmektedir. Şöyleki:
+
+        #include <iostream>
+        template<typename T>
+        void func(T x)
+        {
+            if constexpr (std::is_same_v<T, int(*)(int)>)
+                std::cout << "Type: function pointer\n";
+            else
+                std::cout << "Type: Closure\n";
+        }
+
+        int main()
+        {   
+            puts("\n-----");
+            
+            {
+                func([](int i){ return i*i; });     // Type: Closure
+                func(+[](int i){ return i*i; });    // Type: function pointer
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 17.1,
+        #include <iostream>
+        #include <string>
+        #include <map>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+
+                -----
+                0x55f8181142e0, 0x55f818114300
+                0x55f818114380, 0x55f8181143a0
+                0x55f818114330, 0x55f818114350
+                
+                -----
+                0x7ffdb7a45f80, 0x7ffdb7a45fa0: one = 1
+                0x7ffdb7a45f80, 0x7ffdb7a45fa0: three = 3
+                0x7ffdb7a45f80, 0x7ffdb7a45fa0: two = 2
+                
+                -----
+                0x55f8181142e0, 0x55f818114300: one = 1
+                0x55f818114380, 0x55f8181143a0: three = 3
+                0x55f818114330, 0x55f818114350: two = 2
+                
+                -----
+            */
+            
+            puts("\n-----");
+            
+            std::map<std::string, int> numbers{
+                {"one", 1}, {"two", 2}, {"three", 3}  
+            };
+            
+            // Print Addresses
+            for(auto mit = numbers.cbegin(); mit != numbers.cend(); ++mit)
+                std::cout << &mit->first << ", " << &mit->second << '\n';
+                
+            puts("\n-----");
+
+            {
+                /*  Each time entry is copied from pair<const string, int>!
+                *   Bunun yegane sebebi, "std::map" içerisinde "std::pair"
+                *   öğeleri şu şekilde tutulmaktadır: std::pair<const Key, T>
+                *   Fakat bizler ilgili "callable" için "const std::pair<std::string, int>&"
+                *   bildirdiğimiz için arka planda "std::pair" için bir kopyalama
+                *   gerçekleşmektedir. 
+                */
+                std::for_each(
+                    std::begin(numbers), 
+                    std::end(numbers), 
+                    [](const std::pair<std::string, int>& entry){
+                        std::cout << &entry.first << ", "
+                                << &entry.second << ": " 
+                                << entry.first << " = " 
+                                << entry.second << '\n';
+                    }
+                );
+            }
+            
+                puts("\n-----");
+            
+            {
+                /*  This time entries are not copied, they have the same addresses.
+                *   Artık "auto" kullandığımız için doğru şekilde tür çıkarımı
+                *   yapılmaktadır. 
+                */
+                std::for_each(
+                    std::begin(numbers), 
+                    std::end(numbers), 
+                    [](const auto& entry){
+                        std::cout << &entry.first << ", "
+                                << &entry.second << ": " 
+                                << entry.first << " = " 
+                                << entry.second << '\n';
+                    }
+                );  
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 18, "IIFE: Immediately Invoked Function Expression": 
+        #include <iostream>
+        #include <string>
+        #include <map>
+
+        int func(int a, int b)
+        {
+            int value = a*b;
+            //...
+            return value;
+        }
+
+        int main()
+        {   
+            puts("\n-----");
+
+            {
+                /*
+                *   "const" nesneleri çöp değer ile hayata getiremiyoruz ve bu nesnelere 
+                *   ilk değer verirken de bir takım hesaplamaların yapılmasını istiyoruz. 
+                */
+                int a = 34;
+                int b = 43;
+                const int c = [=]{
+                    int value = a*b;
+                    //...
+                    return value;
+                }();
+                std::cout << "<" << a << "," << b << "," << c << ">\n"; // <34,43,1462>
+            }
+            
+            puts("\n-----");
+            
+            {
+                int a = 34;
+                int b = 43;
+                const int c = func(a, b);
+                std::cout << "<" << a << "," << b << "," << c << ">\n"; // <34,43,1462>
+            }
+        }
+
+    * Örnek 19, "IIFE: Immediately Invoked Function Expression": 
+        #include <iostream>
+
+        struct Foo{
+            int baz; 
+            Foo(int bar) : baz{
+                [&]{ /* Complex Init. of "baz". */ }()
+            }{}
+        };
+
+        int main()
+        {   
+            //...
+        }
+
+    * Örnek 20,
+        #include <iostream>
+        #include <functional>
+
+        int main()
+        {   
+            int x = 6, y = 12;
+            
+            puts("\n-----");
+
+            {
+                const int a = std::invoke(
+                    [&]{
+                    //...
+                    auto value = x+y;
+                    ++value;
+                    return value;
+                    }
+                );
+                std::cout << "a : " << a << '\n';
+            }
+            
+            puts("\n-----");
+            
+            {
+                const int a = [&]{
+                    //...
+                    auto value = x+y;
+                    ++value;
+                    return value;
+                }();
+                std::cout << "a : " << a << '\n';        
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 21,
+        #include <iostream>
+        #include <functional>
+
+        class Nec{
+            public:
+                Nec()
+                {
+                    // Bu "static" değişken yalnızca sınıfın "ctor." fonksiyonu çağrıldığında
+                    // hayata gelecektir. "static" olması hasebiyle de yalnızca bir defa hayata 
+                    // gelecektir. Ayrıca "thread_safe". 
+                    static auto _{
+                        [](){ std::cout << "Bu kod yalnizca bir kez calistirilmali.\n"; return 0; }()
+                    };
+                }
+        };
+
+        int main()
+        {   
+            puts("\n-----");
+
+            {
+                Nec m1, m2, m3, m4; 
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 22,
+        #include <iostream>
+        #include <vector>
+        #include <algorithm>
+        #include <cstdio>
+
+        int f(int) { putchar('i'); return 13; }
+        int f(double) { putchar('d'); return 1.3; }
+        int f(long) { putchar('l'); return 13l; }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                
+                -----
+                
+                -----
+                iiiiiiiiii
+                -----
+                iiiiiiiiii
+                -----
+                iiiiiiiiii
+                -----
+            */
+            
+            puts("\n-----");
+
+            std::vector<int> xvec(10, 3);
+            std::vector<int> yvec(10);
+            
+            /*
+            *   Aşağıdaki "transform" fonksiyonları, ilk iki argümanın oluşturduğu "range"
+            *   içerisindeki öğeleri, dördüncü argümanındaki "callable" nesnesinde gönderip,
+            *   geri dönüş değerlerini de üçüncü argümandaki "range" içerisine yazmaktadır.   
+            */
+            
+            {
+                // I: error: no matching function for call to
+                // ‘transform(std::vector::iterator, std::vector::iterator, std::vector::iterator, )’    
+                // Yani "overload resolution" YAPILAMAMAKTADIR. 
+                // std::transform(xvec.begin(), xvec.end(), yvec.begin(), f);         
+            }
+            
+            puts("\n-----");
+            
+            {
+                // II: "callable" için, fonksiyonun adresini, çağrılmasını istediğimiz fonksiyonun
+                // adresine dönüştürmemiz gerekmektedir.
+                std::transform(xvec.begin(), xvec.end(), yvec.begin(), static_cast<int(*)(int)>(f));        
+            }
+            
+            puts("\n-----");    
+            
+            {
+                // III: "callable" için, fonksiyonun adresini, çağrılmasını istediğimiz fonksiyonun
+                // adresine dönüştürmemiz gerekmektedir. Burada ise "C-Style Casting" uygulanmıştır. 
+                std::transform(xvec.begin(), xvec.end(), yvec.begin(), (int(*)(int))f);
+            }
+            
+            puts("\n-----");
+            
+            {
+                // IV: "callable" için direkt olarak bir "generic lambda" ifadesinin kullanılmasıdır. 
+                std::transform(xvec.begin(), xvec.end(), yvec.begin(), [](auto a){ return f(a); });
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 23,
+        #include <iostream>
+        #include <vector>
+        #include <algorithm>
+        #include <cstdio>
+
+        void f(int) { putchar('i'); }
+        void f(double) { putchar('d'); }
+        void f(long) { putchar('l'); }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+
+                -----
+                
+                -----
+                iiiiiiiiiiiiiiiiiiii
+                -----
+                iiiiiiiiiiiiiiiiiiii
+                -----
+                iiiiiiiiiiiiiiiiiiii
+                -----
+            */
+            
+            puts("\n-----");
+
+            std::vector<int> xvec(20);
+            
+            /*
+            *   Aşağıdaki "transform" fonksiyonları, ilk iki argümanın oluşturduğu "range"
+            *   içerisindeki öğeleri, dördüncü argümanındaki "callable" nesnesinde gönderip,
+            *   geri dönüş değerlerini de üçüncü argümandaki "range" içerisine yazmaktadır.   
+            */
+            
+            {
+                // I: error: no matching function for call to 
+                // ‘for_each(std::vector::iterator, std::vector::iterator, )’  
+                // Yani "overload resolution" YAPILAMAMAKTADIR. 
+                // std::for_each(std::begin(xvec), std::end(xvec), f);         
+            }
+            
+            puts("\n-----");
+            
+            {
+                // II: "callable" için, fonksiyonun adresini, çağrılmasını istediğimiz fonksiyonun
+                // adresine dönüştürmemiz gerekmektedir.
+                std::for_each(std::begin(xvec), std::end(xvec), static_cast<void(*)(int)>(f));        
+            }
+            
+            puts("\n-----");    
+            
+            {
+                // III: "callable" için, fonksiyonun adresini, çağrılmasını istediğimiz fonksiyonun
+                // adresine dönüştürmemiz gerekmektedir. Burada ise "C-Style Casting" uygulanmıştır. 
+                std::for_each(std::begin(xvec), std::end(xvec), (void(*)(int))f);
+            }
+            
+            puts("\n-----");
+            
+            {
+                // IV: "callable" için direkt olarak bir "generic lambda" ifadesinin kullanılmasıdır. 
+                std::for_each(std::begin(xvec), std::end(xvec), [](auto a){ return f(a); });
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 24, C++20 ile birlikte "Stateless Lambda" ifadeleri ile oluşan sınıfların "default ctor." ve 
+    "copy assignment" fonksiyonları "delete" olmaktan çıkmıştır. Yine "Unevaluated Context" içerisinde 
+    "Stateless Lambda" kullanımı mümkün kılınmıştır. Fakat "Statefull Lambda" ifadeleri her iki kullanımda
+    biçiminde de sentaks hatasına yol açmaktadır.  
+        #include <iostream>
+        #include <vector>
+        #include <algorithm>
+        #include <cstdio>
+        #include <set>
+        #include <functional>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto f = [](int x){ return x*5; }; // A "Stateless Lambda"
+                auto g = f;                        // Legal
+                decltype(f) x;                     // ERROR until C++20: "Default Ctor." is "deleted". Since C++20, it is legal. 
+                f = g;                             // ERROR until C++20: "Copy Assignment Opt." is "deleted". Since C++20, it is legal.
+            }
+            
+            puts("\n-----");
+            
+            {
+                std::set<int> x;
+                // std::set<int, std::less<int>> x; 
+                std::set<int, std::greater<int>> y;
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto f = [](int a, int b){ return std::abs(a) < std::abs(b); }; // A "Stateless Lambda"
+                
+                {
+                    // Until C++20
+                    std::set<int, decltype(f)> z(f);             
+                }
+                
+                {
+                    // Since C++20
+                    std::set<int, decltype(f)> q;             
+                }
+
+                /*
+                *   Arka planda "std::set" sınıfının "ctor." fonksiyonu, ilgili
+                *   "closure type" sınıfının "default ctor." fonksiyonunu çağırmakta. 
+                *   Fakat C++20 öncesinde bu fonksiyon "delete" edildiğinden sentaks 
+                *   hatası oluşacaktır. Dolayısıyla C++20 öncesinde "copy ctor."
+                *   fonksiyonuna çağrı yapılması gerekmektedir. C++20 ile birlikte
+                *   "closure type" sınıfının "default ctor." fonksiyonu çağrılabilir 
+                *   olduğu için, "copy ctor." fonksiyonuna çağrıda bulunma zorunluluğu 
+                *   ortadan kalkmıştır. Tabii bu sadece "set" sınıfı için de geçerli 
+                *   değil, "map" ve benzeri sınıflar için de geçerlidir. 
+                */
+            }
+            
+            puts("\n-----");
+            
+            {
+                int x{};
+                //auto f = [x](int a, int b){ return std::abs(a) < std::abs(b); }; // (*)
+                //std::set<int, decltype(f)> z(f);    
+                //std::set<int, decltype(f)> q; 
+                
+                /* 
+                *   "f" bir "Stateless Lambda" olmadığı için C++20'de bile sentaks hatasıdır.
+                */
+            }
+            
+            puts("\n-----");
+            
+            {
+                int xxx{};
+                constexpr auto sz = sizeof([xxx](int x){ return x*5; });  
+                std::cout << sz << '\n';
+                /*
+                *   C++20 ile birlikte yukarıdaki "Lambda" ifadesi sentaks hatası
+                *   olmaktan çıkmıştır. Burada hem "Stateless" hem de "Statefull"
+                *   olacak şekilde kullanabiliriz. 
+                */
+                
+                decltype([xxx](int x){ return x*5; }) f;
+                std::cout << f(213) << '\n';
+                /*
+                *   Böylesi bir kullanım ise, "Stateless Lambda" olmadığı için, C++20'de 
+                *   bile sentaks hatasıdır. 
+                */
+            }
+            
+            puts("\n-----");
+            
+            {
+                // Since C++20
+                std::set<int, decltype([](int a, int b){ return a>b; })> my_set{ 4, 7, 2, 4, 1, 9, 3, 34 };
+            }
+        }
+
+    * Örnek 25,
+        #include <iostream>
+        #include <memory>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+
+                -----
+                0x55f70b81e2c0 adresindeki nesne siliniyor...
+                
+                -----
+                0x55f70b81e2c0 adresindeki nesne siliniyor...
+                
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                // Until C++20 
+                auto f = [](int* ptr){ std::cout << ptr << " adresindeki nesne siliniyor...\n"; delete ptr; };
+                std::unique_ptr<int, decltype(f)> u_ptr{ new int{123}, f }; 
+            }
+            
+            puts("\n-----");
+            
+            {
+                // Since C++20
+                std::unique_ptr<int, decltype([](int* ptr){ std::cout << ptr << " adresindeki nesne siliniyor...\n"; delete ptr; })> u_ptr{ new int{123} };
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 26,
+        #include <iostream>
+        #include <string>
+        #include <set>
+
+        template<typename C>
+        void print(const C& con)
+        {
+            for(const auto& elem: con)
+                std::cout << elem << " ";
+                
+            std::cout << '\n';
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                -----
+                ayse bilal cemil murat nur sumeyye zehra 
+                zehra sumeyye nur murat cemil bilal ayse 
+                nur ayse zehra sumeyye 
+                -75 -8 -5 -3 9 12 40 77 
+                -3 -5 -8 9 12 40 -75 77 
+                
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                std::set<std::string> names = { "ayse", "zehra", "murat", "bilal", "sumeyye", "nur", "cemil" };
+                print(names);
+                
+                using gset = std::set<std::string, decltype([](const auto& l, const auto& r){ return l > r; })>;
+                gset gnames = { "ayse", "zehra", "murat", "bilal", "sumeyye", "nur", "cemil" };
+                print(gnames);
+                
+                using lenset = std::set<std::string, decltype([](const auto& l, const auto& r){ return l.size() < r.size(); })>;
+                lenset namelens = { "ayse", "zehra", "murat", "bilal", "sumeyye", "nur", "cemil" };
+                print(namelens);
+                
+                std::set<int> iset = { 9, -3, 12, -5, 40, -8, 77, -75 };
+                print(iset);
+                
+                using abs_set = std::set<int, decltype([](const auto& l, const auto& r){ return std::abs(l) < std::abs(r); })>;
+                abs_set abs_values = { 9, -3, 12, -5, 40, -8, 77, -75 };
+                print(abs_values);
+                
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 27,
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto f = [](int a) [[nodiscard]] { return a*a; }; // "attribute" nesnesini bu şekilde kullanmak hala sentaks hatasıdır. 
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 28,
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("\n-----");
+            
+            {
+                int x{ 31 };
+                auto f = [x]mutable{ return ++x; }; // Since C++23
+                                                    // "mutable", "trailing return type", "noexcept" vb. şeyler kullandığımız zaman
+                                                    // "()" çiftini yazmak zorundayız. Fakat böyle şeyler kullanmıyorsak
+                                                    // ve fonksiyon da argüman almayacaksa, "()" çiftini yazmamıza lüzum
+                                                    // yoktur. C++23 ile aslında "mutable", "trailing return type" gibi 
+                                                    // şeyler kullanıyorsak fakat fonksiyon argüman almıyorsa, "()" yazmaya 
+                                                    // gerek kalmamıştır. 
+                                                    
+                auto g = [x]()mutable{ return ++x; };
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 29, "Familiar Template Syntax": C++20 ile gelen ve "Generic Lambda" ifadelerinde şablon parametresini 
+    doğrunda "template" sentaksı ile yazılabilmesidir. 
+        #include <iostream>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                
+                -----
+                
+                -----
+                3
+                3.5
+                3
+                3.5
+                3
+                
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                int x{ 31 };
+                // Fonksiyon şablonlarında olan özellikleri arık "lambda" ifadelerinde de kullanabiliriz. 
+                auto f = [] /* typename, class T */ ( /* T x */ ) /* constexpr, mutable, <trailing return type>, noexcept, consteval */ {}; 
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto f1 = [](int x, int y){ return x+y; };
+                std::cout << f1(2, 1.5) << '\n';  // "Narrowing Conversion" from "double" to "int".
+                
+                auto f2 = [](auto x, auto y){ return x+y; };
+                std::cout << f2(2, 1.5) << '\n';
+                
+                auto f3 = [](auto x, decltype(x) y){ return x+y; };
+                std::cout << f3(2, 1.5) << '\n';
+                
+                auto f4 = []<typename T>(T x, T y){ return x+y; };
+                //std::cout << f4(2, 1.5) << '\n'; // ERROR: (ambiguity) no match for call to ‘(main()::) (int, double)’
+                std::cout << f4(2., 1.5) << '\n';
+                std::cout << f4(2, 1) << '\n';
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 30,
+        #include <iostream>
+        #include <vector>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                -----
+                100
+                100
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto fn = []<typename T>(const std::vector<T>& vec){
+                    return vec.size();
+                };
+                
+                std::vector<int> ivec(100, 0);
+                std::vector<double> dvec(100, 0.);
+                //...
+                std::cout << fn(ivec) << '\n';
+                std::cout << fn(dvec) << '\n';
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 31,
+        #include <iostream>
+        #include <vector>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                -----
+                100
+                100
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto fn = []<typename T>(const std::vector<T>& vec, const std::vector<T>& y){
+                    return vec.size() < y.size();
+                };
+                
+                std::vector<int> ivec(100, 0);
+                std::vector<double> dvec(100, 0.);
+                //std::cout << std::boolalpha << fn(ivec, dvec) << '\n'; // ambiguity
+                std::vector<int> ivecc(1000, 0);
+                std::cout << std::boolalpha << fn(ivec, ivecc) << '\n'; // true
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 32,
+        #include <iostream>
+        #include <vector>
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                -----
+                11 12 13 16 19 18 17 14 15 
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto fn = []<class T, int n>(T(&ra)[n]){
+                    for(auto& t : ra)
+                        t += 10;
+                };
+                
+                int a[]{ 1, 2, 3, 6, 9, 8, 7, 4, 5 };
+                
+                fn(a);
+                
+                for(auto i : a) std::cout << i << ' ';
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 33,
+        #include <iostream>
+
+        template<typename T>
+        void foo(T)
+        {
+            std::cout << typeid(T).name() << '\n';
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+                -----
+                d
+                i
+                i
+                
+                -----
+                d
+                i
+                i
+                
+                -----
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto fn = [](auto&& x){
+                    foo(std::forward<decltype(x)>(x));
+                }; 
+                
+                fn(3.1);
+                int x{ 31 }; fn(x);
+                fn(std::move(x));
+            }
+            
+            puts("\n-----");
+            
+            {
+                
+                auto gn = []<typename T>(T&& x){
+                    foo(std::forward<T>(x));
+                };
+                
+                gn(3.1);
+                int x{ 31 }; gn(x);
+                gn(std::move(x));
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 34,
+        #include <iostream>
+        #include <vector>
+        #include <utility>
+
+        template<typename ...Args>
+        void foo(Args&& ...args);
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("\n-----");
+            
+            {
+                auto fpush = []<typename T>(std::vector<T>& x, const T& value){
+                    x.push_back(value);
+                };
+                std::std::vector<int> ivec;
+                fpush(ivec, 20);
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto call_foo = []<typename ...Args>(Args&& ...args) {
+                    foo(std::forward<Args>(args)...);
+                };
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto fn = [](auto x){ return x*x; };
+                fn.operator()<double>(3); // ".operator()" fonksiyonu için tür çıkarımı "double" 
+                                        // yönünde yapılacak fakat argüman olarak "3" değeri 
+                                        // gönderilecektir. 
+            }
+            
+            puts("\n-----");
+            
+            {
+                auto fn = []<int n>(){
+                    int a[n];
+                    return a;
+                };
+                
+                fn.operator()<20>(); // Çünkü burada şablon olan fonksiyon ".operator()" fonksiyonu. 
+                                    // Sınıfın kendisi bir şablon DEĞİLDİR.
+            }
+        }
+
+    * Örnek 35,
+        class Myclass{
+            public:
+                void foo()
+                {
+                    int a = 10;
+                    auto f = [=, this]{ return a * (mx + my) }; // Invalid in C++17, valid in C++20
+                }
+                
+            private:
+                int mx, my;
+        };
+
+        //...
+
+    * Örnek 36,
+        #include <iostream>
+
+        template<typename ...Args>
+        void foo(Args ...)
+        {
+            std::cout << sizeof...(Args) << '\n';
+        }
+
+        template<typename ...Args>
+        void func(Args ...args)
+        {
+            auto f = [/* =, &, args..., &args... */](){
+                foo(args...);
+            }; f();
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("\n-----");
+            
+            {
+                func( 2, 5.6, "Ali" );
+            }
+            
+            puts("\n-----");
+        }
+
+    * Örnek 37,
+        #include <iostream>
+        #include <tuple>
+        #include <functional>
+        #include <utility>
+
+        // Until C++20
+        template<class... Args>
+        auto delay_invoke_foo(Args... args)
+        {
+            return [tup = std::make_tuple(std::move(args)...)]()->decltype(auto){
+                return std::apply(
+                    [const auto&... args]->decltype(auto){
+                        return foo(args...);
+                    }, 
+                    tup
+                );
+            };
+        }
+
+        // Since C++20
+        template<class... Args>
+        auto delay_invoke_foo(Args... args)
+        {
+            return [...args = std::move(args)]()->decltype(auto){
+                return foo(args...);  
+            };
+        }
+
+        int main()
+        {   
+            /*
+                # OUTPUT #
+            */
+            
+            puts("\n-----");
+            
+            {
+                func( 2, 5.6, "Ali" );
+            }
+            
+            puts("\n-----");
+        }
+
+Hatırlatıcı Notlar:
+    >> C++17 ile C++20 arasındaki farklı görmek için: https://open-std.org/jtc1/sc22/wg21/docs/papers/2020/p2131r0.html

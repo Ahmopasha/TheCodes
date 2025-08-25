@@ -1,0 +1,396 @@
+> "Adaptors in STL" : Anımsayacağımız üzere üç farklı "Uyumlandırıcı (Adaptor)" bulunmaktadır. Bunlar Fonksiyon, Sınıf ve 
+iteratör uyumlandırıcıları. 
+    >> Fonksiyon Uyumlandırıcıları ("Function Adaptors") : Argüman olarak bir "Callable" alan ve bir "Callable" geri döndürenlerdir.
+    Örneğin, "std::bind". 
+    >> Sınıf Uyumlandırıcıları ("Container Adaptors") : "std::stack", "std::queue" ve "std::priority_queue". Bunlar ise bir "Container" 
+    ı veri elemanı olarak alırlar ve onun "interface" bilgisini temsil ettikleri "abstrack data type" a göre uyumlandırırlar. Örneğin,
+    "std::stack" arka planda varsayılan durumda "std::dequeu" isimli sınıfı kullanır. "std::stack" sınıfına ilişkin bir fonksiyonu 
+    çağırdığımızda ise "std::dequeu" sınıfının ilgili fonksiyonları çağrılır. İki farklı biçimde oluşturabiliriz. Bunlar "Composition"
+    ve "Inheritence". 
+        >>> "Composition": 
+            * Örnek 1, Artık "Iter" için hangi "Container" açılmışsa, "foo" içerisinde onun üye fonksiyonlarını çağırabiliriz.
+                template<typename Iter>
+                class NecIter{
+                    public:
+                        void foo(){ /* "Iter" sınıfının herhangi bir fonksiyonu */ }
+                    private:
+                        Iter m_iter;
+                };
+
+        >>> "Inheritence" : 
+            * Örnek 1,
+                template<typename Iter>
+                class NecIter : public Iter{
+                    /*
+                    * "Iter" sınıfına ait "public" ve "protected"
+                    * fonksiyonlarını burada başka fonksiyonlar ile
+                    * sarmalayabiliriz, "override" edebiliriz. 
+                    */
+                };
+
+    >> İterator Uyumlandırıcıları ("Iterator Adaptors") : "reverse_iterator", "back_inserter", "front_inserter" şeklinde örnekler 
+    verebiliriz. Yine bu tip uyumlandırıcılar, arka planda kullandıkları iteratör sınıfını özel biçimde uyarlamaktadır. 
+        * Örnek 1, Aşağıda "std::move_iterator" iterator sınıfı için bir örnek verilmiştir. Sonuçlardan da görüldüğü üzere bu 
+        uyumlandırıcı "Move Semantics" mekanizmasını işletmektedir. 
+            #include <vector>
+            #include <algorithm>
+            #include <numeric>
+            #include <iostream>
+            #include <iterator>
+            #include <string>
+
+            template<typename Iter>
+            typename std::move_iterator<Iter> MakeMoveIterator(Iter it){
+                return std::move_iterator<Iter>{it};
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                */
+                
+                std::vector<std::string> svec{"nurullah", "abdulmuttalip", "giyasetting", "UlyaYuruk"};
+                
+                // Way - 1
+                std::move_iterator<std::vector<std::string>::iterator> iterDefault{svec.begin()};
+                auto name = *iterDefault;
+                std::cout << "Name : " << name << ", " << svec[0] << "\n"; // Name : nurullah, 
+                
+                // Way - 2
+                std::move_iterator iterCtat{ svec.begin() + 1}; // CTAT, Since C++17
+                name = *iterCtat;
+                std::cout << "Name : " << name << ", " << svec[0] << "\n"; // Name : abdulmuttalip, 
+                
+                // Way - 3
+                auto iterMaker{ MakeMoveIterator(svec.begin() + 2) };
+                name = *iterMaker;
+                std::cout << "Name : " << name << ", " << svec[0] << "\n"; // Name : giyasetting,      
+                
+                // Way - 4
+                auto itermaker = std::make_move_iterator(svec.begin() + 3);
+                name = *itermaker;
+                std::cout << "Name : " << name << ", " << svec[0] << "\n"; // Name : UlyaYuruk,      
+            }
+
+        * Örnek 2, Yine aşağıdaki örnekte de görüleceği üzere, "std::move_iterator" kullanılması durumunda "Move Semantics"
+        işletileceği için geride kalan nesne "Moved From State" durumunda olacaktır. 
+            #include <vector>
+            #include <algorithm>
+            #include <numeric>
+            #include <iostream>
+            #include <iterator>
+            #include <string>
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Size : 4, nurullah abdulmuttalip giyasetting UlyaYuruk 
+                    Size : 4, nurullah abdulmuttalip giyasetting UlyaYuruk 
+                    Size : 4,     
+                */
+                
+                std::vector<std::string> svec{"nurullah", "abdulmuttalip", "giyasetting", "UlyaYuruk"};
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+                
+                std::vector<std::string> ListNames{svec.begin(), svec.end()};
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+                
+                std::vector<std::string> NameList{std::move_iterator{svec.begin()}, std::move_iterator{svec.end()}};
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+            }
+
+        * Örnek 3, Aşağıdaki "for_each" çağrısı ile birinci ve ikinci parametreden oluşan "range" içerisindeki elemanlar,
+        üçüncü parametredeki "callable" nesneye gönderiliyor.
+            #include <vector>
+            #include <algorithm>
+            #include <numeric>
+            #include <iostream>
+            #include <iterator>
+            #include <string>
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    =====Original Svec=====
+                    Size : 8, nurullah abdulmuttalip giyasetting UlyaYuruk Ahmet Merve John Nishap 
+                    =====Copyied Ones=====
+                    nurullah abdulmuttalip giyasetting UlyaYuruk Ahmet Merve John Nishap 
+                    =====Original Svec=====
+                    Size : 8, nurullah abdulmuttalip giyasetting UlyaYuruk Ahmet Merve John Nishap 
+                    =====Moved Ones=====
+                    nurullah abdulmuttalip giyasetting UlyaYuruk Ahmet Merve John Nishap 
+                    =====Original Svec=====
+                    Size : 8,  
+                */
+                
+                std::vector<std::string> svec{
+                                                "nurullah",
+                                                "abdulmuttalip",
+                                                "giyasetting",
+                                                "UlyaYuruk",
+                                                "Ahmet",
+                                                "Merve",
+                                                "John",
+                                                "Nishap"
+                };
+                
+                std::cout << "=====Original Svec=====\n";
+                
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+                
+                std::cout << "=====Copyied Ones=====\n";
+                
+                for_each(
+                    std::make_move_iterator(svec.begin()),
+                    std::make_move_iterator(svec.end()),
+                    [](const std::string& name){ 
+                        /*
+                        * Programın akışı buraya geldiği an,
+                        * ilgili isim artık "R-Value" haline 
+                        * gelmiş durumdadır. Çünkü "std::move_iterator"
+                        * nesnelerini "dereference" ettiğimiz
+                        * zaman oluşan ifade "R-Value Reference". Dolayısıyla
+                        * "name" nesnesinin türü "R-Value" 
+                        * değer kategorilerini tutabilen bir 
+                        * tür olmalıdır. Ya "const T&", ya "T" 
+                        * ya da "T&&". Bizler burada "const T&"
+                        * dediğimiz için "std::string" sınıfının 
+                        * "Copy Ctor." fonksiyonu çağrılmıştır. 
+                        */
+                        std::cout << name << " "; 
+                    }
+                );
+                
+                std::cout << "\n";
+                
+                std::cout << "=====Original Svec=====\n";
+                
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+                
+                std::cout << "=====Moved Ones=====\n";
+                
+                for_each(
+                    std::make_move_iterator(svec.begin()),
+                    std::make_move_iterator(svec.end()),
+                    [](std::string name){ 
+                        /*
+                        * Programın akışı buraya geldiği an,
+                        * ilgili isim artık "R-Value" haline 
+                        * gelmiş durumdadır. Çünkü "std::move_iterator"
+                        * nesnelerini "dereference" ettiğimiz
+                        * zaman oluşan ifade "R-Value Reference". Dolayısıyla
+                        * "name" nesnesinin türü "R-Value" 
+                        * değer kategorilerini tutabilen bir 
+                        * tür olmalıdır. Ya "const T&", ya "T" 
+                        * ya da "T&&". Bizler burada "T"
+                        * dediğimiz için "std::string" sınıfının 
+                        * "Move Ctor." fonksiyonu çağrılmıştır. 
+                        */
+                        std::cout << name << " "; 
+                    }
+                );
+                
+                std::cout << "\n";
+                
+                std::cout << "=====Original Svec=====\n";
+                
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+            }
+
+        * Örnek 4,
+            #include <vector>
+            #include <algorithm>
+            #include <numeric>
+            #include <iostream>
+            #include <iterator>
+            #include <string>
+
+            void do_something(std::string name) {
+                std::cout << "Passed Name: " << name << "\n";
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT # 
+                    Size : 8, nurullah abdulmuttalip giyasetting UlyaYuruk Ahmet Merve John Nishap 
+                    Passed Name: abdulmuttalip
+                    Passed Name: giyasetting
+                    Passed Name: Nishap
+                    
+                    =====Original Svec=====
+                    Size : 8, nurullah   UlyaYuruk Ahmet Merve John
+                */
+                
+                std::vector<std::string> svec{
+                                                "nurullah",
+                                                "abdulmuttalip",
+                                                "giyasetting",
+                                                "UlyaYuruk",
+                                                "Ahmet",
+                                                "Merve",
+                                                "John",
+                                                "Nishap"
+                };
+                
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+                for_each(
+                    std::make_move_iterator(svec.begin()),
+                    std::make_move_iterator(svec.end()),
+                    [](auto&& name){ 
+                        /*
+                        * Burada "auto&&" yerine "std::string&&" de kullanabiliriz. 
+                        * Fakat her halükarda "do_something" çağrısına "std::move(name)"
+                        * ifadesini geçmeliyiz. Çünkü "name" bir isim olduğu için "L-Value"
+                        * ifadedir. 
+                        */
+                        if(name.find('i') != std::string::npos)
+                            do_something(std::move(name));
+                    }
+                );
+                
+                std::cout << "\n";
+                
+                std::cout << "=====Original Svec=====\n";
+                
+                std::cout << "Size : " << svec.size() << ", ";
+                for(auto&& name : svec)
+                    std::cout << name << " ";
+                std::cout << "\n";
+            }
+
+        * Örnek 5,
+            #include <vector>
+            #include <algorithm>
+            #include <numeric>
+            #include <iostream>
+            #include <iterator>
+            #include <string>
+
+            class Myclass{
+            public:
+                Myclass(const std::string& name) : m_name{name} { std::cout << "Default Ctor.\n"; }
+                Myclass(const Myclass& other) : m_name{other.m_name} { std::cout << "Copy Ctor.\n"; }
+                Myclass& operator=(const Myclass& other) { m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;}
+                Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+                ~Myclass()noexcept { std::cout << "Dtor\n"; }
+                void show_name()const { std::cout << "Name : " << m_name << "\n"; }
+                std::string get_name() const { return m_name; }
+            private:
+                std::string m_name;
+            };
+
+            void do_something(Myclass name) {
+                std::cout << "Passed Name: "; name.show_name();
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT # 
+                    Default Ctor.
+                    Default Ctor.
+                    Default Ctor.
+                    Default Ctor.
+                    Default Ctor.
+                    Default Ctor.
+                    Default Ctor.
+                    Default Ctor.
+                    Size : 8
+                    Name : nurullah
+                    Name : abdulmuttalip
+                    Name : giyasetting
+                    Name : UlyaYuruk
+                    Name : Ahmet
+                    Name : Merve
+                    Name : John
+                    Name : Nishap
+                    
+                    Move Ctor.
+                    Passed Name: Name : abdulmuttalip
+                    Dtor
+                    Move Ctor.
+                    Passed Name: Name : giyasetting
+                    Dtor
+                    Move Ctor.
+                    Passed Name: Name : Nishap
+                    Dtor
+                    
+                    =====Original Svec=====
+                    Size : 8
+                    Name : nurullah
+                    Name : 
+                    Name : 
+                    Name : UlyaYuruk
+                    Name : Ahmet
+                    Name : Merve
+                    Name : John
+                    Name : 
+                    
+                    Dtor
+                    Dtor
+                    Dtor
+                    Dtor
+                    Dtor
+                    Dtor
+                    Dtor
+                    Dtor
+                */
+                
+                std::vector<Myclass> svec; svec.reserve(8);
+                svec.emplace_back("nurullah");
+                svec.emplace_back("abdulmuttalip");
+                svec.emplace_back("giyasetting");
+                svec.emplace_back("UlyaYuruk");
+                svec.emplace_back("Ahmet");
+                svec.emplace_back("Merve");
+                svec.emplace_back("John");
+                svec.emplace_back("Nishap");
+                
+                std::cout << "Size : " << svec.size() << "\n";
+                for(auto&& name : svec)
+                    name.show_name();
+                std::cout << "\n";
+                
+                for_each(
+                    std::make_move_iterator(svec.begin()),
+                    std::make_move_iterator(svec.end()),
+                    [](Myclass&& name){ 
+                        if(name.get_name().find('i') != std::string::npos)
+                            do_something(std::move(name));
+                    }
+                );
+                
+                std::cout << "\n";
+                
+                std::cout << "=====Original Svec=====\n";
+                std::cout << "Size : " << svec.size() << "\n";
+                for(auto&& name : svec)
+                    name.show_name();
+                std::cout << "\n";
+            }

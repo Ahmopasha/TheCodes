@@ -1,0 +1,398 @@
+> "CTAD" :  
+    * Örnek 1,
+        #include <iostream>
+
+        template<typename T>
+        class Myclass{
+            public:
+            Myclass(const T& t){
+                std::cout << typeid(T).name() << '\n';
+            }
+        };
+
+        template<typename T>
+        Myclass<T> make_Myclass(const T& t)
+        {
+            return Myclass<T>(t);
+        }
+
+        int main()
+        {
+            // Before CTAD
+            Myclass<int> m1(31);
+            auto m2 = make_Myclass(3.1);
+            
+            // After CTAD
+            Myclass m3(3.2);
+            
+            return 0;
+        }
+
+    * Örnek 2,
+        #include <iostream>
+
+        template<typename T, typename U>
+        class Myclass{
+            public:
+            Myclass(const T& t, const U& u){
+                std::cout << typeid(T).name() << '\n';
+                std::cout << typeid(U).name() << '\n';
+            }
+        };
+
+        int main()
+        {
+            Myclass m1{34, 6.7};
+            std::cout << '\n';
+            Myclass m2{'U', "Yuruk"};
+            return 0;
+        }
+
+    * Örnek 3,
+        #include <iostream>
+
+        template<typename T, std::size_t N>
+        class Myclass{
+            public:
+            Myclass(T(&)[N]){
+                /*
+                * "Ctor." fonksiyonun parametresi "N" elemanlı bir diziye
+                * referams biçimindedir. 
+                */
+                std::cout << typeid(T).name() << "[" << N << "]\n";
+            }
+        };
+
+        int main()
+        {
+            // Before CTAD
+            int a[10]{};
+            Myclass<int, 10> m1(a);
+            
+            // After CTAD
+            double b[]{ 1., 2., 3., 4. };
+            Myclass m2(b);
+            return 0;
+        }
+    
+    * Örnek 4,
+        #include <iostream>
+
+        template<typename T, typename U, std::size_t N>
+        class Myclass{
+            public:
+                Myclass(T(*f_ptr)(U(&)[N]))
+                {
+                    /*
+                    * Buradaki "f_ptr" türü aslında fonksiyon göstericisi. 
+                    * Gösterilen fonksiyon ise geri dönüş değeri "T" türünden,
+                    * parametresi ise "U" türünden "N" elemanlı diziye referans. 
+                    */
+                    std::cout << typeid(f_ptr).name() << " : " << typeid(T).name() << "(*)(" << typeid(U).name() << "[" << N << "])\n";
+                }
+        };
+
+        int foo(double(&)[20])
+        {
+            /*
+            * Bu fonksiyonun parametresi ise "20" elemanlı 
+            * diziye referans biçimindedir. 
+            */
+            return 1;
+        }
+
+        int main()
+        {
+            Myclass m(foo);
+            return 0;
+        }
+
+    * Örnek 5,
+        #include <iostream>
+
+        template<typename T = double>
+        struct Nec{
+        T val;
+        Nec() : val() {}
+        Nec(T val) : val(val) {}
+        //...
+        };
+
+        int main()
+        {
+            Nec n1{10}; // T is "int"
+            Nec n2;     // T is "double"
+            return 0;
+        }
+   
+    * Örnek 6,
+        #include <iostream>
+
+        template<typename T = int, typename U = double, typename W = long>
+        class Myclass{
+        public:
+        Myclass(T = T{}, U = U{}, W = W{}){
+            /*
+            * Burada "T, U, W" türleri sınıf ise ilgili sınıfların
+            * "Default Ctor." fonksiyonları çağrılacak, temel türler
+            * ise "Value Init." ile hayata gelecekti.
+            */
+            std::cout << typeid(T).name() << '\n';
+            std::cout << typeid(U).name() << '\n';
+            std::cout << typeid(W).name() << '\n';
+        }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                *****
+                i
+                d
+                l
+                *****
+                d
+                d
+                l
+                *****
+                d
+                c
+                l
+                *****
+                d
+                c
+                j
+                *****
+            */
+            
+            puts("*****");
+            Myclass m1;
+            puts("*****");
+            Myclass m2(9.9);
+            puts("*****");
+            Myclass m3(9.9, 'U');
+            puts("*****");
+            Myclass m4(9.9, 'Y', 6U);
+            puts("*****");
+            return 0;
+        }
+
+    * Örnek 7, Aşağıdaki kodda "std::sort" fonksiyonunun üçüncü parametresine "std::ref" sarmalayıcısı kullanılmıştır. Eğer 
+    kullanılmasaydı, "f" nesnesi kopyalanacaktı. Bu durumda da kopyalanmış versiyonun "m_count" değişkeni artacaktı. 
+        #include <iostream>
+        #include <vector>
+        #include <algorithm>
+
+        template<typename F>
+        class CountCalss{
+        public:
+        CountCalss(F f) : m_f{f} {}
+        
+        template<typename... Args>
+        auto operator()(Args&&... args)
+        {
+            ++m_count;
+            return m_f(std::forward<Args>(args)...);
+        }
+        
+        int count()const
+        {
+            return m_count;
+        }
+        
+        private:
+        F m_f;
+        int m_count{};
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Count: 4
+                Count: 4
+            */
+            
+            // Before CTAD
+            {
+                std::vector<std::string> msvec{"Ulya Yuruk", "Ahmet Kandemir Pehlivanli", "Merve Pehlivanli"};
+                auto myLambda = [](const std::string& x, const std::string& y){ return x < y; };
+                auto f = CountCalss<decltype(myLambda)>{myLambda};
+                std::sort(msvec.begin(), msvec.end(), std::ref(f));
+                std::cout << "Count: " << f.count() << '\n';
+            }
+            
+            // After CTAD
+            {
+                std::vector<std::string> msvec{"Ulya Yuruk", "Ahmet Kandemir Pehlivanli", "Merve Pehlivanli"};
+                auto f = CountCalss{ [](const std::string& x, const std::string& y){ return x < y; } };
+                std::sort(msvec.begin(), msvec.end(), std::ref(f));
+                std::cout << "Count: " << f.count() << '\n';
+            }
+
+            return 0;
+        }
+
+    * Örnek 8,
+        #include "MyRandom.h"
+        #include "MyUtility.h"
+
+        int main()
+        {
+            
+            vector<int> v1(100);
+            
+            vector v2{ v1 };        // "v2" is of type "std::vector<int>"
+            vector v3{ v1, v1 };    // "v3" is of type "std::vector<std::vector<int>>"
+            return 0;
+        }
+
+    * Örnek 9,
+        #include "MyRandom.h"
+        #include "MyUtility.h"
+        #include <list>
+        #include <utility>
+        #include <string>
+        #include <vector>
+
+        int main()
+        {
+            std::list<std::pair<std::string, double>> myList{
+                { "necati", 4.25 },
+                { "saadet", 6.92 },
+                { "umut", 4.90 },
+                { "selim", 2.6 }
+            };
+            
+            std::vector vec( myList.rbegin(), myList.rend() ); // "Range Ctor." 
+            for(const auto& [name, wage] : vec){
+                std::cout << name << ' ' << wage << '\n';
+            }
+            
+            std::vector vec2{ myList.rbegin(), myList.rend() }; // "vec2" is of type "std::vector<std::reverse_iterator>"
+            
+            return 0;
+        }
+
+    * Örnek 10,
+        #include <functional>
+        #include <iostream>
+
+        int foo(int) { std::cout << "foo(int)\n"; return 1; }
+        double bar(double, double) { std::cout << "bar(double, double)\n"; return 1.1; }
+
+        struct Functor{
+            void operator()(int);  
+        };
+
+        int main()
+        {
+            
+            std::function f1{ foo };    // "f1" is of type "std::function<int(int)>"
+            std::function f2{ &foo };   // "f2" is of type "std::function<int(int)>"
+            std::function f3{ bar };    // "f3" is of type "std::function<double(double,double)>"
+            std::function f4{ Functor{} }; // "f4" is of type "std::function<void(int)>"
+            std::function f5{ [](int x, int y){ return x+y; } }; // "f5" is of type "std::function<int(int,int)>"
+            
+            return 0;
+        }
+
+    * Örnek 11,
+        #include <vector>
+        int main()
+        {
+            std::vector<std::pair> vec1{
+                { 12, 5.6 },
+                { 23, 5.1 },
+                { 5, 1.1 }
+            };  // ERROR
+            
+            std::vector<std::pair<int, double>> vec2{
+                { 12, 5.6 },
+                { 23, 5.1 },
+                { 5, 1.1 }
+            };  // Before CTAD
+            
+            std::vector vec3{
+                std::pair<int, double>{ 12, 5.6 },  
+                std::pair<int, double>{ 23, 5.1 },  
+                std::pair<int, double>{ 5, 1.1 }
+            }; // After CTAD
+
+            return 0;
+        }
+
+    * Örnek 12,
+        #include <vector>
+        #include <iostream>
+
+        template<typename T>
+        struct Nec{
+            Nec(T){ std::cout << "Primary Template\n"; }  
+        };
+
+        // Explicit/Full Specialization
+        template<>
+        struct Nec<int> {
+            Nec(const double& x) { std::cout << "Nec<int> spec.\n"; }
+        };
+
+        int main()
+        {
+            Nec x{ 324 }; // Nec<int> spec.
+            return 0;
+        }
+
+    * Örnek 13,
+        #include <optional>
+        #include <atomic>
+        #include <tuple>
+        #include <mutex>
+        #include <thread>
+        #include <complex>
+        #include <string>
+        #include <utility>
+
+        std::mutex mt;
+
+        int main()
+        {
+            std::optional op{ 23 };         // "std::optional<int>"
+            std::atomic ato{ 56 };          // "std::atomic<int>"
+            std::tuple tx{ 2, 5.6, "ali" }; // "std::tuple<int, double, const char*>" (*) 
+            std::lock_guard guard{ mt };    // "std::lock_guard<std::mutex>"
+            std::complex cx{ 1.4, 7.87 };   // "std::complex<double, double>"
+            
+            using namespace std::literals;
+            std::pair x{ 1, 4.5 };              // "std::pair<int, double>"
+            std::pair y{ "ayse"s, "fatma" };    // "std::pair<std::string, const char*>"
+            std::pair z{ 7u, 4.5f };            // "std::pair<unsigned, float>"
+            
+            /* (*)
+            * İlgili nesnenin kurucu işlevine gönderilen parametre bir dizi. Kurucu işlevin
+            * prototipi ise referans. Fakat arka plandaki "Deduction Guide" dan dolayı 
+            * tür çıkarımı gösterici yönünde. 
+            */
+            return 0;
+        }
+
+    * Örnek 14,
+        #include <complex>
+
+        int main()
+        {
+            std::complex c1{ 1.4f, 2.2f };  // "std::complex<float>"
+            std::complex c2{ 2.8, 6.3 };    // "std::complex<double>"
+            std::complex c3 = 1.2;          // "std::complex<double>"
+            std::complex c4 = { 4.7 };      // "std::complex<double>"
+            std::complex c5{ 5, 3.3 };      // ERROR (*)
+            
+            /* (*)
+            * "std::complex" sınıfının tipik implementasonunda sadece 
+            * bir adet şablon parametresi "T" olduğundan, farklı türler
+            * söz konusu olduğunda "ambiguity" meydana gelmektedir. 
+            */
+            
+            return 0;
+        }

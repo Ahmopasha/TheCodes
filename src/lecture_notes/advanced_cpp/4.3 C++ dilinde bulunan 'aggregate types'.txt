@@ -1,0 +1,1149 @@
+> "Aggregate Types" : Bileşik türler olarak Türkçeleştirebiliriz. Bu türler "non-static" veri elemanlarını doğrudan kullanıma açan 
+sınıflardır. Yani böylesi sınıfların veri elemanlarına karşı bir "data-hiding" uygulanmamaktadır. Dolayısıyla sınıfları bu noktada 
+iki ana gruba ayırabiliyoruz: "data-hiding" uygulanan ve uygulanmayan sınıflar. Anımsanacağımız üzere bizler "data-hiding" uygulayarak 
+sınıfın veri elemanlarının değerlerini kontrol altında tutarak sınıfın tutarlı olmasını sağlarız. Örneğin, aşağıdaki biçimde bir 
+sınıfımız olsun:
+
+    class Triangle{
+        //...
+        double e1, e2, e3;
+        //...
+    };
+
+Bu sınıfın yukarıdaki veri elemanları negatif olmamalı ve bu veri elemanları ile bizler üçgenleri temsil edebilmeliyiz. Dolayısıyla 
+kontrol bizde olmalı ki temsil ettiğimiz şey bozulmasın. Misal, iki kenarın toplamının üçüncü kenardan büyük olması gerektiği gibi. Öte 
+yandan "data-hiding" uygulamaya gerek görmediğimiz aşağıdaki örneği inceleylim:
+
+    struct Point{
+        int x, y;
+    };
+
+Bu sınıfımız ise 2B düzlemde konum bilgisi tutsun. Dolayısıyla yukarıdaki "Triangle" sınıfı gibi veri elemanlarının negatif olmaması 
+gibi şeyler söz konusu değildir. Buradaki kontrol mekanizması artık sınıfı yazanda değil, o sınıfı kullanan tarafta olacaktır. Öte yandan
+bu kavram sadece sınıflara has bir kavram da değildir. Örneğin, diziler doğrudan "Aggregate" türlerdir. Burada dizinin elemanlarının 
+türlerinin "Aggregate" olup olmaması önemli değildir. Dizi türleri direkt olarak "Aggregate" kabul edilmektedir. Pekiyi "Aggregate"
+olma koşulları nelerdir? 
+
+    -> C++20 standartlarına göre "User-declared Ctor." fonksiyonları OLMAYACAK. Fakat C++17 standartlarına göre "User-Provided Ctor."
+    fonksiyonları OLMAYACAK. Dolayısıyla C++17 ile bizler deklare edebiliriz fakat tanımlamasını yapamayız; yani ya derleyiciye 
+    yaptıracağız ya da "delete" edeceğiz. Fakat C++20 ile birlikte artık bizler bile deklare etmemeliyiz. 
+        * Örnek 1,
+            #include <type_traits>
+
+            struct Nec{
+                Nec() = default;
+                int a, b, c;  
+            };
+
+            int main()
+            {   
+                static_assert(std::is_aggregate_v<Nec>); // ERROR: static assertion failed
+            }
+
+    -> "non-static" veri elemanlarının tamamı "public" OLMAK ZORUNDA. 
+        * Örnek 1,
+            #include <type_traits>
+
+            struct Nec{
+                int a, b; 
+                
+            protected:
+                int c;  
+            };
+
+            int main()
+            {   
+                static_assert(std::is_aggregate_v<Nec>); // ERROR: static assertion failed
+            }
+
+    -> Veri elemanları "Aggregate" olmayan sınıflar "Aggregate" olabilirler. 
+        * Örnek 1,
+            #include <type_traits>
+            #include <string>
+
+            struct Nec{
+                int a, b; 
+                std::string c;  
+            };
+
+            int main()
+            {   
+                /*
+                *   Bir sınıfın "Aggregate" olabilmesi için 
+                *   veri elemanlarının "Aggregate" olmasına
+                *   gerek yoktur. 
+                */
+                static_assert(std::is_aggregate_v<Nec>); // OK 
+                static_assert(std::is_aggregate_v<std::string>); // ERROR: static assertion failed
+            }
+
+    -> C++20 öncesinde "public" kalıtımı ile elde edilen sınıflar "Aggregate" olamıyorken, C++20 ile 
+    birlikte bu kısıtlama da kaldırıldı. Buradaki kilit nokta kalıtımın "public" olmasıdır. Eğer üst
+    sınıf "Aggregate" olmasa bile "public" kalıtım uygulandığı için "Aggregate" kalıtımdır. Tabii 
+    burada yukarıda açıklanan koşulları sağladığı varsayılmaktadır. Fakat kalıtım "virtual" olarak 
+    yapılmışsa, "Aggregate" olma ÖZELLİĞİ DÜŞMEKTEDİR. Buna karşın "Multiple Inheritence" olması, 
+    "Aggregate" olma özelliğini KORUMAKTADIR. Son olarak "Inherited Ctor." da BULUNMAMASI gerekiyor.  
+        * Örnek 1,
+            #include <type_traits>
+
+            class Master{};
+            class Slave : public Master {};
+            class ProtectedSlave : protected Master {};
+            class PrivateSlave : private Master{};
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Master>); // OK 
+                static_assert(std::is_aggregate_v<Slave>);  // OK 
+                static_assert(std::is_aggregate_v<ProtectedSlave>); // ERROR : static assertion failed
+                static_assert(std::is_aggregate_v<PrivateSlave>);   // ERROR : static assertion failed
+            }
+
+        * Örnek 2,
+            #include <type_traits>
+            #include <string>
+
+            class Text : public std::string {};
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<std::string>); // ERROR: static assertion failed
+                static_assert(std::is_aggregate_v<Text>); // OK 
+            }
+
+        * Örnek 3, "Virtual Inheritence": 
+            #include <type_traits>
+
+            struct Myclass{ int mx{}; };
+            struct Text : virtual Myclass { int x{}, y{}; };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Myclass>);    // OK
+                static_assert(std::is_aggregate_v<Text>);       // ERROR : static assertion failed
+            }
+
+        * Örnek 4, "Multiple Inheritence": 
+            #include <type_traits>
+
+            class A{};
+            class B{};
+            class C{};
+            struct D : A, B, C {
+                int x{}, y{}, z{};
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<D>); // OK
+            }
+
+        * Örnek 5, "Inherited Ctor." da OLMAMASI gerekiyor. 
+            #include <type_traits>
+
+            class A{
+                public:
+                A(int) {}
+                A(double) {}
+            };
+
+            struct D : A{
+                using A::A;
+                int x{}, y{}, z{};
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<A>); // ERROR: static assertion failed
+                static_assert(std::is_aggregate_v<D>); // ERROR: static assertion failed
+            }
+
+    -> Veri elemanlarının referans (sağ taraf referans ya da sol taraf referans) olmaları da o sınıfın "Aggregate" olması için 
+    bir engel teşkil etmemektedir. 
+
+    -> İlgili sınıfta "Member Function" olması, "Aggregate" olmasına engel değildir. Bu fonksiyonların "public", "protected"
+    veya "private" olması da sonucu DEĞİŞTİRMEMEKTEDİR.
+        * Örnek 1,
+            #include <type_traits>
+            #include <string>
+
+            class Nec{
+                public:
+                    int a{}, b{}, c{};
+                    int get_a() const { return a; }
+                    
+                protected:
+                    int get_b() const { return b; }
+                    
+                private:
+                    int get_c() const { return c; }
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Nec>); // OK
+            }  
+
+    -> Sanal fonksiyonlara sahip olmaları durumunda "Aggregate" olma özellikleri DÜŞECEKTİR. 
+        * Örnek 1,
+            #include <type_traits>
+
+            struct Nec{
+                int a{}, b{}, c{};
+                
+                virtual void foo() {}
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Nec>); // ERROR: static assertion failed
+            }
+
+    -> "Lambda" ifadelerinden elde edilen türler "Aggregate" DEĞİLDİR. Fakat bu sınıf türlerinden kalıtım 
+    yoluyla türetilen sınıflar "Aggregate" olabilirler. 
+        * Örnek 1,
+            #include <type_traits>
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<decltype([](){})>); // ERROR: static assertion failed
+            }
+
+        * Örnek 2,
+            #include <type_traits>
+
+            auto f = [](int x){ return x*x; };
+            auto g = [](int x){ return x+x; };
+
+            struct Nec : decltype(f), decltype(g) {
+                int mx;
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<decltype(f)>); // ERROR: static assertion failed
+                static_assert(std::is_aggregate_v<decltype(g)>); // ERROR: static assertion failed
+                static_assert(std::is_aggregate_v<Nec>); // OK
+            }
+
+    -> "operator overloading" mekanizmasından yararlanması, onların "Aggregate" olma özelliğini BOZMAMAKTADIR.
+        * Örnek 1,
+            #include <type_traits>
+
+            struct Nec {
+                int mx;
+                
+                Nec operator+(const Nec&)const { return Nec{}; }
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Nec>); // OK
+            }
+
+    -> "static" veri elemanlarına sahip olmaları, onların "Aggregate" olmalarına engel DEĞİLDİR.
+
+Bütün bunlardan sonra şimdi sıra "Aggregate" olmanın avantajlarına gelmiştir. Yani "Aggregate" oldu da ne oldu? 
+
+    -> "Aggregate Init." yöntemi ile bir sınıf türünden nesneye ilk değer verebiliriz. Tıpkı C dilindeki yapı türlerinde 
+    kullandığımız yöntem gibi. 
+        * Örnek 1,
+            #include <type_traits>
+
+            struct Point {
+                int x, y, z;
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Point>); // OK
+                Point p1 = { 1, 3, 5 }; // OK
+                Point p2{ 5, 3, 1 };    // OK
+                // Point p3 = { 1., 3, 5. }; // ERROR: narrowing conversion of ‘1.0e+0’ from ‘double’ to ‘int’ [-Wnarrowing]
+            }
+
+        * Örnek 2,
+            struct Neco {
+                int x;
+                double dval;
+                std::string str;
+                int ar[5];
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Neco>); // OK
+                Neco myNec{ 15, 1.5, "on bes", { 1, 5 } }; // OK
+                Neco myNecNec = { 30, 3., "otuz", { 3, 0 } }; // OK
+            }
+
+        * Örnek 3,
+            #include <type_traits>
+
+            struct Erg{
+                int x, y;
+            };
+
+            struct Neco {
+                int x;
+                Erg e;
+                int ar[2];
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Erg>); // OK
+                static_assert(std::is_aggregate_v<Neco>); // OK
+                Neco myNec{ 15, { 1, 5}, { 1, 5 } }; // OK
+                Neco myNecNec = { 15, { 1, 5}, { 1, 5 } }; // OK
+                Neco myNecNecNec{ 15, 1, 5, 1, 5 }; // OK
+                Neco myNecNecNecNec = { 15, 1, 5, 1, 5 }; // OK
+            }
+
+        * Örnek 4.0, İlk değer verdiğimiz ifadedeki eleman sayısı sınıfın veri elemanlarından eksikse, ilk değer vermediğimiz 
+        veri elemanları "Value Init." ile hayata gelirler. Bu durumda "primitive" türler sıfır ile sınıf türler ise "default ctor."
+        hayata gelirler. 
+            #include <type_traits>
+            #include <string>
+
+            struct Neco {
+                bool b;
+                int x;
+                std::string str;
+            };
+
+            int main()
+            {  
+                static_assert(std::is_aggregate_v<Neco>); // OK
+                Neco my{}; // OK
+                Neco myNec{ false }; // OK
+                Neco myNecNec{ true, 12 }; // OK
+                Neco myNecNecNec{ false, 21, "yirmibir"}; // OK   
+            }
+
+        * Örnek 4.1, Burada hem "Default Member Init." mekanizmasından hem de "Aggregate Init." mekanizmasından faydalanılmıştır. 
+            #include <type_traits>
+            #include <string>
+            #include <iostream>
+
+            struct Neco {
+                bool b;
+                int x{31};
+                std::string str;
+            };
+
+            int main()
+            {  
+                /*
+                    # OUTPUT #
+                    I.   : 0
+                    II.  : 31
+                    III. : 
+                */
+                
+                static_assert(std::is_aggregate_v<Neco>); // OK
+                Neco myNec{ false };
+                std::cout << "I.   : " << myNec.b << '\n';
+                std::cout << "II.  : " << myNec.x << '\n';
+                std::cout << "III. : " << myNec.str << '\n';
+            }
+
+        * Örnek 5.0,
+            #include <array>
+
+            int main()
+            {  
+                std::array<int, 5> ar = { 2, 4, 6, 8 }; // Bu kodun geçerli olmasının yegane sebebi,
+                                                        // "std::array" sınıfının "Aggregate" olmasıdır. 
+                                                        // Diğer elemanlar "Value Init." ile hayata
+                                                        // gelmektedir. 
+                                                        
+                std::array<int, 5> arr{ 2, 4, 5 };  // Yine burada da ilgili sınıfın "Aggregate" olmasından 
+                                                    // dolayı geçerlidir. Diğer elemanlar yine "Value Init."
+                                                    // ile hayata gelmektedir. 
+            }
+
+        * Örnek 5.1,
+            #include <array>
+
+            template<typename T, std::size_t n>
+            struct Array{
+                T a[n];
+            };
+
+            int main()
+            {  
+                Array<int, 5u> arr{ 3, 5, 1, 6 };
+            }
+
+    -> "Structural Binding" mekanizmasından da doğrudan faydalanabilir olmalarıdır. 
+        * Örnek 1,
+            #include <string>
+            #include <iostream>
+
+            struct Neco{
+                int a, b, c;
+                std::string str;
+            };
+
+            int main()
+            {  
+                Neco myNec{ 1, 2, 3, "123" };
+                auto [one, two, three, total] = myNec;
+                std::cout << "<" << one << ", " << two << ", " << three << ", " << total << ">\n"; // <1, 2, 3, 123>
+            }
+
+Şimdi de C++20 ile "Aggregate" türlere gelen yenilikleri inceleyelim. Bunlar: 
+    >> İlki, yukarıda da anlatıldığı üzere, "User-Provided Ctor." olması durumunda ilgili sınıf "Aggregate" kabul edilirken C++20
+    ile birlikte hiç bir "User-declared Ctor." OLMAMASI gerekmektedir ki "Aggregate" olma özelliği korunsun.
+    
+    >> İkincisi, C++20 ile dile eklenen bir diğer çok önemli özellik ise "Designated Init. Syntax" kuralıdır. Bu kural C diline C99 
+    ile birlikte eklendi. Bu zamana kadar da ana akım derleyiciler tarafından "extension" olarak sunulmaktaydı. Artık standart hale 
+    getirilmiş oldu. Fakat C++20 ile eklenen halini işlemeden evvel C dilindekini bir hatırlayalım. Şöyleki: 
+        * Örnek 1,
+            int main()
+            {  
+                // C dilindeki aşağıdaki kullanım biçimi C++ dilindeki dizileri KAPSAMAMAKTADIR. 
+                
+                int arr[5] = { [2] = 4, [4] = 2 };  // İki numaralı indisteki öğe "4" ile 
+                                                    // dört numaralı indisteki öğe ise "2" ile 
+                                                    // geri kalan diğer öğeler ise "0" değerini alır. 
+                                                    
+                int arr[] = { [9] = 3, [3] = 9, 56 };   // Dizi "10" elemanlı olacaktır. Çünkü "en büyük indis no + 1"
+                                                        // Dokuz numaralı indisteki öğe "3" ile
+                                                        // üç numaralı indisteki öğe "9" ile
+                                                        // son indisteki öğe "56" ile 
+                                                        // geri kalanlar ise "0" değerini alır. 
+            }
+
+        * Örnek 2,
+            struct Data{
+                int a, b, c;
+                char str[20];
+                int ar[5];
+            };
+
+
+            int main()
+            {  
+                struct Data myData{
+                    .a = 5,
+                    // Diğer öğeler "Zero Init." edilmektedir. 
+                };
+                
+                struct Data myDataData{
+                    .ar = { 2, 4, 6 },
+                    // Diğer öğeler "Zero Init." edilmektedir.
+                };
+                
+                struct Data myDataDataData{
+                    .str = "Merve",
+                    .ar = {[2] = 3}, // Dizinin diğer elemanları "Zero Init." edilmektedir. 
+                    // Diğer öğeler "Zero Init." edilmektedir.
+                };
+            }
+
+Şimdi de C++20 ile dile eklenen "Designated Init. Syntax" kuralını inceleyelim. Bunlar,
+    >> "Aggregate Type" olması gerekmektedir. 
+        * Örnek 1,
+            struct Nec{
+                int x, y;
+            };
+
+
+            int main()
+            {  
+                Nec myNec{ .x = 1, .y = 2 }; // OK
+                Nec myNecNec = { .x = 2, .y = 1 }; // OK
+                Nec myNecNecNec = { .x = 1 }; // OK: Diğer öğe "Value Init." edilecek. 
+                Nec myNecNecNec = { .y = 2 }; // OK: Diğer öğe "Value Init." edilecek. 
+                Nec myNecNecNecNec = { .y = 2, .x = 1 }; // ERROR: Bildirimdeki sıra gözetilmek zorundayız.  
+            }
+
+        * Örnek 2,
+            struct Nec{
+                int x, y;
+                double dval;
+            };
+
+
+            int main()
+            {  
+                Nec myNec{ .x = 1, .y = 2 }; // OK
+                Nec myNecNec{ .x = 1, .y = 2, 1.2 }; // ERROR: "Designated Init." ile "Normal Init." birlikte kullanılamaz. 
+            }
+
+        * Örnek 3,
+            struct Nec{
+                int x, y;
+                static int s;
+            };
+
+            int main()
+            {  
+                Nec myNec{ .x = 1, .y = 2 }; // OK
+                Nec myNecNec{ .s = 12 }; // "static" veri elemanlarını bu şekilde doğrudan ilk değer veremeyiz. 
+            }
+
+        * Örnek 4, Aşağıdaki örnekte "=" atomu kullanılmıştır. Fakat bu atomun sağındaki ifadeyi "{}" içerisinde yazsak bile
+        yine geçerli olacaktır. 
+            struct Time{
+                int min;
+                int hour;
+            };
+
+            struct Date{
+                int year;
+                int month;
+                int day;
+                Time time;
+                static int h_mode; 
+            };
+
+            int main()
+            {  
+                Date d1 = { .h_mode = 0 }; // ERROR: static data member
+                
+                Date d2 = { .month = 3, .year = 1993 }; // ERROR: wrong order
+                
+                Date d3 = { 3, .year = 1998 }; // ERROR: mixing two "init." method
+                
+                Date d4 = { .time.min = 25 }; // ERROR: nested-member access is not allowed. 
+                
+                Date d5 = {
+                    .time = { 32, 4 }
+                }; // OK
+                
+                Date myDate = {
+                    .time = {
+                        .min = 23,
+                        .hour = 32
+                    }
+                }; // OK
+            }
+
+    >> "Default Member Init." mekanizması ile birlikte kullanabiliriz. Pekala "const" nesneler için de yine bu sentaks 
+    kuralını işletebiliriz. 
+        * Örnek 1,
+            #include <string>
+            #include <iostream>
+
+            struct Nec{
+                int a;
+                int b = 5;
+                std::string name{ "John Doe" };
+                double d;
+            };
+
+            int main()
+            {  
+                Nec myNec{
+                    .d = 5.6,
+                    // "a" nın değeri "Value Init." ile "0" olur. 
+                    // "b" nin ve "name" nin değerleri
+                    // "Default Member Init." ile sırasıyla "5" ve 
+                    // "John Doe" olur. 
+                }; std::cout << "<" << myNec.a << "," << myNec.b << "," << myNec.name << "," << myNec.d << ">" << std::endl;
+                // <0,5,John Doe,5.6>
+                
+                const Nec mycNec{
+                    .a = 5,
+                    // "d" nın değeri "Value Init." ile "0." olur. 
+                    // "b" nin ve "name" nin değerleri
+                    // "Default Member Init." ile sırasıyla "5" ve 
+                    // "John Doe" olur. 
+                }; std::cout << "<" << mycNec.a << "," << mycNec.b << "," << mycNec.name << "," << mycNec.d << ">" << std::endl;
+                // <5,5,John Doe,0>
+            }
+
+Şimdi de kullanım senaryolarını irdeleyelim:
+    >> Kodun okunaklılığını arttırmaktadır. 
+        * Örnek 1,
+            #include <string>
+            #include <iostream>
+
+            struct Student{
+                int id;
+                std::string name;
+                int grades[5];
+            };
+
+            int main()
+            {  
+                Student s{
+                    .id = 6144,
+                    .name = "Merve",
+                    .grades = { 75, 57, 78, 87, 100 }
+                };
+            }
+
+    >> Fonksiyonların geri dönüş değerinin "Aggregate" tür olması durumunda "Copy Ellision" dan faydalanabiliriz. 
+        * Örnek 1,
+            #include <string>
+            #include <iostream>
+
+            struct Person{
+                int id{0};
+                std::string name{"NoName"};
+                int age{0};
+            };
+
+            Person create_person(void)
+            {
+                //...
+                
+                // Approach - I
+                return Person{ 
+                    .id = 7562, 
+                    .name = "Merve", 
+                    .age = 29
+                };
+                
+                // Approach - II 
+                // return { .id = 7562, .name = "Merve", .age = 29 };
+                
+                // Approach - III 
+                // return { 7562, "Merve", 29 };
+            }
+
+            int main()
+            {  
+                auto [id, name, age] = create_person();
+            }
+    
+    >> Birden fazla argüman alan fonksiyonlara parametre geçerken öğeleri karıştırabiliriz. 
+        * Örnek 1,
+            #include <string>
+            #include <iostream>
+
+            // APPROACH - I 
+            void process_file(bool open, bool close, bool read, bool write);
+
+            // APPROACH - II 
+            struct FileProp{
+                bool open, close, read, write;
+            };
+            void process_file(const FileProp& prop);
+
+            int main()
+            {  
+                // APPROACH - I.1 
+                process_file(true, false, false, true); // Hangi parametreye hangi değerin gönderildiğini karıştırabiliriz. 
+                
+                // APPROACH - I.2 
+                process_file(
+                    /* open */  true,
+                    /* close */ false,
+                    /* read */  false,
+                    /* write */ true 
+                ); // Yukarıdaki yönteme görece biraz daha iyi bir yöntem. En azından hangi parametrenin hangi değeri aldığını daha rahat görebiliyoruz. 
+                
+                // APPROACH - II.1 
+                FileProp fp1{ true, false, false, true };
+                process_file(fp1);
+                
+                // APPROACH - II.2 
+                process_file(FileProp{ true, false, false, true });
+                
+                // APPROACH - II.3 
+                process_file({ true, false, false, true });
+                
+                // APPROACH - II.4 
+                process_file( 
+                    .open  = true,
+                    .close = false,
+                    .read  = false,
+                    .write = true
+                );
+            }
+
+    >> "Function Overload Resolution" için de kullanılabilir. 
+        * Örnek 1,
+            #include <string>
+            #include <iostream>
+
+            struct Point{
+                int x, y;
+            };
+
+            struct Point3D{
+                double dx, dy, dz; 
+            };
+
+            void process(const Point&) { std::cout << "const Point&\n"; }
+
+            void process(const Point3D&) { std::cout << "const Point3D&\n"; }
+
+            int main()
+            {  
+                /*
+                    # OUTPUT #
+                    const Point&
+                    const Point&
+                    const Point3D&
+                    const Point3D&
+                    const Point3D&
+                */
+                
+                process({.x = 45});
+                process({.x = 45, .y = 54});
+                process({.dx = 4.5});
+                process({.dx = 4.5, .dy = 5.4});
+                process({.dx = 4.5, .dy = 5.4, .dz = 45.54});
+            }
+
+    >> "Deduction Guide" gereken yerlerde kullanabiliriz:
+        * Örnek 1, Aşağıdaki örnekte "Aggregate" türler için "CTAT" dan faydalanabilmek için yine "Deduction Guide"
+        gerekmektedir.
+            #include <string>
+
+            template<typename T>
+            struct Nec
+            {
+                T x;
+                int ival;
+            };
+
+            // The Required deduction guide:
+            template<typename T>
+            Nec(T, int) -> Nec<T>;
+
+            int main()
+            {
+                // OK
+                Nec<double> n1{ 1.2, 12 };  
+                Nec<std::string> { "murat", 124 };  
+
+                // Require a deduction guide until C++20
+                Nec n3{ 1.2, 12 };
+                Nec n4{45L, 990};
+
+                // Since C++20
+                Nec n5{ 2.1, 21};
+                Nec n6{ 45L, 990};
+            }
+
+        * Örnek 2,
+            #include <string>
+
+            template<typename T>
+            struct Nec
+            {
+                T x;
+                int ival;
+            };
+
+            // The deduction guide from "const char*" to "std::string" 
+            Nec(const char*, int) -> Nec<std::string>;
+
+            int main()
+            {
+
+                Nec n1{ "mustafa", 12}; // "T" would be of type "const char*"
+                                        // w/o the deduction guide. 
+            }
+
+    >> "container" sınıflarda "Aggregate Type" lar tutulduğu durumlarda, geçini nesne ile "insert" işlemi yapılırken de kullanılabilir:
+        * Örnek 1,
+            #include <string>
+            #include <vector>
+            #include <iostream>
+
+            struct Person {
+                int id;
+                std::string name{ "John Due" };
+                int age;
+            };
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    <436,John Due,0>
+                    <0,Merve,0>
+                    <0,John Due,34>
+                    <34,Menekse,0>
+                    <34,Menekse,29>
+                */
+
+                std::vector<Person> pvec;
+                pvec.push_back(Person{ .id = 436 });
+                pvec.push_back(Person{ .name = "Merve" });
+                pvec.push_back(Person{ .age = 34 });
+                pvec.push_back(Person{ .id = 34, .name = "Menekse"});
+                pvec.push_back(Person{ .id = 34, .name = "Menekse", .age = 29});
+                for (const auto& [id, name, age] : pvec)
+                    std::cout << "<" << id
+                    << "," << name
+                    << "," << age
+                    << ">\n";
+            }
+
+    >> "Aggregate Type" lar "Direct Init." e tabii tutulamıyorlar. Bu da bazı yerlerde problemlerin oluşmasına sebep oluyordu. C++20 
+    ile birlikte "Aggregate Type" lar da "Direct Init." edilebilir hale getirildi. 
+        * Örnek 1,
+            #include <string>
+            #include <memory>
+            #include <vector>
+
+            struct Nec {
+                int x, y, z;
+            };
+
+            template<typename T, typename ...Args>
+            std::unique_ptr<T> MakeUnique(Args&& ...args)
+            {
+                return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+            }
+
+            int main()
+            {
+                // ERROR: "Aggregate Types", C++20 STANDARDINA KADAR 
+                // "Dirent Init." EDİLEMİYORLAR. Yani "()" kullanılarak
+                // ilk değer verilemiyorlar. "=" veya "{}" kullanılıyordu. 
+                // Dolayısıyla "new" ifadelerinde, "emplace" fonksiyonlarında, 
+                // "std::make_unique / std::make_shared" fonksiyonlarında
+                // "Aggregate" türleri aşağıdaki biçimde kullanmak 
+                // sentaks hatası oluşturacaktır. 
+                auto up{ std::make_unique<Nec>(3, 5, 8) };
+                auto sp{ std::make_shared<Nec>(8, 5, 3) };
+                std::vector<Nec> nvec; nvec.emplace_back(3, 5, 8);
+                auto myup = MakeUnique<Nec>(3, 5, 8);
+                int a[3](1, 3, 5);
+                Nec myNec(1, 3, 5);
+            }
+
+    Burada dikkat etmemiz gereken nokta "Aggregate" türleri "Dirent Init." etmemiz değil, "Direct Init." kullanan standart fonksiyonların 
+    artık sentaks hatasına neden olmadığıdır.
+     
+    >> "Aggregate Type" lar "Direct Init." e tabii tutulamıyorlar. Bu da bazı yerlerde problemlerin oluşmasına sebep oluyordu. C++20 
+    ile birlikte "Aggregate Type" lar da "Direct Init." edilebilir hale getirildi. 
+        * Örnek 1,
+            #include <memory>
+            #include <array>
+
+            struct Nec {
+                int a[5];
+            };
+
+            int main()
+            {
+                int a[3](4, 7, 9);      // OK since C++20
+                // int b[3] = (4, 7, 9);// Still ERROR
+
+                Nec n1{ 2, 6, 9 };      // OK 
+                Nec n2 = { 2, 6, 9 };   // OK 
+                // Nec n3(2, 6, 9);     // Still ERROR
+                Nec n4({ 2, 6, 9 });    // OK 
+                Nec n5{{ 2, 6, 9 }};    // OK 
+
+                std::array<int, 4> ar{1, 3, 4};       // OK
+                std::array<int, 4> arr = {1, 3, 4};   // OK
+                std::array<int, 4> arrr(1, 3, 4);     // Still ERROR 
+                std::array<int, 4> arrr({ 1, 3, 4 }); // OK 
+            }
+
+        * Örnek 2, Pekala "," operatörünün kullanımına da dikkat etmeliyiz. 
+            #include <iostream>
+
+            struct Nec {
+                int a[5];
+            };
+
+            int main()
+            {
+                int x = 5, y = 4, z = 3;
+                std::cout << (x, y) << ',' << (y, z) << ',' << (x, z) << '\n'; // 4,3,3
+
+                int q = (x, y, z);
+                std::cout << q << '\n'; // 3
+
+                int j = x, y, z; // Re-definiton of 'y' and 'z'. Otherwise, they'd be "Default Init". 
+                                 // 'j' is equal of 'x'. 
+
+            }
+
+        * Örnek 3, Artık "Aggregate Type" lar "Direct Init." edilebildikleri için, şablonlarla birlikte kullanıldıklarında,
+        "Narrowing Conversion" lar sentaks hatasına yol açmayabilir. Anımsanacağı üzere "{}" ile yapılan "Init." işlemlerinde 
+        "Narrowing Conversion" sentaks hatasına yol açmaktadır.  
+            struct Point{
+                int x, y, z;
+            };
+
+            int main()
+            {  
+                /*
+                    # OUTPUT #
+                */
+                
+                auto p = new Point(1, 3, 5); // OK
+                delete p;
+                
+                //p = new Point{ 1.1, 2, 3}; // ERROR: narrowing conversion
+                //delete p;
+                
+                p = new Point( 1.1, 2, 3); // OK: narrowing conversion
+                delete p;
+            }
+
+        * Örnek 4,
+            #include <iostream>
+
+            struct Point{
+                int x, y, z;
+                const int& ra;  // Sağ taraf değerine bağlanması durumunda "Life Extension" a neden olacaktır. 
+                int&& rb;       // Sağ taraf değerine bağlanması durumunda "Life Extension" a neden olacaktır. 
+            };
+
+            int foo() { return 1; }
+            int bar() { return 2; }
+
+            int main()
+            {  
+                // int& r = foo(); // ERROR 
+                const int& cr = foo(); // OK - Life Extension
+                int&& rr = bar(); // OK - Life Extension
+                
+                
+                Point pt1 = { 3, 4, 5, foo(), bar() }; // OK - Life Extension
+                std::cout << "<" << pt1.x << "," << pt1.y << "," << pt1.z << "," << pt1.ra << "," << pt1.rb << ">\n";
+                
+                Point pt2( 3, 4, 5, foo(), bar() ); // Warning - Not A Life Extension
+                std::cout << "<" << pt2.x << "," << pt2.y << "," << pt2.z << "," << pt2.ra << "," << pt2.rb << ">\n";
+            }
+
+        * Örnek 5,
+            #include <iostream>
+
+            // "Point" is an "Aggregate Type"
+            struct Point{
+                int x, y;
+                
+                // "Nested" is an "Aggregate Type"
+                struct Nested{
+                    int xx, yy;
+                }z;
+            };
+
+            void printer(const Point& ptr)
+            {
+                std::cout << "<" << ptr.x << "," << ptr.y << "," << ptr.z.xx << "," << ptr.z.yy << ">\n";
+            }
+
+            int main()
+            {  
+                Point pt1 = { 1, 2, { 3, 4 } }; printer(pt1); // OK => <1,2,3,4>
+                Point pt2 = { 1, 2, 3, 4 };     printer(pt2); // OK => <1,2,3,4>
+                Point pt3{ 1, 2, { 3, 4 } };    printer(pt3); // OK => <1,2,3,4>
+                Point pt4{ 1, 2, 3, 4 };        printer(pt4); // OK => <1,2,3,4>
+                Point pt5{ 1, 2, (3, 4) };      printer(pt5); // OK(*) => <1,2,4,0>
+                Point pt6( 2, 1, { 4, 3 } );    printer(pt6); // OK => <2,1,4,3>
+                // Point pt7( 2, 1, ( 4, 3 ) ); // ERROR 
+                
+                /*  (*)
+                *   Çıktıdan da görüleceği üzere burada "," operatörü devreye girmiştir. Yani 
+                *   ilk değer vermede kullanılan "1, 2, (3, 4)" ifadesi derleyici tarafından
+                *   "1, 2, 4" biçiminde ele alınmıştır. 
+                */
+            }
+
+        * Örnek 6,
+            #include <iostream>
+
+            struct Nec{
+                int a, b, c;
+            };
+
+            void printer(const Nec& ptr)
+            {
+                std::cout << "<" << ptr.a << "," << ptr.b << "," << ptr.c << ">\n";
+            }
+
+            int main()
+            {  
+                Nec n1{ 1, 2, 3 };  // Valid C++17/C++20
+                printer(n1);
+                
+                Nec n2( 1, 2, 3 );  // Invalid at C++17, but valid at C++20
+                printer(n2);
+                
+                // Nec n3{ 1, 2.2, 3 }; // ERROR: Narrowing Conversation
+                Nec n4( 1, 2.2, 3 ); // Warning: Narrowing Conversation
+                
+                Nec n5( .b = 6 ); // Invalid C++17/C++20
+                Nec n6{ .b = 6 }; // Invalid at C++17, but valid at C++20
+            }
+
+        * Örnek 7, "Designated Init", "Direct Init". ile birlikte çalışmamaktadır. 
+            #include <iostream>
+
+            struct Nec{
+                int a, b, c;
+            };
+
+            void printer(const Nec& ptr)
+            {
+                std::cout << "<" << ptr.a << "," << ptr.b << "," << ptr.c << ">\n";
+            }
+
+            int main()
+            {  
+                Nec n6{ .b = 6 }; // Invalid at C++17, but valid at C++20
+                Nec n5( .b = 6 ); // Invalid C++17/C++20
+            }
+
+    Bütün bu örneklerdekileri özetleyecek olursak;
+
+        -> "Direct Init." söz konusu olduğunda, referans elemanlar "Life Extension" a neden olmaz. 
+        -> "Direct Init." ile birlikte "Designated Init" kullanamayız. 
+        -> "= (x, y, z)" biçiminde ilk değer veremeyiz. 
+        -> "Nested Type" eleman için "{}" kullanmak zorundayız. 
+
+> Hatırlatıcı Notlar:
+    >> Aşağıdaki örnekleri inceleyelim:
+        * Örnek 1.0, Aşağıdaki örnekte sınıf şablonunda "auto" kullanılması, "n" isminin "non-type" parametre 
+        olduğunu belirtmektedir. C++17 ile dile eklenmiştir. Sınıf şablonlarında kullanıldığı gibi fonksiyon şablonu 
+        ve "variable" şablonlarda da kullanılmaktadır. 
+            template<auto n>
+            class Myclass{
+                
+            };
+
+            template<auto n>
+            void foo() {}
+
+            template<auto n>
+            constexpr auto nec = n;
+
+            int main()
+            {
+                Myclass<5> x; 
+
+                Myclass<[](){}> y; 
+
+                foo<5>();
+
+                std::cout << nec<5> << '\n';
+            }
+
+        * Örnek 1.1,
+            #include <iostream>
+
+            // ERROR
+            /*
+            template<decltype([](){})>
+            class Nec{
+
+            };
+            */
+
+            template<double = 1.2>
+            class Myclass1{
+                
+            };
+
+            template<auto = 2.1>
+            class Myclass2{
+                
+            };
+
+            template<auto = [](){}>
+            class Myclass3{
+                
+            };
+
+            template<auto n>
+            class Myclass4{
+                
+            };
+
+            constexpr auto g = [](int x){ return x*x; };
+
+            int main()
+            {
+                Myclass1 d1; // OK 
+                Myclass1<2.1> d2; // OK 
+                
+                Myclass2 d3; // OK 
+                Myclass2<1.2> d4; // OK 
+                
+                Myclass3 d5; // OK: "d5" is different from "d6". 
+                Myclass3 d6; // OK: "d6" is different from "d5". 
+                
+                auto f = [](){ return 31; };
+                Myclass3<f> d7; // OK
+
+                Myclass4<g> d8; // "g" must be "constexpr". 
+            }
+
+        * Örnek 1.2.0, "Static Init. Order Fiasco" engellemek. 
+            #include <iostream>
+
+            template<typename T>
+            class Lazy{
+                public:
+                constexpr Lazy() = default;
+                T& get() { static T var; return var; }
+            };
+
+            int main()
+            {
+                /*
+                *   Aşağıdaki "x" ve "y" nesneleri aynı nesnelerdir. Bu iki nesneyi
+                *   ayrı iki nesne olarak kullanmak istiyorsak, yukarıdaki yöntem 
+                *   yerine başka bir yöntem kullanmalıyız. 
+                */
+                Lazy<int> x; 
+                Lazy<int> y;
+                x.get()++; x.get()++; x.get()++; x.get()++; x.get()++; 
+                std::cout << y.get() << '\n'; // 5 
+            }
+
+        * Örnek 1.2.1, Alternatif yöntemlerden birisi de yeni bir şablon parametresi eklemek ve bu parametreye 
+        karşılık "incomplete" tür kullanmaktır. 
+            #include <iostream>
+
+            template<typename Tag, typename T>
+            class Lazy{
+                public:
+                constexpr Lazy() = default;
+                T& get() { static T var; return var; }
+            };
+
+            int main()
+            {
+                /*
+                *   Aşağıdaki "x" ve "y" nesneleri artık ayrı nesnelerdir. 
+                *   Burada "struct X" ve "struct Y" türleri "incomplete"
+                *   tür olarak kullanılmıştır. 
+                */
+                Lazy<struct X, int> x; 
+                Lazy<struct Y, int> y;
+                x.get()++; x.get()++; x.get()++; x.get()++; x.get()++; 
+                std::cout << y.get() << '\n'; // 0 
+            }
+
+        * Örnek 1.2.2, Alternatif yöntemlerden bir diğeri ise şablon parametresi olarak "auto = [](){}" ifadesinin 
+        kullanılmasıdır. Böylelikle varsayılan tür kullanılacağı için "incomplete" tür kullanma zahmetinden 
+        kurtulmuş oluyoruz. 
+            #include <iostream>
+            
+            template<typename T, auto = [](){}>
+            class Lazy{
+                public:
+                constexpr Lazy() = default;
+                T& get() { static T var; return var; }
+            };
+
+            int main()
+            {
+                /*
+                *   Aşağıdaki "x" ve "y" nesneleri artık ayrı nesnelerdir. 
+                *   Burada "struct X" ve "struct Y" türleri "incomplete"
+                *   tür olarak kullanılmıştır. 
+                */
+                Lazy<int> x; 
+                Lazy<int> y;
+                x.get()++; x.get()++; x.get()++; x.get()++; x.get()++; 
+                std::cout << y.get() << '\n'; // 0 
+            }

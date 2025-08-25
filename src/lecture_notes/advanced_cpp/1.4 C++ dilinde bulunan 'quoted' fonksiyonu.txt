@@ -1,0 +1,98 @@
+> "IO Manipulators" : 
+    >> "quoted" fonksiyonu: Argüman olarak bir yazıyı alır. Fonksiyonun geri dönüş değeri, derleyiciye bağlıdır.
+        * Örnek 1,
+            #include <iostream>
+            #include <string>
+            #include <iomanip>
+            #include <sstream>
+
+            int main()
+            {
+                std::ostringstream oss;
+                oss << std::quoted("ulya", '*');
+                std::cout << oss.str(); // *ulya*
+            }
+
+        * Örnek 2,
+            #include <iostream>
+            #include <string>
+            #include <iomanip>
+
+            int main()
+            {
+                std::cout << std::quoted("ahmet") << "\n"; // "ahmet"
+                
+                std::cout << std::quoted("\" ahmet \"") << "\n"; // "\" ahmet \""
+                
+                std::cout << std::quoted(R"( "ali" "can" "nur" )") << "\n";// " \"ali\" \"can\" \"nur\" "
+            }
+
+        * Örnek 3,
+            #include <iostream>
+            #include <string>
+            #include <iomanip>
+            #include <sstream>
+
+            int main()
+            {
+                std::ostringstream oss;
+                oss << std::quoted("*ulya*", '*');
+                std::cout << oss.str(); // *\*ulya\**
+            }
+
+        * Örnek 4,
+            #include <iostream>
+            #include <string>
+            #include <iomanip>
+            #include <sstream>
+
+            int main()
+            {
+                std::ostringstream oss;
+                oss << std::quoted("+ulya+", '+', '-');
+                std::cout << oss.str(); // +-+ulya-++ 
+            }
+
+        * Örnek 5,
+            #include <iostream>
+            #include <string>
+            #include <iomanip>
+            #include <sstream>
+
+            int main()
+            {
+                std::istringstream iss{ "\"Ulya\"" };
+                {
+                    std::string name;
+                    iss >> name;
+                    std::cout << name; // "Ulya"   
+                }
+                {
+                    std::string name;
+                    iss >> std::quoted(name);
+                    std::cout << name; // Ulya
+                }    
+            }
+
+        * Örnek 6,
+            #include <iostream>
+            #include <string>
+            #include <iomanip>
+            #include <sstream>
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                */
+                
+                std::stringstream ss;
+                std::string name;
+                
+                ss << std::quoted("\"ali\"");
+                
+                ss >> std::quoted(name);
+                
+                std::cout << name << "\n"; // "ali"
+                
+            }

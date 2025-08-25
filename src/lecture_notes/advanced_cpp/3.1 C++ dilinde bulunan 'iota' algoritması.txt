@@ -1,0 +1,73 @@
+> "std::iota" algoritmasının incelenmesi: "numeric" başlık dosyasında bulunur. Parametre olarak bir "range" ki minimal "forward_iterator"
+olacak, ve bir değer alır. Bu "range" içerisindeki öğeleri, almış olduğu değerden başlayarak ardışık bir sonraki öğeyi, o değerin bir fazlası 
+olarak "set" edeceğim. Yani ilk öğenin yeni değeri, almış olduğu değer olacak. İkinci öğe ise, almış olduğu değerin bir fazlası olacak vs.
+Tabii bu "set" işlemi için "toplama" işleminin öğeler bazında desteklenmesi gerekmektedir. 
+    * Örnek 1,
+        #include <numeric>
+        #include <vector>
+        #include <iostream>
+
+        int main()
+        {
+            std::vector<int> ivec(10);
+            for (auto i : ivec)
+                std::cout << i << ' '; // 0 0 0 0 0 0 0 0 0 0
+            std::cout << '\n';
+
+            std::iota(ivec.begin(), ivec.end(), 0);
+            for (auto i : ivec)
+                std::cout << i << ' '; // 0 1 2 3 4 5 6 7 8 9
+            std::cout << '\n';
+        }
+
+    * Örnek 2, Aşağıdaki Date sınıfının fonksiyonlarının tanımı olmadığından, sadece derlenebilmektedir. Burada gösterilmek 
+    istenen şey ise sınıfların "operator++" fonksiyonlarının bulunması gerekmesidir. 
+        #include <numeric>
+        #include <vector>
+        #include <iostream>
+
+        class Date {
+        public:
+            Date();
+            Date(int, int, int);
+            Date& operator++();	// Ön ek ++ operatörü	
+            Date operator++(int); // Son ek ++ operatörü
+        };
+
+        int main()
+        {
+            std::vector<Date> dvec(5);
+            Date dx{24, 9, 2023};
+            std::iota(dvec.begin(), dvec.end(), dx);
+        }
+
+    * Örnek 3,
+        #include <numeric>
+        #include <vector>
+        #include <iostream>
+        #include "MyUtility.h"
+
+        using namespace MyUtility;
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                24 Eylul 2023 Pazar
+                25 Eylul 2023 Pazartesi
+                26 Eylul 2023 Sali
+                27 Eylul 2023 Carsamba
+                28 Eylul 2023 Persembe
+                29 Eylul 2023 Cuma
+                30 Eylul 2023 Cumartesi
+                01 Ekim 2023 Pazar
+                02 Ekim 2023 Pazartesi
+                03 Ekim 2023 Sali
+            */
+
+            std::vector<Date::Date> dvec(10);
+            Date::Date dx{24, 9, 2023};
+            std::iota(dvec.begin(), dvec.end(), dx);
+            for (const auto& d : dvec)
+                std::cout << d << '\n';
+        }

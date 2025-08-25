@@ -1,0 +1,2478 @@
+> "concepts" : Buradaki amaç şablon kodlarını "constraint" etmektir. Yani şablon argümanını belirli bir miktarda kısıtlamak için kullanılır. 
+Böylelikle yanlış bir şablon argümanı kullanıldığında ya direkt sentaks hatası oluşacak ya ilgili şablonun belli bir kısmı kullanılacak ya da 
+derleyici nokta atışı mesaj vererek hatanın tam olarak nereden kaynaklandığını belirtecektir. Burada kendi kısıtlamalarımızı kendimiz 
+oluşturabildiğimiz gibi, standart kütüphanenin bize hazır olarak verdiği kısıtlamaları da kullanabiliriz. 
+    * Örnek 1,
+        #include <iostream>
+        #include <concepts>
+
+        template<std::integral T>
+        void foo(T x)
+        {
+            std::cout << "Tam sayi\n";
+        }
+
+        template<std::floating_point T>
+        void foo(T x)
+        {
+            std::cout << "Gercek sayi\n";
+        }
+
+        void bar(std::integral auto)
+        {
+            std::cout << "Tam sayi\n";
+        }
+
+        void bar(std::floating_point auto)
+        {
+            std::cout << "Gercek sayi\n";
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Tam sayi
+                Tam sayi
+                Gercek sayi
+                Gercek sayi
+                Tam sayi
+                Tam sayi
+                Gercek sayi
+                Gercek sayi
+            */
+            
+            foo(23); foo(23L);
+            foo(2.3f); foo(2.3);
+            
+            bar(23); bar(23L);
+            bar(2.3f); bar(2.3);
+        }
+
+Diğer yandan C++20 ile "concepts" kavramının ile eklenmesiyle birlikte toplamda beş adet şablon bulunmaktadır. Sınıf şablonu, 
+fonksiyon şablonu, "variable templates", "allias template" ve "concepts". Aynı zamanda da "concept" bir anahtar sözcüktür. 
+    * Örnek 1, "concept" olmasaydı, aşağıdaki gibi bir çözüm sergilemek zorundaydı. 
+        #include <iostream>
+        #include <type_traits>
+
+        template<typename T, std::enable_if_t<std::is_integral_v<T>>* = nullptr>
+        void foo(T) { std::cout << "foo\n"; }
+
+        template<typename T>
+        std::enable_if_t<std::is_integral_v<T>, T> bar(T) { std::cout << "bar\n"; return true; }
+
+        template<typename T>
+        void baz(T, std::enable_if_t<std::is_integral_v<T>>* p = nullptr) { std::cout << "baz\n"; }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+            
+            foo(340); // OK
+            foo(3.4); // ERROR: no matching function for call to ‘foo(double)’
+            bar(340); // OK
+            bar(3.4); // ERROR: no matching function for call to ‘bar(double)’
+            baz(340); // OK
+            baz(3.4); // ERROR: no matching function for call to ‘baz(double)’
+        }
+
+    * Örnek 2, "concept" olmasaydı, aşağıdaki sentaks hataları oluşacaktı. 
+        #include <iostream>
+        #include <string>
+        #include <vector>
+
+        template<typename T>
+        void print(const T& t)
+        {
+            std::cout << t << '\n';
+        }
+
+        template<typename T>
+        void convert_to_int(const T& t)
+        {
+            int x = t;
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+            
+            print(12);
+            print(1.2);
+            print(std::string{"Merve"});
+            std::vector vec{ 45, 5, 7, 2 }; print(vec); // ERROR: no match for ‘operator<<’ (operand types are ‘std::ostream’ {aka ‘std::basic_ostream’} and ‘const std::vector >’)
+
+            convert_to_int(std::string{"Merve"}); // ERROR: cannot convert ‘const std::__cxx11::basic_string’ to ‘int’ in initialization
+        }
+
+Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza çıkmaktadır. Bunlar "requires clause", "requires expression", 
+"named constraints(concept)".
+    >> "requires clause" : Genel sentaks şu şekildedir:
+    
+        " requires ("boolean" olarak yorumlanacak "Compile Time Expression") "
+    
+    İki biçimde kullanılır. Bunlar "prefix" ve "trailing" biçimde. 
+        >>> "prefix" yönteminde fonksiyonun parametre değişkeninin ismini kullanamayız. Çünkü bu yöntemde, yukarıdaki ifadeyi, fonksiyonun 
+        geri dönüş değerinin türünden önce yazmaktayız. 
+            * Örnek 1, Aşağıdaki "requires clause" kullanımında "prefix" biçimi uygulanmıştır. 
+                #include <iostream>
+
+                // "T" türünün "sizeof" değerinin "2" bayttan büyük olması gerekmektedir. 
+                template<typename T>
+                requires (sizeof(T) > 2)
+                void foo(T x) { std::cout << "sizeof x : " << sizeof(x) << '\n'; }
+
+                int main()
+                {
+                    // foo('A'); // ERROR: no matching function for call to ‘foo(char)’
+                    
+                    foo(45); // OK : sizeof x : 4
+                }
+
+        >>> "trailing" yönteminde ise fonksiyonun parametre değişkeninin ismini kullanabiliriz. Çünkü bu yöntemde yukarıdaki ifadeyi 
+        fonksiyonun imzası ile "{" arasındaki kısma yazmaktayız. 
+            * Örnek 1,
+                #include <iostream>
+
+                // "x" değişkeninin "sizeof" değerinin "4" bayttan büyük olması gerekmektedir. 
+                template<typename T>
+                void foo(T x) requires (sizeof(x) > 4)
+                { 
+                    std::cout << "sizeof x : " << sizeof(x) << '\n';
+                }
+
+                int main()
+                {
+                    //foo(45); // ERROR: no matching function for call to ‘foo(int)’
+                    
+                    foo(45L); // OK : sizeof x : 8
+                }
+
+    Pekala bu iki biçimi de aynı anda kullanabiliriz. 
+        * Örnek 1,
+            #include <iostream>
+            #include <type_traits>
+
+            template<typename T>
+            requires std::is_integral_v<T> 
+            void foo(T x) requires std::is_signed_v<T> 
+            { 
+                std::cout << "sizeof x : " << sizeof(x) << '\n';
+            }
+
+            int main()
+            {
+                foo(45);
+                
+                foo(4.5); // ERROR: no matching function for call to ‘foo(double)’
+                
+                foo(45u); // ERROR: no matching function for call to ‘foo(unsigned int)’
+            }
+    
+    Tabii bu biçimleri böyle aynı anda kullanmak yerine, "logic" operatörleriyle de birleştirerek kullanabiliriz.
+        * Örnek 1,
+            #include <iostream>
+            #include <type_traits>
+
+            template<typename T>
+            requires std::is_integral_v<T> && (sizeof(T) > 2) 
+            void foo(T x)
+            { 
+                std::cout << "sizeof x : " << sizeof(x) << '\n';
+            }
+
+            int main()
+            {
+                foo('A'); // ERROR: no matching function for call to ‘foo(char)’
+                
+                foo(45);
+                
+                foo(4.5); // ERROR: no matching function for call to ‘foo(double)’
+                
+                foo(45u); 
+            }
+
+        * Örnek 2.0,
+            #include <iostream>
+            #include <type_traits>
+
+            template<typename T>
+            requires !(sizeof(T) > 2) // ERROR: expression must be enclosed in parentheses
+            void foo(T x)
+            { 
+                std::cout << "sizeof x : " << sizeof(x) << '\n';
+            }
+
+            int main()
+            {
+                /*
+                *   "!" operatörünü kullanmak istiyorsak, "()" içerisinde kullanmalıyız. 
+                */
+            }
+
+        * Örnek 2.1,
+            #include <iostream>
+            #include <type_traits>
+
+            template<typename T>
+            requires (!(sizeof(T) > 2)) // ERROR: expression must be enclosed in parentheses
+            void foo(T x)
+            { 
+                std::cout << "sizeof x : " << sizeof(x) << '\n';
+            }
+
+            int main()
+            {
+                foo('a');
+                foo(65); // ERROR: no matching function for call to ‘foo(int)’
+            }
+
+        * Örnek 3,
+            #include <iostream>
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+
+            template<typename T>
+            requires (sizeof(T) > 2) &&             // "requires clause"        => "T" türünün "sizeof" değerinin "2" den büyük olması 
+            requires { typename T::size_type; } &&  // "requires expression"    => "T" türü "size_type" isminde "nested type" a sahip olması
+            std::input_iterator<T>                  // "concept"                => "input_iterator" konseptinin "T" türüne açılabilir olması 
+            class Myclass{
+                
+            };
+
+            int main()
+            {
+                //...
+            }
+
+        * Örnek 4,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+
+            template<typename T>
+            requires std::is_pointer_v<T> || std::is_reference_v<T>
+            class Myclass{
+                
+            };
+
+            int main()
+            {
+                Myclass<int> m1; // ERROR: template constraint failure for ‘template  requires (is_pointer_v) || (is_reference_v) class Myclass’
+            }
+
+        * Örnek 5,
+            template<std::size_t N> // template<auto N> 
+            requires (N > 10)
+            class Neco{
+                
+            };
+
+            int main()
+            {
+                Neco<5> n1;     // ERROR: template constraint failure for ‘template  requires  N > 10 class Neco’
+                Neco<15> n2;    // OK
+            }
+    
+    Buradaki önemli nokta, derleme zamanında "constant expression" olabilmesidir. 
+    
+    >> "concept" : İsimlendirilmiş "constraint" lerdir. Tekrar tekrar belirtmek yerine, vermiş olduğumuz ismi kullanıyoruz. Yine 
+    derleme zamanında "boolean" değer üretmesi gerekmektedir. 
+        * Örnek 1,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+
+            template<typename T>
+            concept Integral = std::is_integral_v<T>; // Bu noktada diğer "concept", "requires clause" ve "requires expression" 
+                                                      // kullanarak istediğimiz kombinasyonları yapabiliriz. 
+
+            template<typename T>
+            requires Integral<T> 
+            void foo(T) {}
+
+            template<Integral T>
+            void func(T) {}   // Burada fonksiyon şablonu kullanabildiğimiz gibi sınıf şablonu da kullanabilirdik.
+                              // Hakeza diğer şablon türlerini de. Buradaki şart, "Integral" şartını sağlamasıdır. 
+                              // Yani "std::is_integral_v<T>" ifadesinin "true" değer üretmesi gerekiyor.
+                            
+            template<Integral T, Integral U>
+            class Myclass{
+                
+            };
+
+            int main()
+            {
+                foo(12);    // OK 
+                func(1.2);  // ERROR: no matching function for call to ‘func(double)’ (*)
+                
+                
+                func(12);   // OK 
+                func(1.2);  // ERROR: no matching function for call to ‘func(double)’ (*)
+                
+                /*  (*)
+                *   Burada bizler "CTAT" yararlandık. Özel olarak türü belirtsek bile yine 
+                *   sentaks hatası olabilirdi. Çünkü buradaki kıstas, yukarıdaki "std::is_integral_v<T>"
+                *   ifadesinin "true" değer üretmesidir. 
+                */
+                
+                Myclass<int, long> m1;  // Burada herhangi bir sentaks hatası yoktur. Çünkü "T" ve "U" isminde iki farklı 
+                                        // şablon parametresi vardır. Bura bizim sağlamamız gereken şart ise 
+                                        // "std::is_integral_v<T> && std::is_integral_v<U>" ifadesinin "true" değer 
+                                        // üretmesidir. 
+                                        
+                Myclass<double, long> m2;   // ERROR: template constraint failure for ‘template  requires (Integral) && (Integral) class Myclass’
+                Myclass<int, double> m3;    // ERROR: template constraint failure for ‘template  requires (Integral) && (Integral) class Myclass’ 
+            }
+
+        * Örnek 2,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+
+            template<typename T>
+            concept Integral = std::is_integral_v<T>; 
+
+            template<typename T>
+            concept SignedIntegral = Integral<T> && std::is_signed_v<T>; 
+
+            template<typename T>
+            concept UnsignedIntegral = Integral<T> && !SignedIntegral<T>;
+
+            int main()
+            {
+                //... 
+            }
+
+        * Örnek 3,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+
+            template<typename T>
+            concept as_int = std::integral<T> || std::is_convertible_v<T, int>; 
+
+            template<typename T>
+            requires as_int<T> 
+            void foo(void) {}
+
+            struct Neco{};
+
+            struct Myclass{
+                operator int()const; 
+            };
+
+            int main()
+            {
+                foo<char>();    // OK
+                foo<short>();   // OK
+                foo<int>();     // OK
+                foo<double>();  // OK
+                foo<Neco>();    // ERROR: no matching function for call to ‘foo()’
+                foo<Myclass>(); // OK
+            }
+
+        * Örnek 4,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+
+            template<typename T>
+            concept as_int = std::integral<T> || std::is_convertible_v<T, int>; 
+
+            template<as_int T>
+            class Myclass{
+                
+            };
+
+            struct Nec{};
+
+
+            // Way - I 
+            // template<as_int T>
+            // void foo (T x);
+
+            // Way - II 
+            void foo(as_int auto x) {}
+
+            int main()
+            {
+                //Myclass<Nec> m1; // ERROR : template constraint failure for ‘template  requires  as_int class Myclass’
+                
+                Myclass<int> m_i; // OK
+                foo(15);          // OK 
+            }
+
+        * Örnek 5,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+            #include <iostream>
+
+            void foo(std::convertible_to<std::string> auto x) { std::cout << "x: " << x << '\n'; }
+            void foo(std::integral auto x) { std::cout << "x: " << x << '\n';  } // II 
+            /*  Alternative - I 
+                template<std::integral T>
+                void foo(T x) { std::cout << "x: " << x << '\n'; }
+                
+                Alternative - II
+                template<typename T>
+                requires std::integral<T>
+                void foo(T x) { std::cout << "x: " << x << '\n'; }
+            */
+
+
+            int main()
+            {
+                foo(std::string{ "Merve" }); // x: Merve
+                foo(31); // x: 31 
+                foo(3.1); // ERROR: no matching function for call to ‘foo(double)’
+            }
+
+        * Örnek 6,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+            #include <iostream>
+
+            std::integral auto bar(int x) { return x * 1.1; } // ERROR: deduced return type does not satisfy placeholder constraints
+
+            int foo() { return 1; }
+            double func() { return 1.1; }
+
+            int main()
+            {
+                std::integral auto x = foo();
+                
+                std::integral auto y = func(); // ERROR: deduced initializer does not satisfy placeholder constraints
+            }
+
+        * Örnek 7,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+            #include <iostream>
+            #include <vector>
+
+            int main()
+            {
+                // 0 0 0 0 0
+                std::vector<int> ivec(5);
+                for(std::integral auto x : ivec){
+                    std::cout << x << ' ';
+                }
+            }
+
+        * Örnek 8,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+            #include <iostream>
+            #include <vector>
+            #include <string>
+
+            template<typename T>
+            void func(T x)
+            {
+                if constexpr (std::integral<T>){
+                    std::cout << "Tam sayi turler...\n";
+                }    
+                else if constexpr (std::floating_point<T>){
+                    std::cout << "Gercek sayi turler...\n";
+                }
+                else {
+                    std::cout << "Diger turler...\n";
+                }
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    Tam sayi turler...
+                    Gercek sayi turler...
+                    Diger turler...
+                */
+                
+                func(12);
+                func(1.2);
+                func("Merve");
+            }
+
+        * Örnek 9,
+            #include <type_traits>
+            #include <iterator>
+            #include <concepts>
+            #include <iostream>
+            #include <vector>
+            #include <string>
+
+            template<typename T>
+            concept additive = requires (T x, T y){
+                x+y; // "T" türünden iki nesne "+" operatörünün operandı olduğunda, geçerli bir ifade olacak. 
+                x-y; // "T" türünden iki nesne "-" operatörünün operandı olduğunda, geçerli bir ifade olacak.
+            };
+
+            template<typename T>
+            void func(T x)
+            {
+                if constexpr (additive<T>){
+                    std::cout << "necati ergin...\n";
+                } 
+                else {
+                    std::cout << "eray goksu...\n";
+                }
+            }
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    necati ergin...
+                    eray goksu...
+                */
+                
+                func(12);
+                
+                int x = 10; int* p = &x; 
+                func(p);
+            }
+
+        * Örnek 10,
+            #include <bit>
+            #include <concept>
+
+            // Sadece tek bir "bit" i "1" olacak ve
+            // "N" değeri de "32" den büyük olacak.  
+            template<std::size_t N>
+            requires (std::has_single_bit(N) && N > 32)
+            class Myclass{
+                
+            };
+
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    
+                */
+                
+                Myclass<5> m1; // ERROR: template constraint failure for ‘template  requires  std::has_single_bit(N) && N > 32 class Myclass’
+                Myclass<45> m2; // ERROR: template constraint failure for ‘template  requires  std::has_single_bit(N) && N > 32 class Myclass’
+                Myclass<64> m3; // OK 
+            }
+
+        * Örnek 11,
+            #include <bit>
+
+            constexpr bool is_prime(int x)
+            {
+                if (x < 2) return false;
+                if (x % 2 == 0) return x == 2;
+                if (x % 3 == 0) return x == 3;
+                if (x % 5 == 0) return x == 5;
+                for(int i{7}; i * i <= x; i += 2)
+                    if (x % i == 0) 
+                        return false; 
+                        
+                return true;
+            }
+
+            template<std::size_t N>
+            requires (is_prime(N))
+            class Myclass{};
+
+            template<std::size_t N>
+            concept IsPrime = is_prime(N);
+
+            template<std::size_t N>
+            requires IsPrime<N>
+            void func() {}
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                */
+                
+                
+                Myclass<17> m1; // OK 
+                Myclass<18> m1; // ERROR: template constraint failure for ‘template  requires  is_prime()(N) class Myclass’
+                
+                func<19>(); // OK 
+            }
+
+    >> "requires expression" : Diğerleri gibi derleme zamanında "boolean" değer üretmesi gerekmektedir. Kendi içerisinde üç aşama 
+    barındırır. Bunlar: "Simple Requiretments", "Type Requiretments", "Compound Requiretments" ve "Nested Requirements".  
+        >>> "Simple Requiretments" : Belirtilen ifade, derleyici tarafından geçerli bir ifade olmalıdır. Örneğin, "T" herhangi bir 
+        tür olmak şartıyla, bu türden "x" değişkenimiz olsun. "x++;" ifadesi geçerli bir ifade olmalıdır. Bir diğer deyişle "x"
+        değişkeni "++ son ek" operatörünün operandı olmalıdır. Burada "x" değişkeninin değeri bir arttırılmamaktadır. 
+            * Örnek 1,
+                #include <concepts>
+                #include <vector>
+
+                template<typename T>
+                concept Nec = requires (T x) {
+                    // Simple Requiretments
+                    x++; 
+                };
+
+                struct X{};
+                struct Y{
+                    Y operator++(int){ return this; }
+                };
+
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                    */
+                    
+                    static_assert(Nec<int>); // "int" türden nesne "++" operatörünün operandı olabilir. 
+                    static_assert(Nec<int*>); // "int*" türden nesne "++" operatörünün operandı olabilir. 
+                    static_assert(Nec<std::vector<int>::iterator>); // "std::vector<int>::iterator" nesnesi "++" operatörünün operandı olabilir. 
+                    static_assert(Nec<X>); // "X" türünden nesne "++" operatörünün operandı olamayacağı için, sentaks hatası olacaktır. 
+                    static_assert(Nec<Y>); // "Y" türünden nesne "++" operatörünün operandı olabilir. 
+                }  
+
+            * Örnek 2,
+                #include <concepts>
+                #include <vector>
+
+                template<typename T>
+                concept Nec = requires (T x) {
+                    // Simple Requiretments
+                    *x;     // "dereference" operatörünün operandı olabilecek. 
+                    x[0];   // "[]" operatörünün operandı olabilecek. 
+                };
+
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                    */
+                    
+                    static_assert(Nec<int>); // "int" türünden nesne içerik operatörünün operandı olamaz. 
+                    static_assert(Nec<int*>); // "int*" türünden nesne hem içerik hem de "[]" operatörünün operandı olabilir. 
+                }
+
+            * Örnek 3,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+
+                template<typename T>
+                concept Neco = requires(T p) {
+                    p == nullptr; // "p" değişkeninin "nullptr" ile karşılaştırılabilir olması gerekmektedir.
+                };
+
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                        a: false
+                        b: true
+                        c: true
+                    */
+                    
+                    std::boolalpha(std::cout);
+                    
+                    constexpr auto a = Neco<int>; std::cout << "a: " << a << '\n';
+                    constexpr auto b = Neco<int*>; std::cout << "b: " << b << '\n';
+                    constexpr auto c = Neco<std::unique_ptr<int>>; std::cout << "c: " << c << '\n';
+                }
+
+            * Örnek 4,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+
+                template<typename T>
+                concept Neco = requires(T x /*, T y */) {
+                    x < x; // "x" değişkeninin "<" operatörünün operandı olabilmelidir. 
+                    // x < y; // "T" türünden değişkenlerin, "<" operatörünün operandı olabilmeleri gerekmektedir.  
+                };
+
+                struct X{};
+                struct Y{
+                    bool operator<(Y)const { return true; }
+                };
+
+                int main()
+                {
+                    std::boolalpha(std::cout);
+                    std::cout << Neco<int> << ' ' << Neco<X> << ' ' << Neco<Y> << '\n';
+                    //             true              false              true
+                }
+
+            * Örnek 5,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                concept Neco = requires(T) {
+                    std::is_integral_v<T>; // "std::is_integral_v<T>" biçiminde yazmak SENTAKS HATASI OLMAMALI.
+                                        // Yoksa buradaki "std::is_integral_v<T>" ifadesinin değerinin ne olduğu 
+                                        // önemli değildir. 
+                };
+
+
+                int main()
+                {
+                    constexpr auto a = Nec<double>; // "a" is "true"
+                }
+
+            * Örnek 6,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                concept Neco = requires(T p) {
+                    *p; 
+                    **p;
+                };
+
+
+                int main()
+                {
+                    constexpr auto a = Nec<int*>; // "a" is "false"
+                    constexpr auto b = Nec<int**>; // "b" is "true"
+                }
+
+            * Örnek 7,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                concept Neco = requires(T p) {
+                    ++**p;
+                };
+
+
+                int main()
+                {
+                    constexpr auto a = Nec<std::string**>; // "a" is false 
+                    constexpr auto b = Nec<int**>; // "b" is "true"
+                }
+
+            * Örnek 8,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                concept Printable = requires(T p) {
+                    std::cout << p; // "std::cout << p;" ifadesini yazmak SENTAKS HATASI OLMAMALIDIR. 
+                    p.print(); // "p.print();" ifadesini yazmak SENTAKS HATASI OLMAMALIDIR. Bir diğer
+                            // deyişle "print" isminde üye fonksiyonunun olması gerekmektedir.  
+                };
+
+                struct A{};
+                struct B{
+                    friend std::ostream& operator<<(std::ostream& os, const B& other) { return os; }
+                };
+                struct C{
+                    friend std::ostream& operator<<(std::ostream& os, const C& other) { return os; }
+                    void print() {  }
+                };
+
+                int main()
+                {
+                    
+                    /*
+                        # OUTPUT #
+                        false
+                        false
+                        false
+                        false
+                        true
+                    */
+
+                    constexpr auto a = Printable<int>; // "a" is "false" 
+                    constexpr auto b = Printable<std::string>; // "b" is "false"
+                    constexpr auto c = Printable<A>; // "c" is "false"
+                    constexpr auto d = Printable<B>; // "d" is "false"
+                    constexpr auto e = Printable<C>; // "e" is "true"
+                    std::boolalpha(std::cout);
+                    std::cout << a << '\n' << b << '\n' << c << '\n' << d << '\n' << e << '\n';
+                }
+
+            * Örnek 9,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                requires // start of "requires clause"
+                requires(T x){ // start of "requires expression"
+                    x+x;            // "T" türünden nesnelerin toplanabilir
+                    x-x;            // ve çıkartılabilir olması gerekmektedir. 
+                }// end of "requires expression"
+                &&
+                std::integral<T> // "concepts" : "T" türünün bir tam sayı olması gerekmektedir. 
+                // end of "requires clause"
+                class Myclass{};
+
+                int main()
+                {
+                    Myclass<int> m1; // OK 
+                    Myclass<double> m2; // ERROR: template constraint failure for
+                                        // ‘template  requires requires(T x) {x + x;x - x;} && (integral) class Myclass’
+                }
+
+            * Örnek 10,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                requires requires(T x){ 
+                    std::cout << x; // "std::cout << x;" ifadesinin SENTAKS HATASI OLUŞTURMAMASI GEREKİYOR. 
+                    *x; // "*x;" ifadesinin SENTAKS HATASI OLUŞTURMAMASI GEREKİYOR. 
+                    sizeof(x) > 100; // "sizeof(x) > 100;" ifadesini yazmak, hiçbir zaman için, SENTAKS HATASI oluşturmaz. 
+                }
+                class Myclass{};
+
+                template<typename T>
+                requires requires(T x){ 
+                    std::cout << x; // "std::cout << x;" ifadesinin SENTAKS HATASI OLUŞTURMAMASI GEREKİYOR. 
+                    *x; // "*x;" ifadesinin SENTAKS HATASI OLUŞTURMAMASI GEREKİYOR. 
+                } && (sizeof(T) > 4) // Artık "T" türünün "sizeof" değerinin de dörtten büyük olması gerekmektedir. 
+                class Neco{};
+
+                template<typename T>
+                concept my_custom_constraint = requires {
+                    sizeof(int) > 100;  // "sizeof(int) > 100;" ifadesi hiç bir zaman sentaks hatası oluşturmaz. Yani "Always True".
+                    std::is_integral_v<int>; // "std::is_integral_v<int>;" ifadesi de hiç bir zaman sentaks hatası oluşturmaz. Yani "Always True". 
+                }; // Yani aslında hiç bir "constraints" mevcut değildir. 
+
+                int main()
+                {
+                    constexpr bool a = my_custom_constraint<float>; 
+                    std::cout << "a: " << std::boolalpha << a << '\n';
+                    
+                    constexpr bool b = Neco<char>;  // ERROR: template constraint failure for ‘template  requires requires(T x) {std::cout << x;*x;} && sizeof (T) > 4 class Neco’
+                    constexpr bool c = Myclass<char>; // ERROR: template constraint failure for ‘template  requires requires(T x) {std::cout << x;*x;sizeof x > 100;} class Myclass’
+                }
+
+            * Örnek 11,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                concept my_custom_constraint = requires {
+                    requires (sizeof(T) > 100); // "sizeof(int) > 100" ifadesinin "true" değer döndürmesi gerekmektedir. 
+                    requires (!std::is_integral_v<T>); // "!std::is_integral_v<T>" ifadesinin "true" değer döndürmesi gerekmektedir. 
+                }; 
+
+                struct Buffer{
+                    char m_buffer[2000]{};
+                };
+
+                int main()
+                {
+                    std::cout << std::boolalpha << my_custom_constraint<Buffer> << '\n'; // true
+                }
+
+            * Örnek 12,
+                #include <iostream>
+                #include <random>
+
+                template<typename T>
+                requires (sizeof(T) > 64)
+                class Myclass {};
+
+                int main()
+                {
+                    // Myclass<int> m1; // ERROR: the associated constraints are not satisfied
+                    
+                    std::cout << "sizeof mt19937 : " << sizeof(std::mt19937) << '\n'; // sizeof mt19937 : 5000
+                    Myclass<std::mt19937> eng; // OK 
+                }
+
+            * Örnek 13,
+                #include <iostream>
+                #include <concepts>
+                #include <type_traits>
+
+                template<typename T>
+                requires std::is_pointer_v<T> || std::same_as<T, std::nullptr_t>
+                void foo(T x) {}
+
+                template<typename T>
+                requires std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>
+                void func(T x) {}
+
+                int main()
+                {
+                    int ival{}; foo(&ival); foo(nullptr);
+                    double dval{}; func(&dval); func(nullptr);
+                }
+
+            * Örnek 14,
+                #include <iostream>
+                #include <concepts>
+                #include <type_traits>
+
+                template<typename T>
+                requires (!std::convertible_to<T, std::string>)
+                void foo(T x) {}
+
+                template<typename T, typename U>
+                requires std::convertible_to<T, U>
+                void func(T, U) {}
+
+                template<typename T, typename U>
+                requires std::is_convertible_v<T, U>
+                void bar(T, U) {}
+
+                int main()
+                {
+                    foo("Merve"); // ERROR: the associated constraints are not satisfied
+                    foo(4.5); // OK
+
+                    func(2, 5.6); // OK 
+                    int x{}; func(x, &x); // ERROR: the associated constraints are not satisfied
+                }
+
+            * Örnek 15,
+                #include <string>
+                #include <concepts>
+                #include <optional>
+
+                template<typename T>
+                requires std::integral<std::remove_reference_t<decltype(*std::declval<T>())>>
+                void foo(T) {}
+
+                /*
+                *	(I)   Buradaki "std::integral<std::remove_reference_t<decltype(*std::declval<T>())>>" ifadesi,
+                *	"true" olması sentaks hatası oluşmayacaktır. 
+                *	(II)  Bunun için de "std::remove_reference_t<decltype(*std::declval<T>())>" ifadesinin "std::integral"
+                *	"concept" ini karşılaması gerekmektedir. 
+                *	(III) "std::declval<T>()" ifadesi ise "T" türünden bir nesne oluşturma ifadesidir. Tıpkı "T{}" veya 
+                *	"T()" gibi. Burada "declval" fonksiyon şablonunun kullanılma amacı, "T{}" veya "T()" biçimindeki kullanımda 
+                *	ilgili tür için "Default Ctor." olması gerekmesidir. 
+                *	(IV)  "*std::declval<T>()" ifadesi ise "std::declval<T>()" ifadesinin "dereference" edilebilir olması
+                *	demektir. 
+                *	(V)   "decltype(*std::declval<T>())" ifadesi ise "std::declval<T>()" ifadesi "dereference" edildiğinde
+                *	oluşan ifadenin türü demektir. 
+                *	(VI)  "std::remove_reference_t<decltype(*std::declval<T>())>" ifadesi ise yukarıda "decltype" ile elde 
+                *	ettiğimiz türün referans olması halinde, referanslığını atmaktadır. 
+                *	(VII) Böylelikle "std::integral<std::remove_reference_t<decltype(*std::declval<T>())>>" ifadesiyle biz,
+                *	"T" türünden bir nesnenin "dereference" edildiğinde "std::integral" konseptini karşılayıp karşılamadığını
+                *	sorgulamış oluyoruz. 
+                */
+                int main()
+                {
+                    int x{};
+                    foo(&x);	// "T" türü "int*" oldu. "dereference" edildiğinde "int" türü elde edildi.
+                                // "std::integral" konseptini karşılamış oldu.  
+
+                    double dval{};
+                    foo(&dval);	// "T" türü "double*" olacaktır. "dereference" edildiğinde "double" türü elde
+                                // edilecektir. "std::integral" konsepti KARŞILANMAMIŞ olacaktır. 
+                    
+                    std::optional op{ 45 };
+                    foo(op);	// "op" nesnesi "dereference" edildiğinde "int&" türü elde edilmekte. Referanslık
+                                // sıyrılacak ve "int" türü elde edilecek. Bu da "std::integral" konseptini karşılamış 
+                                // oldu. 
+                }
+
+            * Örnek 16.0,
+                template<typename T, typename U>
+                concept my_custom_concept = requires(T x, U y) {
+                    x.foo() || y.bar(); // "x.foo() || y.bar();" ifadesinin yazılması sentaks hatası
+                                        // OLUŞTURMAMALIDIR. 
+                };
+
+                struct A {
+                    void foo() {}
+                };
+
+                struct B {};
+
+                struct C {
+                    void bar() {}
+                };
+
+                int main()
+                {
+                    constexpr auto a = my_custom_concept<A, B>; // "a" is "false". Çünkü "B" sınıfında ".bar()" 
+                                                                // fonksiyonu olmadığı için normalde sentaks
+                                                                // hatası oluşacaktır. Fakat burada konsept 
+                                                                // karşılanmadığı için "false" değerini almıştır. 
+                                                                // Dolayısıyla "||" operatörünü kullanırken dikkatli 
+                                                                // olmalıyız. Normal şartlarda "||" operatörünün sol 
+                                                                // operandı "true" ise sağ operandına bakılmaz. 
+                    
+                    constexpr auto b = my_custom_concept<A, C>; // Artık "b" değişkeninin değeri "true" olacaktır. Çünkü
+                                                                // her iki sınıf da bünyesinde ilgili fonksiyonları 
+                                                                // barındırmaktadır. 
+                }
+
+            * Örnek 16.1,
+                #include <iostream>
+                #include <concepts>
+
+                template<typename T, typename U>
+                concept my_custom_concept =  requires(T x) { x.foo(); } || requires (T x) { x.bar(); };
+
+                struct A {
+                    void foo() {}
+                };
+
+                struct B {};
+
+                int main()
+                {
+                    constexpr auto a = my_custom_concept<A, B>; // "a" is "true". Çünkü artık
+                                                                // "requires(T x) { x.foo(); } || requires (T x) { x.bar(); }"
+                                                                // ifadesinin "true" olması halinde sonuç "true" olacaktır. Yani 
+                                                                // "constraint" ifadelerinin kendilerinin "||" ile birleştirilmesi 
+                                                                // gerekmektedir. 
+                }
+            
+            * Örnek 16.2,
+                #include <iostream>
+                #include <concepts>
+
+                template<typename T>
+                concept has_foo = requires(T x) {
+                    x.foo();
+                };
+
+                template<typename T>
+                concept has_bar = requires(T x) {
+                    x.bar();
+                };
+
+                template<typename T, typename U>
+                    requires has_foo<T> || has_bar<U>
+                class Myclass {};
+
+                struct A {
+                    void foo() {}
+                };
+
+                struct B {};
+
+                struct C {
+                    void bar() {}
+                };
+
+                int main()
+                {
+                    Myclass<A, B> m1;
+                    Myclass<B, C> m2;
+                    Myclass<A, C> m3;
+                }
+            
+            * Örnek 17,
+                #include <iostream>
+                #include <concepts>
+
+                template<typename T>
+                concept my_concept_v1 = requires{
+                    std::declval<T>().foo();
+                };
+
+                template<typename T>
+                concept my_concept_v2 = requires (T x){
+                    x.foo();
+                };
+
+                int main()
+                {
+                    //... 
+                }
+        
+        >>> "Type Requiretments": Derleyici bir türün var olduğunu ve o türün kullanımının geçerli olduğunu sınamak zorunda. Burada 
+        "typename" anahtar sözcüğünü kullanmak zorundayız. Örneğin, "T" herhangi bir tür olmak şartıyla, "typename T::value_type;"
+        ifadesi demek "T" türünün alt türü olarak "value_type" türünün olması gerekmektedir. Burada "using" bildirimi de kullanılabilir,
+        "sub-class" olarak da. Önemli olan "value_type" a karşılık bir türün olmasıdır. 
+            * Örnek 1,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                concept my_custom_constraint = requires {
+                    typename T::value_type;
+                }; 
+
+                struct Eray{};
+
+                struct Neco{
+                    using value_type = int; 
+                };
+
+                int main()
+                {
+                    constexpr auto a =  my_custom_constraint<int>;  // "int" türü alt tür olarak "value_type" türüne
+                                                                    // sahip olmadığından, "a" değişkeni "false" değerdedir. 
+                                                                    
+                    constexpr auto b = my_custom_constraint<std::vector<int>>;  // "std::vector<int>" türü alt tür olarak 
+                                                                                // "value_type" türüne sahip olduğundan dolayı
+                                                                                // "b" değişkeni "true" değerdedir. 
+                                                                                
+                    constexpr auto c = my_custom_constraint<std::vector<int>::iterator>;    // "std::vector<int::iterator>" türü alt tür olarak 
+                                                                                            // "value_type" türüne sahip olduğundan dolayı
+                                                                                            // "c" değişkeni "true" değerdedir. 
+                                                                                            
+                    constexpr auto d = my_custom_constraint<Eray>;  // "Eray" türü "value_type" türünden alt türe sahip değildir. Bu yüzden 
+                                                                    // "d" değişkeni "false" değerdedir. 
+                                                                    
+                    constexpr auto e = my_custom_constraint<Neco>;  // "Neco" türü "value_type" türünden alt türe sahiptir. Dolayısıyla 
+                                                                    // "e" değişkeni "true" değerdedir. 
+                    
+                } 
+
+            * Örnek 2,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                template<typename T>
+                class Myclass{
+                    // Burada "T" türü herhangi bir tür olabilir. 
+                };
+
+                template<std::integral T>
+                class Neco{
+                    // Burada "T" türü tam sayı türlerinden birisi olmak zorundadır. 
+                };
+
+                template<typename T>
+                concept Eray = requires{
+                    typename Myclass<T>;    // "T" türü ne ise "Myclass" sınıf şablonunun
+                                            // o tür nezdinde açılabilir olması gerekiyor. 
+                };
+
+                template<typename T>
+                concept Deniz = requires{
+                    typename Neco<T>;    // "T" türü ne ise "Neco" sınıf şablonunun
+                                            // o tür nezdinde açılabilir olması gerekiyor. 
+                };
+
+                int main()
+                {
+                    constexpr auto a = Eray<int>;   // "T" için "int" gelmekte. "Myclass<int>" geçerli 
+                                                    // olması hasebiyle, "a" değişkeni "true" değerde. 
+                                                    
+                    constexpr auto b = Deniz<double>;   // "T" için "double" gelmekte. "Neco<double>" geçerli
+                                                        // değildir çünkü "Neco" için "T" ye karşılık sadece 
+                                                        // tam sayı türleri gelebilir. Dolayısıyla "b" değişkeni
+                                                        // "false" değerdedir. 
+                }
+
+            * Örnek 3,
+                #include <concepts>
+                #include <vector>
+                #include <memory>
+                #include <iostream>
+                #include <type_traits>
+
+                // Way - I 
+                template<typename T>
+                concept check_if_moveable_v1 = requires {
+                    requires (std::is_move_constructible_v<T>);
+                };
+
+                // Way - II 
+                template<typename T>
+                concept check_if_moveable_v2 = (std::is_move_constructible_v<T>);
+
+                int main()
+                {
+                    //... 
+                }
+
+        >>> "Compound Requirements" : "{}" kullandığımız durumlardır. Üç farklı yöntemi vardır. 
+            >>>> Sadece "{}" kullanılması:
+                * Örnek 1,
+                    #include <concepts>
+                    #include <iostream>
+
+                    template<typename T>
+                    concept Nec = requires (T x){
+                        // Compound Requirement 
+                        {x.foo()}; // x.foo();
+                    };
+
+                    struct A{};
+                    struct B{
+                        void foo(void) {}
+                    };
+                    struct C{
+                        void foo(void) noexcept {}
+                    };
+
+                    int main()
+                    {
+                        std::boolalpha(std::cout);
+                        std::cout << Nec<A> << '\n'; // false
+                        std::cout << Nec<B> << '\n'; // true
+                        std::cout << Nec<C> << '\n'; // true
+                    }
+
+            >>>> "{}" ile birlikte "noexcept" gibi şeylerin kullanılması:
+                * Örnek 1,
+                    #include <concepts>
+                    #include <iostream>
+
+                    template<typename T>
+                    concept Nec = requires (T x){
+                        // Compound Requirement 
+                            {x.foo()}; // x.foo();
+                        {*x}noexcept; // "*x" ifadesinin yürütülmesi "noexcept" garantisi vermektedir. 
+                    };
+
+                    struct A{};
+                    struct B{
+                        void foo(void) {}
+                    };
+                    struct C{
+                        void foo(void) noexcept {}
+                    };
+                    struct D{
+                        void foo(void) {}
+                        D& operator*() { return *this; }
+                    };
+                    struct G{
+                        void foo(void) {}
+                        G& operator*() noexcept { return *this; }
+                    };
+                    struct E{
+                        void foo(void) noexcept {}
+                        E& operator*() { return *this; }
+                    };
+                    struct F{
+                        void foo(void) noexcept {}
+                        F& operator*() noexcept { return *this; }
+                    };
+
+
+                    int main()
+                    {
+                        std::boolalpha(std::cout);
+                        std::cout << Nec<A> << '\n'; // false
+                        std::cout << Nec<B> << '\n'; // false
+                        std::cout << Nec<C> << '\n'; // false
+                        std::cout << Nec<D> << '\n'; // false
+                        std::cout << Nec<E> << '\n'; // false
+                        std::cout << Nec<F> << '\n'; // true
+                        std::cout << Nec<G> << '\n'; // true
+                    }
+
+            >>>> "{}" ile birlikte "->" operatörünün kullanılması. Bu kullanım ile amaç "{}" içerisindeki ifadeden elde edilmesi gereken 
+            türün ne olması gerektiği belirlenmektedir. Fakat türü doğrudan yazamıyoruz. Buradaki türü bir "concept" olarak 
+            belirmemiz gerekmektedir. Dolayısıyla "std::same_as" konseptini kullanmalıyız. Buradaki çalışma mekanizması da aşağıdaki gibidir:
+
+                //...
+                {x.foo()} -> std::same_as<int>;
+                //...
+
+            Normal şartlarda "std::same_as" konsepti iki parametrelidir. Buradaki parametrelerden birisi "decltype(x.foo())" ile otomatik 
+            olarak elde edilirken, ikinci parametre ise bizim belirttiğimiz "int" türüdür. Benzer şekilde "{}" içerisindeki ifadenin türünün 
+            tam sayı olmasını istiyorsak; 
+
+                //...
+                {x.foo()} -> std::integral;
+                //...
+            
+            Buradaki "std::integral" in tek parametresi ise "decltype(x.foo())" ile elde edilmiş olduğundan, nihai hedefe ulaşmış oluyoruz. 
+                * Örnek 1,
+                    #include <concepts>
+                    #include <iostream>
+
+                    template<typename T>
+                    concept Nec = requires (T x){
+                        // Compound Requirement 
+                        {x.foo()} noexcept -> std::integral;
+                    };
+
+                    struct A{};
+                    struct B{
+                        void foo(void) {}
+                    };
+                    struct C{
+                        void foo(void) noexcept {}
+                    };
+                    struct D{
+                        int foo(void) noexcept { return 1; }
+                    };
+
+                    int main()
+                    {
+                        std::boolalpha(std::cout);
+                        std::cout << Nec<A> << '\n'; // false
+                        std::cout << Nec<B> << '\n'; // false
+                        std::cout << Nec<C> << '\n'; // false
+                        std::cout << Nec<D> << '\n'; // true
+                    } 
+
+                * Örnek 2,
+                    #include <concepts>
+                    #include <iostream>
+
+                    template<typename T, typename U>
+                    concept any_concept = requires (T x, U y){
+                        { x+y } -> std::common_with<U>; // "x+y" ifadesinin türü "std::common_type<x+y, y>"
+                                                        // ifadesinin türü olmalıdır. 
+                        
+                    };
+
+                    struct A{};
+                    struct B{
+                        B() = default;
+                        B(int) {}
+                    };
+                    struct C{
+                        C() = default;
+                        C(int) {}
+                        operator int() { return 1; }
+                    };
+
+                    int main()
+                    {
+                        std::boolalpha(std::cout);
+                        std::cout << any_concept<int, long> << '\n';    // true
+                        std::cout << any_concept<int, char> << '\n';    // true
+                        std::cout << any_concept<int, float> << '\n';   // true
+                        std::cout << any_concept<int, int*> << '\n';    // true
+                        std::cout << any_concept<int, const char*> << '\n'; // true
+                        std::cout << any_concept<int, A> << '\n';   // false
+                        std::cout << any_concept<int, B> << '\n';   // false
+                        std::cout << any_concept<int, C> << '\n';   // true
+                    }
+
+        >>> "Nested Requirements" : "Require Expression" içerisinde "Require Closure" kullanılmasıdır. 
+            * Örnek 1,
+                #include <concepts>
+                #include <iostream>
+
+                /*  (IV)
+                template<typename T>
+                concept Reference = std::is_reference_v<T>;
+                */
+
+                template<typename T>
+                concept Nec = /* (I) => */ /* std::is_reference_v<T> && */ requires (T x){
+                    
+                    std::is_reference_v<T>; // "std::is_reference_v<T>;" ifadesini yazmak sentaks hatası
+                                            // OLUŞTURMAMALI. Burada "T" türünün referanslığı sorgulanmamaktadır. 
+                                            
+                    // Eğer "T" türünün referanslığının sorgulanmasını istiyorsak
+                    // ya "I" ya "II" ya da "III" nolu yöntemi kullanabiliriz. 
+                    // (II)
+                    // requires std::is_reference_v<T>; 
+                    // (III)
+                    // requires requires (T) { std::is_reference_v<T>; }
+                    // Hatta referans sorgulamasını ayrı bir konsept altında da yapabiliriz. (IV)
+                    // requires Reference<T>; 
+                };
+
+                int main()
+                {
+                    //...
+                }
+
+    Şimdi de kritik noktaları gösteren örnekleri inceleyelim:
+        * Örnek 1,
+            #include <concepts>
+            #include <iostream>
+
+            template<typename T>
+            concept c1 = std::integral<T>;
+
+            template<typename T>
+            concept c2 = requires {
+                std::integral<T>; // !!!
+            };
+
+            template<typename T>
+            concept c3 = requires {
+                requires std::integral<T>;
+            };
+
+            template<std::integral T>
+            class Myclass{};
+
+            template<typename T>
+            concept c4 = requires {
+                typename Myclass<T>; 
+            };
+
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                    true false
+                    true true
+                    true false
+                    true false
+                */
+                
+                std::boolalpha(std::cout);
+                std::cout << c1<int> << ' ' << c1<double> << '\n'; 
+                std::cout << c2<int> << ' ' << c2<double> << '\n'; 
+                std::cout << c3<int> << ' ' << c3<double> << '\n'; 
+                std::cout << c4<int> << ' ' << c4<double> << '\n'; 
+            }
+
+        * Örnek 2,
+            #include <concepts>
+            #include <iostream>
+
+            // constraint: 
+            // *p && p[]
+
+            // WAY - I 
+                template<typename T>
+                concept Nec_v1_1 = requires (T p){
+                    *p; 
+                    p[0];
+                };
+
+            // WAY - II 
+                template<typename T>
+                concept Dereferencable_v1 = requires (T x) { *x; };
+                
+                template<typename T>
+                concept Subscriptable_v1 = requires (T x) { x[0]; };
+                
+                template<typename T>
+                concept Nec_v1_2 = Dereferencable_v1<T> && Subscriptable_v1<T>; 
+
+            // constraint: 
+            // *p || p[]
+
+            // WAY - I 
+                template<typename T>
+                concept Dereferencable_v2 = requires (T x) { *x; };
+                
+                template<typename T>
+                concept Subscriptable_v2 = requires (T x) { x[0]; };
+                
+                template<typename T>
+                concept Nec_v2_1 = Dereferencable_v2<T> || Subscriptable_v2<T>; 
+
+            // WAY - II 
+                template<typename T>
+                concept Nec_v2_2 = requires (T x) { *x; } || requires (T x) { x[0]; };
+                
+            // WAY - III: Different Meaning!!!
+                template<typename T>
+                concept Nec_v2_3 = requires (T x){
+                    *x || x[0];  
+                };
+                
+            int main()
+            {
+                /*
+                    # OUTPUT #
+                */
+                
+                //...
+            }
+
+        * Örnek 3,
+            #include <concepts>
+            #include <functional>
+
+            template<typename T>
+            concept hashable = requires {
+                // typename std::hash<T>;   // "typename std::hash<T>" ifadesi "std::hash<T>" türü oluşturulabilir mi demektir. 
+                                            // "std::hash" in herhangi bir türden açılımı oluşturulabilir. 
+                
+                std::hash<T>{}; // "std::hash" in "T" açılımı türünden bir nesneyi oluşturabiliriz, demektir. 
+            }; 
+
+            /*  // WAY - I 
+            template<typename T>
+            requires hashable<T>
+            void foo(T)
+            {
+                std::hash<T> x;
+                //...
+            }
+            */
+
+            /*  // WAY - II 
+            template<hashable T>
+            void bar(T)
+            {
+                std::hash<T> x;
+                //...
+            }
+            */
+
+            // WAY - III 
+            void func(hashable auto)
+            {
+                //...
+            }
+
+            struct A{};
+            template<>
+            struct std::hash<A>{
+                std::size_t operator()(const A&)const { return 3; }  
+            };
+
+            int main()
+            {
+                func(A{});  // OK: Çünkü yukarıda "std::hash" için kendi sınıfımız için
+                            // açılabilir olmasını kıldık. Eğer "template<>" kısmı 
+                            // olmasaydı, bu kod parçası sentaks hatası oluşturacaktı. 
+                            // Böylelikle bizler "custom" türlerimiz için "std::hash" açılımının 
+                            // olup olmadığını sorgulayabiliriz. 
+            }
+
+        * Örnek 4,
+            #include <concepts>
+            #include <iostream>
+
+            template<typename T>
+            concept HasFoo = requires (T x) {
+                { x.foo() } noexcept -> std::convertible_to<bool>; // "x.foo()" ile elde ettiğimiz tür, bool" türüne dönüştürülebilir olmalıdır.  
+                { x.bar() } noexcept -> std::same_as<bool>; // "x.bar()" ile elde ettiğimiz tür ise "bool" türü olmalıdır. 
+            };
+
+            struct Nec{
+                int foo()const noexcept { return 1; }
+                int bar()const noexcept { return 11; }
+            };
+
+            struct Erg{
+                int foo()const noexcept { return 1; }
+                bool bar()const noexcept { return 11; }
+            };
+
+            int main()
+            {
+                std::cout << HasFoo<Nec> << '\n'; // false
+                std::cout << HasFoo<Erg> << '\n'; // true
+            }
+
+        * Örnek 5,
+            #include <concepts>
+            #include <iostream>
+
+            // LEVEL - I
+                template<typename T>
+                concept HasTheFunctions = requires (T x) {
+                    { x.foo() } noexcept -> std::convertible_to<bool>; // "x.foo()" ile elde ettiğimiz tür, bool" türüne dönüştürülebilir olmalıdır.  
+                    { x.bar() } noexcept -> std::same_as<bool>; // "x.bar()" ile elde ettiğimiz tür ise "bool" türü olmalıdır. 
+                };
+
+                template<typename T>
+                requires HasTheFunctions<T>
+                class StepOne{};
+                
+                template<typename T>
+                requires HasTheFunctions<T>
+                T FuncOne(T x) { return x; }
+                
+                template<typename T>
+                T FooOne(T x) requires HasTheFunctions<T> { return x; }
+
+            // LEVEL - II
+                template<typename T>
+                concept IsItFinal = std::integral<T> && HasTheFunctions<T>; 
+                
+                template<typename T>
+                requires IsItFinal<T>
+                class StepTwo{};
+                
+                template<typename T>
+                requires IsItFinal<T>
+                T FuncTwo(T x) { return x; }
+                
+                template<typename T>
+                T FooTwo(T x) requires IsItFinal<T> { return x; }
+                
+            // LEVEL - III 
+                template<IsItFinal T> // "Constrained Template Param."
+                class Last{};
+
+                template<IsItFinal T>
+                T FuncThree(T x) { return x; }
+                
+            // LEVEL - IV 
+                auto FuncFour(IsItFinal auto x) { return x; } // "Aggregate Template Syntax"
+                IsItFinal auto FooFour(IsItFinal auto x) { return x; } // "Aggregate Template Syntax"
+                
+            int main()
+            {
+                //...
+            }
+
+        * Örnek 6,
+            #include <concepts>
+            #include <iostream>
+
+            int main()
+            {
+                auto f = []<typename T>(T x) {}; f(12);
+                auto g = []<std::integral T>(T x){}; g(12); 
+                auto h = []<typename T>(T x)-> typename T::value_type {}; h(12);
+                auto i = []<std::integral T>(T x)-> double{ return 1.; }; i(12);
+                auto j = [](std::integral auto)->std::integral auto { return 1; }; j(12);
+                auto k = []<std::integral T>(T x)-> T {}; k(12);
+            }
+
+        * Örnek 7,
+            #include <concepts>
+            #include <iostream>
+
+            template<typename T>
+            concept nec = requires (T x) {
+                {++x}noexcept->std::convertible_to<int>;
+                
+                requires std::integral<T>; 
+            };
+
+            int main()
+            {
+                //... 
+            }
+
+        * Örnek 8,
+            #include <type_traits>
+            #include <concepts>
+
+            template<typename T, typename U, typename W>
+            concept Necible = requires (T t, U u, W w){
+                ++t;
+                --u;
+                w.foo();
+            };
+
+            void foo(Necible<int, double> auto) {} // Buradaki fonksiyon parametresi olarak diğeri derleyici tarafından yazıldığı için yazılmamıştır. 
+
+            int main()
+            {
+
+            }
+
+Bir fonksiyonun sadece belirli bir argümanla çağrılmasına izin vermek; örneğin, sadece "int" ile çağrılabilen bir fonksiyon: 
+    * Örnek 1.0, Klasik yöntem.
+        #include <concepts>
+        #include <iostream>
+
+        template<typename T>
+        void func(T) = delete;
+
+        void func(int) {}
+
+        int main()
+        {
+            /*
+            *   Yukarıdaki iki "func" fonksiyonu da birbirini
+            *   "overload" etmektedir. Dilin kuralına göreyse;
+            *   Argümanla parametre uyuyorsa, gerçek fonk. 
+            *   Argümanla parametre uymuyorsa, o şablondan bir 
+            *   "specialization" oluşturulacak. Yukarıda da bu 
+            *   "specialization" "delete" edildiği için sentaks
+            *   hatası oluşacak. 
+            */
+            
+            func(12);   // OK 
+            func(1.2);  // ERROR: use of deleted function ‘void func(T) [with T = double]’
+            func(1.2f); // ERROR: use of deleted function ‘void func(T) [with T = float]’
+            func('f');  // ERROR: use of deleted function ‘void func(T) [with T = char]’
+            func(12u);  // ERROR: use of deleted function ‘void func(T) [with T = unsigned int]’
+        }
+
+    * Örnek 1.1, "Substitution Failure is not an error" / "SFINAE": 
+        #include <type_traits>
+
+        template<typename T, std::enable_if_t<std::is_same_v<T, int>> * = nullptr>
+        void func(T);
+
+        int main()
+        {
+            func(12);   // OK 
+            func(1.2);  // ERROR: no matching function for call to ‘func(double)’
+            func(1.2f); // ERROR: no matching function for call to ‘func(float)’
+            func('f');  // ERROR: no matching function for call to ‘func(char)’
+            func(12u);  // ERROR: no matching function for call to ‘func(unsigned int)’
+        }
+
+    * Örnek 1.2.0,
+        #include <type_traits>
+        #include <concepts>
+
+        template<typename T>
+        requires std::same_as<T, int>
+        void func(T x) {}
+
+
+        int main()
+        {
+            func(12);   // OK 
+            func(1.2);  // ERROR: no matching function for call to ‘func(double)’
+            func(1.2f); // ERROR: no matching function for call to ‘func(float)’
+            func('f');  // ERROR: no matching function for call to ‘func(char)’
+            func(12u);  // ERROR: no matching function for call to ‘func(unsigned int)’
+        }
+
+    * Örnek 1.2.1,
+        #include <type_traits>
+        #include <concepts>
+
+        template<std::same_as<int> T>
+        void func(T x) {}
+
+
+        int main()
+        {
+            func(12);   // OK 
+            func(1.2);  // ERROR: no matching function for call to ‘func(double)’
+            func(1.2f); // ERROR: no matching function for call to ‘func(float)’
+            func('f');  // ERROR: no matching function for call to ‘func(char)’
+            func(12u);  // ERROR: no matching function for call to ‘func(unsigned int)’
+        }
+
+    * Örnek 1.2.2,
+        #include <type_traits>
+        #include <concepts>
+
+        void func(std::same_as<int> auto x) {}
+
+        int main()
+        {
+            func(12);   // OK 
+            func(1.2);  // ERROR: no matching function for call to ‘func(double)’
+            func(1.2f); // ERROR: no matching function for call to ‘func(float)’
+            func('f');  // ERROR: no matching function for call to ‘func(char)’
+            func(12u);  // ERROR: no matching function for call to ‘func(unsigned int)’
+        }
+
+Standart konseptleri inceleyelim:
+    * Örnek 1,
+        #include <iostream>
+        #include <concepts>
+
+        // WAY - I 
+        template<typename F>
+        void func1(F fn) { fn(100); }
+
+        // WAY - II 
+        template<typename F>
+        requires std::invocable<F, int>
+        void func2(F fn) { fn(100); }
+
+        // WAY - III 
+        template<typename F>
+        void func3(F fn) requires std::invocable<F, int> { fn(100); }
+
+        // WAY - IV 
+        template<std::invocable<int> F>
+        void func4(F fn) { fn(100); }
+
+        // WAY - V 
+        void func5(std::invocable<int> auto f) { f(100); }
+        void func5(std::invocable<int, double> auto f) { f(100, 100.001); }
+
+        auto f = [](int x){ std::cout << x*x << '\n'; };
+        auto g = [](int x, double y){ std::cout << x+x * y+y<< '\n'; };
+        int main()
+        {
+            func1(f);
+            func2(f);
+            func3(f);
+            func4(f);
+            func5(f);
+            func5(g);
+        }
+
+    * Örnek 2,
+        #include <iostream>
+        #include <concepts>
+        #include <string>
+
+
+        void func(std::regular auto x) {} // "regular" olabilmesi için "Default Init.",
+                                        // "Copyable", "Moveable", "Swapable" ve 
+                                        // "Equality Comparison" işlevlerini desteklemeli. 
+                                        
+        void func(std::semiregular auto x) {} // "semiregular" supports "Default Init.", "Copy",
+                                            // "Move" and "Swapable". 
+        struct Merve{};
+        struct Menekse{
+            bool operator==(const Menekse&) const = default;
+        };
+
+        int main()
+        {
+            func(12); // OK: Regular
+            func(std::string{"Merve"}); // OK: Regular 
+            func(Merve{}); // OK: Semiregular
+            func(Menekse{}); // OK: Regular 
+        }
+
+"concepts" kullanmanın ilave bir avantajı ise "overloading" tarafıdır. Fakat buna yönelik de bir takım kurallar vardır. 
+    * Örnek 1,
+        #include <iostream>
+        #include <map>
+        #include <string>
+
+        void foo(std::integral auto) { std::cout << "integral\n"; }
+        void foo(std::unsigned_integral auto) { std::cout << "unsigned_integral\n"; }
+
+        int main()
+        {
+            foo(12);    // integral
+            foo(12u);   // unsigned_integral
+            foo(21L);   // integral
+            foo(21uL);  // unsigned_integral
+        }
+
+    * Örnek 2,
+        #include <iostream>
+        #include <map>
+        #include <string>
+
+        template<typename T>
+        concept Nec = requires (T x) {
+            x.foo();  
+        };
+
+        template<typename T>
+        concept Erg = Nec<T> && requires (T x) {
+            x.bar();  
+        };
+
+        void func(Nec auto) { std::cout << "Nec auto\n"; }
+        void func(Erg auto) { std::cout << "Erg auto\n"; }
+
+        struct A{
+            void foo() {}
+        };
+
+        struct B{
+            void foo() {}
+            void bar() {}
+        };
+
+        int main()
+        {
+            func(A{}); // Nec auto
+            func(B{}); // Erg auto
+        }
+
+    * Örnek 3,
+        #include <iostream>
+        #include <map>
+        #include <string>
+
+        template<typename T>
+        concept Nec = requires (T x) {
+            x.foo();  
+        };
+
+        template<typename T>
+        concept Erg = Nec<T> || requires (T x) {
+            x.bar();  
+        };
+
+        void func(Nec auto) { std::cout << "Nec auto\n"; }
+        void func(Erg auto) { std::cout << "Erg auto\n"; }
+
+        struct A{
+            void foo() {}
+        };
+
+        struct B{
+            void foo() {}
+            void bar() {}
+        };
+
+        int main()
+        {
+            func(A{}); // Nec auto
+            func(B{}); // Nec auto
+        }
+
+Şimdi de "concepts" ler arasındaki kısıtlama ilişkisine değinelim:
+    * Örnek 0,
+        #include <iostream>
+        #include <concepts>
+
+        template<typename T>
+        concept integral_or_floating = std::integral<T> || std::floating_point<T>; 
+
+        template<typename T>
+        concept integral_and_char = std::integral<T> && std::same_as<T, char>; 
+
+        void f(std::integral auto) { std::cout << "std::integral\n"; } // 1
+        void f(integral_or_floating auto) { std::cout << "std::integral_or_floating\n"; } // 2
+        void f(std::same_as<char> auto) { std::cout << "same_as<char>\n"; } // 3
+        // void f(integral_and_char auto) { std::cout << "integral_and_char\n"; } // 4 
+
+        int main()
+        {
+            f(5);   // Burada daha kısıtlayıcı hangisi ise o seçilecektir.
+                    // Yani ya "1" ya "2" seçilecektir. "2" için "||" operatörü 
+                    // kullanıldığı için, "1" den daha kısıtlayıcı DEĞİLDİR. Bu 
+                    // durumda "1" daha kısıtlayıcıdır. 
+                    
+            f(2.3); // Sadece "2" uygundur. O çağrılacaktır. 
+            
+            f('A'); // "1", "2" ve "3" uymaktadır. Fakat buradaki konseptler arasında bir 
+                    // kısıtlayıcı etki YOKTUR. Dolayısıyla şu anda "ambiguous" oluşacaktır. 
+                    // Bu hatayı gidermek için "4" numara gibi bir fonksiyon yazmalıyız.
+        }
+
+    * Örnek 1.0,
+        #include <concepts>
+
+        template<typename T>
+        concept has_foo = requires (T t) {
+            t.foo();
+        };
+
+        template<typename T>
+        concept has_foo_bar = requires (T t) {
+            t.foo();
+            t.bar();
+        };
+
+        void func(has_foo auto) {}
+        void func(has_foo_bar auto) {}
+
+        struct Nec {
+            void foo() {}
+        };
+
+        struct Erg{
+            void foo() {}
+            void bar() {}
+        };
+
+        int main()
+        {
+            func(Erg{});	// Görünürde daha kısıtlayıcı olan "has_foo_bar" olandır.
+                            // Fakat bu iki konsept arasında "subsumption" olmadığından
+                            // "ambigous" hatası oluşacaktır. Alttaki konseptin üsttekini 
+                            // "&&" operatörü ile birlikte kapsaması gerekmektedir. 
+        }
+
+    * Örnek 1.1,
+        #include <concepts>
+
+        template<typename T>
+        concept has_foo = requires (T t) {
+            t.foo();
+        };
+
+        template<typename T>
+        concept has_foo_bar = has_foo<T> && requires (T t) {
+            t.bar();
+        };
+
+        void func(has_foo auto) {}
+        void func(has_foo_bar auto) {}
+
+        struct Nec {
+            void foo() {}
+        };
+
+        struct Erg{
+            void foo() {}
+            void bar() {}
+        };
+
+        int main()
+        {
+            func(Erg{});	// Alttaki olan üsttekini "&&" operatörü ile "subsume" etmiştir.
+                            // Artık "has_foo_bar" parametreli fonksiyon çağrılacaktır.  
+        }
+
+    * Örnek 2.0,
+        #include <concepts>
+
+        template<typename T>
+        concept Integral = requires (T x) {
+            requires std::is_integral_v<T>;
+        };
+
+        template<typename T>
+        concept SignedIntegral = requires (T x) {
+            requires std::is_integral_v<T>;
+            requires std::is_signed_v<T>;
+        };
+
+        void f(Integral auto) {}
+        void f(SignedIntegral auto) {}
+
+        int main()
+        {
+            f(12);	// Yine iki konsept arasında kapsayıcılık ilişkisi
+                    // olmadığından, "ambigous" hatası oluşacaktır.  
+        }
+
+    * Örnek 2.1,
+        #include <concepts>
+
+        template<typename T>
+        concept Integral = requires (T x) {
+            requires std::is_integral_v<T>;
+        };
+
+        template<typename T>
+        concept SignedIntegral = Integral<T> && requires (T x) {
+            requires std::is_signed_v<T>;
+        };
+
+        void f(Integral auto) {}
+        void f(SignedIntegral auto) {}
+
+        int main()
+        {
+            f(12);	// Alttaki, üstekini "subsume" edeceğinden ilgili
+                    // sentaks hatası ortadan kalkacaktır. 
+        }
+
+    * Örnek 2.2,
+        #include <concepts>
+
+        template<typename T>
+        concept Integral = requires (T x) {
+            requires std::is_integral_v<T>;
+        };
+
+        template<typename T>
+        concept SignedIntegral = Integral<T> || requires (T x) {
+            requires std::is_signed_v<T>;
+        };
+
+        void f(Integral auto) {}
+        void f(SignedIntegral auto) {}
+
+        int main()
+        {
+            f(12);	// Bu durumda "subsumtion" ilişkisi farklı
+                    // olacaktır. Artık "Integral" parametreli 
+                    // fonksiyon çağrılacaktır. Eğer "&&" opt.
+                    // kullanılsaydı, "SignedIntegral" parametreli
+                    // fonksiyon çağrılacaktır.
+        }
+
+    * Örnek 3,
+        #include <concepts>
+        #include <string>
+
+        void foo_v1(const std::convertible_to<std::string> auto& x)
+        {
+            std::string str = x;
+            //...
+        }
+
+        void foo_v2(const auto& x)
+        requires std::convertible_to<decltype(x), std::string>
+        {
+            std::string str = x;
+            //...
+        }
+
+        template<std::convertible_to<std::string> T>
+        void foo_v3(const T& x)
+        {
+            std::string str = x;
+            //...
+        }
+
+        template<typename T>
+        requires std::convertible_to<T, std::string>
+        void foo_v4(const T& x)
+        {
+            std::string str = x;
+            //...
+        }
+
+        int main()
+        {
+            //...
+        }
+
+    * Örnek 4,
+        #include <concepts>
+        #include <string>
+        #include <iostream>
+        #include <memory>
+
+        template<std::convertible_to<bool> T>
+        void foo(T x)
+        {
+            std::cout << static_cast<bool>(x) << '\n';
+        }
+
+        int main()
+        {
+            std::boolalpha(std::cout);
+
+            int x{ 43 };
+            foo(x);		// "int" türünden "bool" türüne dönüşüm geçerlidir.
+            foo(&x);	// Gösterici türlerden "bool" türüne dönüşüm geçerlidir. 
+            
+            foo(nullptr);	// "nullptr" -> "bool" türüne örtülü dönüşüm mevcut değildir. 
+            foo("murat");	// Gösterici türlerden "bool" türüne dönüşüm geçerlidir. "T" is "const char*".
+            foo(std::string{"murat"});	// "std::string" -> "bool" türüne örtülü dönüşüm mevcut değildir. 
+            foo(std::make_unique<int>(43));	// İlgili tür dönüştürme operatör fonksiyonu "explicit" olduğu için
+                                            // sentaks hatası meydana gelmektedir. 
+        }
+
+    * Örnek 5,
+        #include <concepts>
+
+        template<std::copyable T>
+        class Myclass {};
+
+        struct A {};
+
+        struct B {
+            B() = default;
+            B(const B&) = default;
+            B& operator=(const B&) = default;
+        };
+
+        struct C {
+            C() = delete;
+            C(const C&) = delete;
+            C& operator=(const C&) = delete;
+        };
+
+        struct D {
+            D() = default;
+            D(const D&) = default;
+            D& operator=(const D&) = default;
+            D(D&&) = delete;
+            D& operator=(D&&) = delete;
+        };
+
+        int main()
+        {
+            Myclass<int> m1;
+            Myclass<A> m2;
+            Myclass<B> m3;
+            Myclass<C> m4; // "C" is not copyable.
+            Myclass<D> m5; // "D" is not copyable.
+        }
+
+    * Örnek 6,
+        #include <concepts>
+        #include <iostream>
+        #include <iterator>
+        #include <vector>
+
+        template<typename F, typename Iter>
+        void bar(F fn, Iter iter)
+        requires std::indirect_unary_predicate<F, Iter>
+        {
+            std::cout << fn(*iter) << '\n';
+        }
+
+        int main()
+        {
+            const auto pred = [](int x) { return x % 5 == 0; };
+            std::vector ivec{ 4, 50, 12, 20, 35, 7, 9, 40 };
+            std::boolalpha(std::cout);
+            for (auto iter = ivec.begin(); iter != ivec.end(); ++iter) {
+                bar(pred, iter);
+            }
+        }
+
+    * Örnek 7,
+        #include <concepts>
+        #include <iostream>
+        #include <iterator>
+        #include <vector>
+
+        void func(std::invocable<int> auto f, int x)
+        {
+            f(x);
+        }
+
+        void func(std::invocable<int, double> auto f, int x)
+        {
+            f(x);
+        }
+
+        int main()
+        {
+            f(
+                []() {}, 
+                20
+            ); // ERROR
+            
+            f(
+                [](int x) { return x * x; }, 
+                20
+            ); // OK 
+
+            f(
+                [](int x, double y) { return x * y; },
+                40, 40.
+            ); // OK 
+        }
+
+    * Örnek 8,
+        #include <concepts>
+        #include <string>
+
+        void foo(std::totally_ordered auto x)
+        {
+            //...
+        }
+
+        struct Nec {};
+        struct Erg {
+            auto operator<=>(const Erg&) const = default;
+        };
+        struct Cpp {
+            bool operator==(const Cpp&) const = default;
+        };
+
+        int main()
+        {
+            foo(1);
+            foo(std::string{ "Merve" });
+            foo(Nec{}); // ERROR
+            foo(Erg{});
+            foo(Cpp{}); // ERROR
+        }
+
+> Hatırlatıcı Notlar:
+    >> "std::declval" : Derleme zamanında çağrılan bir fonksiyondur. Geri dönüş değeri, o türe ilişkin bir referanstır. "R-Value"
+    veya "L-Value" referans olması fark etmemektedir. 
+        * Örnek 1,
+            class Necati{
+                public:
+                    Myclass();
+                    int foo() const { return 1; }
+            };
+
+            class Ergin{
+                public:
+                    Myclass(int); 
+                    int foo() const { return 2; }
+            };
+
+            int main()
+            {
+                decltype(Necati{}.foo()); // Bu ifade sentaks hatası oluşturmayacaktır. 
+                decltype(Ergin{}.foo()); // Bu ifade sentaks hatası oluşturacaktır. Çünkü sınıfın "Default Ctor." YOKTUR. 
+                decltype(std::declval<Ergin>().foo());  // Artık sentaks hatası oluşmayacaktır. Fakat bu fonksiyonu sadece 
+                                                        // "Unevaluated Context" içerisinde çağırmak zorundayız. 
+            }
+
+    >> Uzun fonksiyonların nasıl daha kısa gale getirildiğine ilişkin örnek:
+        * Örnek 1,
+            #include <iostream>
+            #include <map>
+            #include <string>
+
+            // WAY - I
+            void aggregateAndDisplay_v1(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
+            {
+                auto aggregatedMap = destination;
+                for(auto const& sourceEntry: source){
+                    auto destinationPosition = aggregatedMap.find(sourceEntry.first);
+                    if(destinationPosition == aggregatedMap.end())
+                        aggregatedMap.insert(std::make_pair(sourceEntry.first, sourceEntry.second));
+                    else
+                        aggregatedMap[sourceEntry.first] = sourceEntry.second + " or " + destinationPosition->second;
+                }
+                
+                for(auto const& entry: aggregatedMap){
+                    std::cout << "Available translation for " << entry.first << " : " << entry.second << '\n';
+                }
+            }
+
+            // WAY - II 
+            void aggregateAndDisplay_v2(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
+            {
+                const auto aggregatedMap = [&]() {
+                    auto aggregatedMap = destination;
+                    for(auto const& sourceEntry: source){
+                        auto destinationPosition = aggregatedMap.find(sourceEntry.first);
+                        if(destinationPosition == aggregatedMap.end())
+                            aggregatedMap.insert(std::make_pair(sourceEntry.first, sourceEntry.second));
+                        else
+                            aggregatedMap[sourceEntry.first] = sourceEntry.second + " or " + destinationPosition->second;
+                    }
+                    
+                    return aggregatedMap;
+                }();
+                
+                for(auto const& entry: aggregatedMap){
+                    std::cout << "Available translation for " << entry.first << " : " << entry.second << '\n';
+                }
+            }
+
+            // WAY - III 
+            void aggregateAndDisplay_v3(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
+            {
+                const auto aggregatedMap = [](std::map<int, std::string> const& destination, std::map<int, std::string> const& source) {
+                    auto aggregatedMap = destination;
+                    for(auto const& sourceEntry: source){
+                        auto destinationPosition = aggregatedMap.find(sourceEntry.first);
+                        if(destinationPosition == aggregatedMap.end())
+                            aggregatedMap.insert(std::make_pair(sourceEntry.first, sourceEntry.second));
+                        else
+                            aggregatedMap[sourceEntry.first] = sourceEntry.second + " or " + destinationPosition->second;
+                    }
+                    
+                    return aggregatedMap;
+                }(source, destination);
+                
+                for(auto const& entry: aggregatedMap){
+                    std::cout << "Available translation for " << entry.first << " : " << entry.second << '\n';
+                }
+            }
+
+            // WAY - IV
+            namespace{
+                auto aggregateAndDisplay(std::map<int, std::string> const& destination, std::map<int, std::string> const& source)
+                {
+                    auto aggregatedMap = destination;
+                    for(auto const& sourceEntry: source){
+                        auto destinationPosition = aggregatedMap.find(sourceEntry.first);
+                        if(destinationPosition == aggregatedMap.end())
+                            aggregatedMap.insert(std::make_pair(sourceEntry.first, sourceEntry.second));
+                        else
+                            aggregatedMap[sourceEntry.first] = sourceEntry.second + " or " + destinationPosition->second;
+                    }
+                    
+                    return aggregatedMap;
+                }
+            };
+
+            void aggregateAndDisplay_v4(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
+            {
+                auto aggregatedMap = aggregateAndDisplay(destination, source);
+                for(auto const& entry: aggregatedMap){
+                    std::cout << "Available translation for " << entry.first << " : " << entry.second << '\n';
+                }
+            }
+
+            int main()
+            {
+                std::map<int, std::string> m1{ { 10, "CPU" }, { 15, "GPU" }, { 20, "RAM" } };
+                std::map<int, std::string> m2;
+                
+                /*
+                    # OUTPUT #
+                    Available translation for 10 : CPU
+                    Available translation for 15 : GPU
+                    Available translation for 20 : RAM
+                */
+                aggregateAndDisplay_v4(m1, m2);
+                
+                /*
+                    # OUTPUT #
+                    Available translation for 10 : CPU
+                    Available translation for 15 : GPU
+                    Available translation for 20 : RAM
+                */   
+                aggregateAndDisplay_v3(m1, m2);
+                
+                /*
+                    # OUTPUT #
+                    Available translation for 10 : CPU
+                    Available translation for 15 : GPU
+                    Available translation for 20 : RAM
+                */   
+                aggregateAndDisplay_v2(m1, m2);
+                
+                /*
+                    # OUTPUT #
+                    Available translation for 10 : CPU
+                    Available translation for 15 : GPU
+                    Available translation for 20 : RAM
+                */   
+                aggregateAndDisplay_v1(m1, m2);
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

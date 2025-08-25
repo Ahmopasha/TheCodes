@@ -1,0 +1,108 @@
+> Fonksiyonların parametre değişkenleri nasıl olmalıdır? Aşağıdaki örneği inceleyelim:
+    * Örnek 1, Normal şartlarda kopyalamadan kaçınmak adına fonksiyonumuzun parametresini "const-reference" biçiminde belirtirdik. 
+    Şimdi de argüman olarak aldığı yazıyı ters çeviren bir yazı yazmak isteyelim. Dolayısıyla fonksiyonumuzun parametresini de 
+    "const-reference" olarak belirtelim. Parametresi bu şekil olduğu için bizler argüman olarak aldığımız yazıyı fonksiyonun 
+    içerisinde tekrardan başka bir yere kopyalamalıyız. Fakat bu örnek nezdinde ilgili fonksiyonumuzun parametresini direkt 
+    sınıf türünden yaparsak, fonksiyon gövdesinde tekrardan kopyalamaya gerek kalmayacaktır. Eğer fonksiyona da "PR-Value" argüman 
+    da geçersek, "Mandotary Copy Ellision" gerçekleşecektir. 
+        #include <string>
+        #include <algorithm>
+        #include <iostream>
+
+        class Myclass{
+        public:
+            Myclass(const std::string& name) : m_name{name} { std::cout << "Default Ctor.\n"; }
+            Myclass(const Myclass& other) : m_name{other.m_name} { std::cout << "Copy Ctor.\n"; }
+            Myclass& operator=(const Myclass& other) { m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;}
+            Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
+            Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+            ~Myclass()noexcept { std::cout << "Dtor\n"; }
+            void show_name()const { std::cout << "Name : " << m_name << "\n"; }
+        private:
+            std::string m_name;
+        };
+
+        void func(const std::string& str){
+            auto s_temp = str;
+            reverse(s_temp.begin(), s_temp.end());
+
+            std::cout << "[" << str << "] => [" << s_temp << "]\n";
+        }
+
+        void func_(std::string str){
+            reverse(str.begin(), str.end());
+            std::cout << "[" << str << "]\n";
+        }
+
+        void func(const Myclass& other){
+            auto s_other = other;
+            s_other.show_name();
+        }
+
+        void func_(Myclass other){
+            other.show_name();
+        }
+
+        int main()
+        {
+            {
+                /*
+                    # OUTPUT #
+                    [Ulya] => [aylU]
+                    [Ulya] => [aylU]
+                */
+                
+                std::string name{"Ulya"};
+                func(name); // [Ulya] => [aylU]
+                std::cout << "[" << name << "] => "; func_(name); // [Ulya] => [aylU]
+            }
+            
+            std::cout << "\n==================================\n";
+            
+            {
+                /*
+                    # OUTPUT #
+                    Default Ctor.
+                    Name : Ahmet
+                    Copy Ctor.
+                    Name : Ahmet
+                    Dtor
+                    Dtor
+                */
+                
+                Myclass m{"Ahmet"}; m.show_name();
+                func(m);
+            }
+            
+            std::cout << "\n==================================\n";
+            
+            {
+                /*
+                    # OUTPUT #
+                    Default Ctor.
+                    Name : Kandemir
+                    Dtor
+                */
+                
+                func_(Myclass{"Kandemir"});
+            }
+
+            std::cout << "\n==================================\n";
+
+            {
+                /*
+                    # OUTPUT #
+                    Default Ctor.
+                    Name : Ahmet
+                    Copy Ctor.
+                    Name : Ahmet
+                    Dtor
+                    Dtor
+                */
+                
+                Myclass m{"Ahmet"}; m.show_name();
+                func_(m);
+            }
+            
+            //... 
+        }

@@ -1,0 +1,428 @@
+> "Attributes" : Derleyiciyi yönlendiren, aynı zamanda da kodu okuyanı bilgilendiren şeylerdir. Her zaman için "[[]]" biçiminde, en 
+içteki parantezin içerisine yazılır. En önemlilerinden birisi "nodiscard" olandır. Tipik olarak fonksiyonların geri dönüş
+değeri ıskartaya çıkartıldığında, derleyicinin uyarı vermesini teşvik eder. Ek olarak o fonksiyonu kullanan kişiyi de
+fonksiyonun geri dönüş değerini kullanması konusunda disipline eder. Bu "attribute" şu senaryolarda kullanılmalıdır:
+
+    -> Fonksiyonun geri dönüş değerinin kullanılmaması bir "Logic Error ise. 
+    -> Fonksiyonun geri dönüş değerinin kullanılmaması bir "Logic Error" değil fakat çok büyük bir risk içeriyorsa. 
+
+Bu "attribute", "[[nodiscard]]" veya "[[nodiscard (Explanation)]]" biçiminde kullanılır. 
+    * Örnek 1,
+        #include <iostream>
+
+        [[discard]] // C++17
+        int foo(int x) { return x; }
+
+        [[discard ("The return value of foo should not be discarded!")]] // C++20
+        int bar(int x) { return x; }
+
+        int main()
+        {
+            foo(313); // WARNING: ‘discard’ attribute directive ignored [-Wattributes]
+            
+            bar(313); // WARNING: The return value of foo should not be discarded!
+            
+            (void)foo(313); // OK : The return value of foo is discarded intentionally
+            (void)bar(313); // OK : The return value of bar is discarded intentionally
+        }
+
+Pekala sınıfların üye fonksiyonlarında da kullanılabilir.
+    * Örnek 1,
+        #include <iostream>
+
+        class Myclass{
+            public:
+            [[nodiscard ("Myclass::Myclass return value is discared!")]]
+            Myclass(int x) { std::cout << x << '\n'; }
+            
+            [[nodiscard]]
+            int foo(int x) { return x; }
+        };
+
+        int main()
+        {
+            Myclass{5}; // WARNING: ignoring return value of ‘Myclass::Myclass(int)’, declared with attribute ‘nodiscard’: ‘Myclass::Myclass return value is discared!’
+            static_cast<Myclass>(7); // WARNING: ignoring return value of ‘Myclass::Myclass(int)’, declared with attribute ‘nodiscard’: ‘Myclass::Myclass return value is discared!’
+            Myclass{10}.foo(50); // WARNING: ignoring return value of ‘int Myclass::foo(int)’, declared with attribute ‘nodiscard’
+        }
+
+Diğer yandan "class-type" tanımlarında da kullanılır ki bu durumda geri dönüş değeri türü bu sınıf olan fonksiyonlar çağrıldığında,
+fonksiyonun bu "attribute" kullanmasına bakılmaksızın, yine bir uyarı mesajı verecektir. Tıpkı fonksiyonların geri dönüş değerini
+ıskartaya çıkardığımız gibi. 
+    * Örnek 1,
+        #include <iostream>
+
+        class [[nodiscard]] Myclass{};
+        class [[nodiscard ("Neco cannot be discarded!")]] Neco{};
+
+        Myclass foo() { return Myclass{}; }
+        Neco bar() { return Neco{}; }
+
+        int main()
+        {
+            foo(); // WARNING: ignoring returned value of type ‘Myclass’, declared with attribute ‘nodiscard’
+            bar(); // WARNING: ignoring returned value of type ‘Neco’, declared with attribute ‘nodiscard’: ‘Neco cannot be discarded!’
+        }
+
+    * Örnek 2,
+        #include <iostream>
+
+        enum [[nodiscard]] ErrorCode{ Passed, Failed, Unknown };
+        enum class [[nodiscard ("Neco cannot be discarded!")]] WarningCode{};
+
+        ErrorCode foo() { return ErrorCode{}; }
+        WarningCode bar() { return WarningCode{}; }
+
+        int main()
+        {
+            foo(); // WARNING: ignoring returned value of type ‘ErrorCode’, declared with attribute ‘nodiscard’
+            bar(); // WARNING: ignoring returned value of type ‘WarningCode’, declared with attribute ‘nodiscard’: ‘WarningCode cannot be discarded!’
+        }
+
+    * Örnek 3,
+        #include <iostream>
+
+        class [[Myclass]] Myclass{};
+
+        Myclass foo() { return Myclass{}; };
+        Myclass& bar() { static Myclass m; return m; };
+
+        int main()
+        {
+            foo(); // WARNING: ‘Myclass’ attribute directive ignored [-Wattributes]
+            bar(); // OK 
+        }
+
+Burada bizim dikkat etmemiz gereken nokta, bu "attribute" kullanmakla birlikte derleyicileri uyarı mesajı vermeye teşvik
+etmiş oluyoruz. Fakat uyarı mesajı vermek gibi bir zorunlulukları yoktur. Şimdi de sırayla 'attribute' leri inceleyelim: 
+    >> "deprecated" : Nitelediği şeyin artık kullanılmaması gerektiğini, ilerleyen zamanlarda kaldırılacağını belirtir. Genelde kütüphane 
+    tasarlayanlar tarafından kullanılır. Derleyici, bu "attribute" ile nitelenen türlerin/fonksiyonların kullanılması durumunda, uyarı
+    veya hata kodu verecektir. 
+        * Örnek 1,
+            struct [[deprecated("use ErgNect")]] Nec {
+                int a, b, c;
+            };
+
+            int main()
+            {
+                Nec mynec; // error C4996: 'Nec': use ErgNect
+            }
+
+        * Örnek 2,
+            [[deprecated]] int x = 10;
+
+            [[deprecated]] typedef int MyInt;
+            using MyInt32 [[deprecated]] = int;
+
+            enum Color {
+                White, 
+                Blue,
+                DarkBlue [[deprecated]],
+                Yellow
+            };  
+
+            int main()
+            {
+                x = 5; // error C4996: 'x': was declared deprecated
+
+                MyInt y = 11; // error C4996: 'MyInt': was declared deprecated
+
+                MyInt32 z = 12; // error C4996: 'MyInt32': was declared deprecated
+
+                auto c = DarkBlue; // error C4996: 'DarkBlue': was declared deprecated
+            }
+
+        * Örnek 3,
+            [[deprecated ("Call Func")]]
+            void CallableFunc()
+            {
+
+            }
+
+            int main()
+            {
+                CallableFunc(); // error C4996: 'CallableFunc': Call Func
+            }
+
+        * Örnek 4,
+            struct Data {
+                int a, b, c;
+                [[deprecated]] double d; 
+            };
+
+            int main()
+            {
+                Data myData; 
+                myData.a = 1;
+                myData.b = 2;
+                myData.c = 3;
+                myData.d = 123.321; // error C4996: 'Data::d': was declared deprecated
+            }
+
+        * Örnek 5,
+            namespace [[deprecated]] old_version {
+                void func() {}
+            }
+
+            int main()
+            {
+                old_version::func(); // error C4996: 'old_version': was declared deprecated
+            }
+
+    >> "likely" / "unlikely" : Hangi "path" in oluşma ihtimalinin daha yüksek, hangisinin daha düşük olduğunu derleyiciye ve okuyucuya 
+    söylemektedir. Böylelikle derleyiciler daha iyi kod üretebilme şansına sahip olabilmektedir. Buradaki "path" ile kastedilen "if-else",
+    "switch" deyimlerinde programın akışının nereden devam edeceğidir. 
+        * Örnek 1,
+            enum class Color {
+                white,
+                blue,
+                black,
+                red,
+                magenta
+            };
+
+            void f_white() {}
+            void f_blue() {}
+            void f_black() {}
+            void f_red() {}
+            void f_magenta() {}
+            void func_color(Color c)
+            {
+                switch (c)
+                {
+                    case Color::white: f_white(); break;
+                    case Color::blue: f_blue(); break;
+                    [[likely]] case Color::black: f_black(); break; // "c" nin "black" değerinde olma ihtimali daha yüksek. 
+                    case Color::red: f_red(); break;
+                    [[unlikely]] case Color::magenta: f_magenta(); break; // "c" nin "magenta" değerinde olma ihtimali daha düşük. 
+                }
+            }
+
+            int main()
+            {
+                //...
+            }
+
+        * Örnek 2,
+            #include <cmath>
+
+            constexpr double pow(double x, long long n) noexcept
+            {
+                if (n > 0) [[likely]]
+                    return x * pow(x, n - 1);
+                else [[unlikely]]
+                    return 1;
+            }
+
+            constexpr long long fact(long long n) noexcept
+            {
+                if (n > 1) [[likely]]
+                    return n * fact(n - 1);
+                else
+                    return 1;
+            }
+
+            constexpr double cosin(double x) noexcept
+            {
+                constexpr long long precision{ 16LL };
+                double y{};
+                for (auto n{0LL}; n < precision; n += 2LL) [[likely]]
+                    y += pow(x, n) / (n & 2LL ? -fact(n) : fact(n));
+                    return y;
+            }
+
+            int main()
+            {
+                //...
+            }
+
+    >> "maybeunused" : Kodda var olan bazı öğelerin kullanılmaması şüpheli bir durumdur. Çoğu derleyici de böylesi senaryolarda 
+    uyarı mesajı vermektedir. Fakat öyle durumlar var ki "debug" modunda kullandığımız öğeleri, "release" modunda kullanmıyoruz. 
+        * Örnek 1,
+            #include <cmath>
+
+            // İş bu fonksiyon iç bağlantıya açık bir fonksiyondur. 
+            // Dolayısıyla dışarıdan bu fonksiyona erişim söz konusu
+            // değildir. Eğer bu fonksiyonun kullanılmadığı görülürse,
+            // derleyici uyarı mesajı verebilir. 
+            static int func() { return 1; }
+
+            // İş bu fonksiyon da yine iç bağlantıya açıktır fakat 
+            // "[[maybe_unused]]" kullanımından dolayı derleyici uyarı 
+            // vermeyebilir. 
+            [[maybe_unused]] static int foo() { return 2; }
+
+            int main()
+            {
+                //...
+
+                auto a = func();
+                auto b = foo();
+
+                int c = 32; // "c" değişkeni için derleyici kullanılmadığına dair uyarı mesajı verebilir. 
+                [[maybe_unused]] int d = 23; // Fakat "d" için artık uyarı mesajı vermeyecektir. 
+            }
+
+        * Örnek 2,
+            #include <cassert>
+
+            [[maybe_unused]] void func([[maybe_unused]] bool param1, [[maybe_unused]] bool param2)
+            {
+                [[maybe_unused]] bool result = param1 && param2;
+                assert(result);  
+            }
+
+            int main()
+            {
+                //...
+            }
+
+        * Örnek 3,
+            #include <tuple>
+
+            struct [[maybe_unused]] Nec {
+                int a, b, c;
+            };
+
+            [[maybe_unused]] typedef Nec* Necptr;
+
+            using NecPtr [[maybe_unused]] = Nec*;
+
+            struct Erg {
+                int a, b, c;
+                [[maybe_unused]] double d; 
+            };
+
+            int main()
+            {
+                [[maybe_unused]] auto [i, d, sptr] = std::make_tuple(45, 4.5, "FHAM");
+            }
+
+    >> "noreturn" : Fonksiyonun geri dönüş değerinin olmadığını değil, programın çalışma zamanındaki akışının "return" deyimine  
+    ulaşmayacağını garanti etmektedir. Eğer programın akışı bir şekilde ilgili "return" deyimine ulaşırsa, "Tanımsız Davranış" 
+    meydana gelecektir. 
+        * Örnek 1,
+            [[noreturn]] void foo() {}
+            void bar() {}
+
+            int main()
+            {
+                foo();	// Burada bir lojik hata vardır. Programın akışı 
+                        // "foo" fonksiyonundan gelmeyeceği için, "bar" 
+                        // fonksiyonu çağrılmayacaktır. 
+                
+                bar();
+            } 
+
+        * Örnek 2,
+            #include <stdexcept>
+            #include <iostream>
+
+            [[noreturn]] void foo /* [[noreturn]] */ ()
+            {
+                //... 
+                throw std::runtime_error("void bar()\n");
+            }
+
+
+            int main()
+            {
+                try {
+                    foo();
+                    std::cout << "Unreachable code\n"; // warning C4702 : unreachable code
+                }
+                catch (const std::exception&) {
+                    // Reachable code...
+                }
+            }
+
+        * Örnek 3, Aşağıdaki programda Tanımsız Davranış vardır. 
+            [[noreturn]] void foo /* [[noreturn]] */ ()
+            {
+                //... 
+                if (true)
+                    return;  // warning C4645: function declared with 'noreturn' has a return statement
+            }
+
+
+            int main()
+            {
+                foo();
+            }
+
+    >> "fallthrough" : "switch" deyiminde kullanılır. Okuyuca ve derleyiciye, ilgili "break;" ifadesinin kasıtlı olarak yazılmadığını
+    söylemek için de kullanılır.  
+        * Örnek 1,
+            void f1() {}
+            void f2() {}
+            void f3() {}
+            void f4() {}
+
+            void foo(int x)
+            {
+                /*
+                *	Aşağıdaki deyimde "x" eğer "1" değerinde
+                *	olursa hem "f1" hem "f2" fonksiyonu çağrılacaktır. 
+                *	Pekiyi burada istenen şey bu mudur yoksa ikisinin 
+                *	ayrı ayrı çağrılması mıdır? Eğer niyetimiz ilki ise
+                *   bunu hem derleyiciye hem de okuyucuya iletmek için
+                *   "fallthrough" ifadesi kullanılır. 
+                */
+                switch (x) {
+                    case 1: f1(); /* [[fallthrough]]; */
+                    case 2: f2(); break; 
+                    case 3: f3(); break;
+                    case 4: f4(); break; 
+                }
+            }
+
+            int main()
+            {
+                foo(1);
+            }
+
+        * Örnek 2,
+            constexpr bool isleap(int y) { return y % 4 == 0 && (y % 100 != 0 || y % 400 == 0); }
+
+            constexpr int day_of_year(int d, int m, int y)
+            {
+                int sum = d;
+                switch (m - 1) {
+                case 11: sum += 30; [[fallthrough]];
+                case 10: sum += 31; [[fallthrough]];
+                case 9: sum += 30; [[fallthrough]];
+                case 8: sum += 31; [[fallthrough]];
+                case 7: sum += 31; [[fallthrough]];
+                case 6: sum += 30; [[fallthrough]];
+                case 5: sum += 31; [[fallthrough]];
+                case 4: sum += 30; [[fallthrough]];
+                case 3: sum += 31; [[fallthrough]];
+                case 2: sum += 30; isleap(y) ? 29 : 28; [[fallthrough]];
+                case 1: sum += 31;
+                }
+
+                return sum;
+            }
+
+            int main()
+            {
+                constexpr auto day = day_of_year(23, 9, 2023);
+            }
+
+        * Örnek 3,
+            #include <iostream>
+
+            void comment_place(int place)
+            {
+                switch (place) {
+                case 1: std::cout << "very "; [[fallthrough]];
+                case 2: std::cout << "well\n"; break;
+                default: std::cout << "OK\n"; break;
+                }
+            }
+
+            int main()
+            {
+                comment_place(1);
+            }
+

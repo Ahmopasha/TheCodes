@@ -1,0 +1,4453 @@
+IDIOM -0
+    //..
+
+    /*
+        Function-Try-Block : Aşağıdaki örnekleri inceleyelim:
+    */
+
+    * Örnek 1, Kurucu işlevler tarafından gönderilen hata nesnesinin yakalanmasına/işlenmesi:
+        #include <iostream>
+        #include <stdexcept>
+
+        class Member{
+        public:
+            Member() = default;
+            Member(int x) {
+                if (x > 5) {
+                    throw std::runtime_error{"Exception from Member Ctor.(int)\n"};
+                }
+            }
+            
+            Member(float x) {
+                if (x > 5.0f) {
+                    throw std::runtime_error{"Exception from Member Ctor.(float)\n"};
+                }
+            }
+        };
+
+        class Neco{
+        public:
+            Neco(int x) : mx{x} {
+                
+                // Aşağıdaki "try-catch" bloğunu kullanarak, 
+                // "Member" sınıfının ilgili kurucu işlevinden 
+                // gönderilen hatayı YAKALAYAMAYIZ. Onun için 
+                // "Function-Try-Block" mekanizmasını kullanmalıyız.
+                try {
+                    //...
+                }   
+                catch(...){
+                    std::cout << "An exception was caught!(int)\n";
+                }
+            }
+            
+            Neco(float x) try: mx{x}{
+                //...
+            }
+            catch(...){
+                std::cout << "An exception was caught!(float)\n";
+                
+                // Derleyici "implicit" olarak aşağıdaki kodu
+                // yazmaktadır:
+                /* throw; */ // (*)
+            }
+            
+        private:
+            Member mx;
+        };
+
+        int main()
+        {
+            // "Member" sınıfının kurucu işlevinden gönderilen hata 
+            // nesnesi yakalanamadığı için sırasıyla önce "std::terminate",
+            // sonra "std::abort" fonksiyonları çağrılmıştır. 
+            // "terminate called after throwing an instance of 'std::runtime_error'"
+            // "  what():  Exception from Member Ctor.(int)""
+            // Neco n(34);
+
+            // "n" nesnesinin oluşturduğu problemi gidermek adına bizler
+            // "Function-Try-Block" mekanizmasını kullandık. Fakat derleyici 
+            // "catch" deyiminin sonuna "implicit" olarak "throw;" deyimini 
+            // eklediği için, yakalamış olduğumuz hata nesnesi "rethrow"
+            // edildi. İş bu "rethrow" edilen hata nesnesi yakalanamadığı için 
+            // önce "std::terminate", sonra "std::abort" fonksiyonları çağrılmıştır. 
+            // "An exception was caught!(float)"
+            // "terminate called after throwing an instance of 'std::runtime_error'"
+            // "  what():  Exception from Member Ctor.(float)"
+            // Neco nn(34.f);
+            
+            try {
+                // Artık "mx" nesnesinin kurucu işlevinden gönderilen hata nesnesini 
+                // ilk olarak "nnn" nesnesinin kurucu işlevinde yakaladık. Fakat orada
+                // "rethrow" edildi. İşte bunu da "main" fonksiyonu içerisinde yakaladık.
+                // "An exception was caught!(float)"
+                // "An exception was caught!(MAIN FUNC)"
+                Neco nnn(454.f);
+            }
+            catch(...){
+                std::cout << "An exception was caught!(MAIN FUNC)\n";
+            }
+            
+            // (*):
+            // Burada bizler yakaladığımız hataya ilişkin bir aksiyon almadığımız 
+            // için derleyici "implicit" olarak "rethrow" gerçekleştirdi. Bunun 
+            // yerine bizler yakaladığımız hatayı başka bir hata nesnesine dönüştürmek
+            // suretiyle işlemek, kendimiz elle "std::terminate" çağrısı yapmak vb. 
+            // yöntemler de kullanabiliriz. 
+        }
+
+    * Örnek 2, Düz fonksiyonlardaki kullanım biçimi:
+        //...
+
+        int foo(int x) try {
+            // "try-block" together with the 
+            // "function-block"
+            
+            if (x > 10)
+                throw x;
+                
+            return x;
+        }
+        catch(...) {
+            // the "catch" block.
+            
+            std::cout << "An error has been caught!\n";
+            
+            return -1;
+        }
+
+        int main()
+        {
+            foo(100); // An error has been caught!
+        }
+
+IDIOM -1
+    //..
+
+    /*
+        Overloader Idiom : Aşağıdaki örnekleri inceleyelim:
+    */
+
+    * Örnek 1, Bu örnekte "CTAT" ve "Deduction Guide" arasındaki ilişkiye değinilmiştir. 
+        #include <iostream>
+
+        template<typename T, typename U>
+        struct Pair{
+            Pair(const T& t, const U& u) : m_first{t}, m_second{u} {}
+            
+            /*
+            // Alternative - I 
+            Pair(T t, U u) : m_first{t}, m_second{u} {}
+            */
+        private:
+            T m_first;
+            U m_second;
+        };
+
+        // Alternative - II 
+        /*
+        * Bu "Deduction Guide" a göre "T" ve "U"
+        * türleri, "array-decay" mekanizmasından
+        * dolayı birer gösterici olacaktır. Dolayısıyla 
+        * "t" ve "u" değişkenlerinin türleri ise "int*(&)"
+        * ve "double*(&)" biçiminde olacaktır...
+        */
+        template<typename T, typename U>
+        Pair(T, U)->Pair<T,U>;
+
+        /*
+        * ..."Deduction Guide" için şablonlara da gerek yoktur. 
+        * Örneğin, "Pair" sınıfının "Ctor." fonksiyonuna "const char*"
+        * türden parametre gönderilirse, tür çıkarımı "std::string"
+        * türüne göre yapılacaktır. 
+        */
+        Pair(const char*, const char*)->Pair<std::string, std::string>;
+
+        int main(void)    
+        {
+            int a[10]{};
+            double d[20]{};
+            
+            /*
+            * Aşağıdaki değişkene ilk değer verirken şablon 
+            * parametreleri şu türlere denk gelecektir:
+            * T : int[10]
+            * U : double[20]
+            * Dolayısıyla "ctor." fonksiyon parametreleri
+            * ise şu türlerden olacaktır:
+            * t : int(&)[10]
+            * u : double(&)[20]
+            * Fakat sınıfın veri elemanları ise aşağıdaki 
+            * biçimde olacaktır:
+            * int m_first[10];
+            * double m_second[20];
+            * İşte burada şu meydana gelmektedir: Sınıfın 
+            * veri elemanları birer dizi. "Ctor." fonksiyonuna 
+            * argümanları ise diziye-referans. Dilin kuralları 
+            * gereği iki dizi birbirine atanamaz olduğundan,
+            * SENTAKS HATASI MEYDANA GELECEKTİR. Burada sentaks 
+            * hatasını iki şekilde giderebiliriz: 
+            * 1-) Eğer sınıfın "Ctor." fonksiyonunun parametreleri
+            * "const T&" yerine direkt olarak "T" olsaydı, "array-decay"
+            * gerçekleşecek ve tür çıkarımları "pointer" olarak
+            * yapılacaktır. Dolayısıyla hem "T" hem de "t" bir 
+            * gösterici olduğundan birbirine atanabilir durumdadır. 
+            * Fakat bu durum kopyalama maliyetini de beraberinde 
+            * getirecektir!!!
+            * 2-) "Deduction Guide" mekanizmasından faydalanmaktır. 
+            */
+            Pair p(a, d); 
+                
+            return 0;
+        }
+
+    * Örnek 2, Aşağıdaki örnekte ise "Overloader" deyimine dair bir örnek verilmiştir. 
+        #include <iostream>
+        #include <variant>
+        #include <string>
+
+        template<typename ...Args>
+        struct Overload : Args...{
+            using Args::operator()...;
+        };
+
+        // Until C++20
+        template<typename ...Args>
+        Overload(Args...) -> Overload<Args...>;
+
+        int main()
+        {
+            std::variant<int, double, long, std::string> vx{ "ulya yuruk" };
+            std::visit(
+                Overload{
+                    [](int) { std::cout << "int\n"; },
+                    [](double) { std::cout << "double\n"; },
+                    [](long) { std::cout << "long\n"; },
+                    [](std::string) { std::cout << "string\n"; },
+                    [](auto) { std::cout << "other types\n"; }
+                },
+                vx
+            );
+        }
+
+    * Örnek 3,
+        #include <iostream>
+        #include <variant>
+        #include <string>
+
+        template<typename ...Ts>
+        struct overload : Ts... {
+            using Ts::operator()...;
+        };
+
+        // Until C++20
+        template<typename ...Ts>
+        overload(Ts...) -> overload<Ts...>;
+
+        int main()
+        {
+            using namespace std;
+            variant<int, string> vx(99);
+            visit(overload{
+                [](int ival) {cout << "int: " << ival << "\n"; },
+                [](const string& s) {cout << "string: " << s << "\n"; }
+                },
+                vx
+            );
+
+            auto twice = overload{
+                [](std::string& s) { s += s; },
+                [](auto& i) {i *= 2; }
+            };
+            visit(twice, vx);
+            cout << get<0>(vx) << "\n";
+        }
+
+    * Örnek 4,
+        #include <iostream>
+        #include <variant>
+        #include <string>
+
+        template<typename ...Ts>
+        struct overload : Ts... {
+            using Ts::operator()...;
+        };
+
+        // Until C++20
+        template<typename ...Ts>
+        overload(Ts...) -> overload<Ts...>;
+
+        int main()
+        {
+            using namespace std;
+            variant<int, double, string> vx(99);
+            variant<int, float, const char*> vy(9.9f);
+
+            visit(
+                overload{
+                    [](int, int) { cout << "int, int\n"; },
+                    [](string, const char*) { cout << "string, const char*\n"; },
+                    [](float, double) { cout << "float, double"; },
+                    [](auto, auto) { cout << "other types\n"; }
+                },
+                vx,
+                vy
+            );
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        #include <string>
+        #include <list>
+        #include <variant>
+        #include <algorithm>
+
+        class Dog {
+        public:
+            Dog(const std::string& name) : m_name{ name } {}
+            void Bark(void) const {
+                std::cout << m_name << " is barking!..\n";
+            }
+        private:
+            std::string m_name;
+        };
+
+        class Cat {
+        public:
+            Cat(const std::string& name) : m_name{ name } {}
+            void Meow(void) const {
+                std::cout << m_name << "  meows!..\n";
+            }
+        private:
+            std::string m_name;
+        };
+
+        class Lamb {
+        public:
+            Lamb(const std::string& name) : m_name{ name } {}
+            void Bleat(void) const {
+                std::cout << m_name << " is bleating!..\n";
+            }
+        private:
+            std::string m_name;
+        };
+
+        //////////////////////////////////////////////////////
+
+        using Animal = std::variant<Dog, Cat, Lamb>;
+
+        template<typename T>
+        bool is_type(const Animal& a) {
+            return std::holds_alternative<T>(a);
+        }
+
+        struct AnimalVoice {
+            void operator()(const Dog& dog) const { dog.Bark(); };
+            void operator()(const Cat& dog) const { dog.Meow(); };
+            void operator()(const Lamb& dog) const { dog.Bleat(); };
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                -----------------------
+                pamuk  meows!..
+                kont is barking!..
+                kuzucuk is bleating!..
+                pamuk is bleating!..
+                tekir  meows!..
+                -----------------------
+                pamuk  meows!..
+                kont is barking!..
+                kuzucuk is bleating!..
+                pamuk is bleating!..
+                tekir  meows!..
+                -----------------------
+                pamuk  meows!..
+                kont is barking!..
+                kuzucuk is bleating!..
+                pamuk is bleating!..
+                tekir  meows!..
+                -----------------------
+                In farm, we have: 1 dogs, 2 cats, 2 lambs.
+            */
+
+            std::list<Animal> animal_farm{ Cat{"pamuk"}, Dog{"kont"}, Lamb{"kuzucuk"}, Lamb{"pamuk"}, Cat{"tekir"} };
+
+            puts("-----------------------");
+            for (const auto& a : animal_farm) {
+                switch (a.index()) {
+                case 0:
+                    std::get<Dog>(a).Bark();
+                    break;
+                case 1:
+                    std::get<Cat>(a).Meow();
+                    break;
+                case 2:
+                    std::get<Lamb>(a).Bleat();
+                    break;
+                }
+            }
+            puts("-----------------------");
+            for (const auto& a : animal_farm) {
+                if (const auto ptr = std::get_if<Dog>(&a)) {
+                    ptr->Bark();
+                }
+                if (const auto ptr = std::get_if<Cat>(&a)) {
+                    ptr->Meow();
+                }
+                if (const auto ptr = std::get_if<Lamb>(&a)) {
+                    ptr->Bleat();
+                }
+            }
+            puts("-----------------------");
+            for (const auto& a : animal_farm) {
+                std::visit(AnimalVoice{}, a);
+            }
+            puts("-----------------------");
+            std::cout << "In farm, we have: " <<
+                std::count_if(std::begin(animal_farm), std::end(animal_farm), is_type<Dog>) << " dogs, " <<
+                std::count_if(std::begin(animal_farm), std::end(animal_farm), is_type<Cat>) << " cats, " <<
+                std::count_if(std::begin(animal_farm), std::end(animal_farm), is_type<Lamb>) << " lambs.\n";
+        }
+
+IDIOM -2
+    //..
+
+    /*
+        Exception Tracker : Hangi sınıfın "exception" gönderdiğinin takibini yapmak için kullanılan bir
+        deyimdir. Buradaki kilit nokta "," operatörünün bir "seperator" olarak değil, bir operatör olarak kullanılmasıdır. 
+        Böylelikle ilgili operatörün sol tarafındaki kod işletildikten sonra "discard" edilecek, operatörün ürettiği değer
+        de sağ tarafındaki değer olacaktır. 
+    */
+
+    * Örnek 1,
+        #include <iostream>
+        #include <stdexcept>
+
+        struct X{
+            X(const char* name = nullptr) {
+                //...
+                
+                // Uncomment the code below so that "struct X" will throw
+                // an exception before "struct Y".
+                //throw std::runtime_error{"An exception from X::X()"};
+            }  
+        };
+
+        struct Y{
+            Y(const char* name = nullptr) {
+                //...
+                
+                // Uncomment the code below so that "struct Y" will throw
+                // an exception before "struct Z".
+                //throw std::runtime_error{"An exception from Y::Y()"};
+            }  
+        };
+
+        struct Z{
+            Z(const char* name = nullptr) {
+                //...
+                throw std::runtime_error{"An exception from Z::Z()"};
+            }  
+        };
+
+        class Neco{
+            private:
+                X mx;
+                Y my;
+                Z mz;
+                enum TrackerType{
+                    NONE,
+                    ONE, // Will track struct X
+                    TWO, // Will track struct Y
+                    THREE // Will track struct Z
+                };
+                
+            public:
+                Neco(TrackerType tracker = NONE) try : 
+                    // İçerideki parantezler ile "," operatörü, ayıraç yerine, operatör işlevini görmektedir.
+                    mx((tracker = ONE, "Ulya")), 
+                    my((tracker = TWO, "Yuruk")), 
+                    mz((tracker = THREE, "Uskudar")) 
+                {
+                    std::cout << "Neco ctor. body\n";
+                }
+                
+                catch (const std::exception& ex){
+                    std::size_t flag_X{}, flag_Y{}, flag_Z{};
+                    if (tracker == ONE)
+                        flag_X = 1;
+                    if (tracker == TWO)
+                        flag_Y = 1;
+                    if (tracker == THREE)
+                        flag_Z = 1;
+                    
+                    if (flag_X)
+                        std::cout << "struct X threw an exception\n";
+                    if (flag_Y)
+                        std::cout << "struct Y threw an exception\n";
+                    if (flag_Z)
+                        std::cout << "struct Z threw an exception\n";
+                    
+                    std::cout << "[" << ex.what() << "]\n";
+                    
+                    throw; // Bizler elle "rethrow" etmiş olduk.
+                }
+                
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                struct Z threw an exception
+                [An exception from Z::Z()]
+                An exception was caught: [An exception from Z::Z()]
+            */
+            
+            try {
+                Neco n;
+            }
+            catch (const std::exception& ex){
+                std::cout << "An exception was caught: [" << ex.what() << "]\n";
+            }
+        }
+
+IDIOM -3
+    //..
+
+    /*
+        Exception Dispatcher : Yakalanan hata nesnesinin işleme mekanizması, ortak bir noktada toplanarak
+        ele alınmıştır. 
+    */
+
+    * Örnek 1, 
+        #include <iostream>
+
+        class a_exception{ /*...*/ };
+        class b_exception{ /*...*/ };
+        class c_exception{ /*...*/ };
+
+        void handle_exception() {
+            try {
+                throw; // rethrow statement
+            }
+            catch (const a_exception&) {
+                std::cout << "a_exception is handled.\n";
+            }
+            catch (const b_exception&) {
+                std::cout << "b_exception is handled.\n";
+            }
+            catch (const c_exception&) {
+                std::cout << "c_exception is handled.\n";
+            }
+        }
+
+        void a() { throw a_exception{}; }
+        void b() { throw b_exception{}; }
+        void c() { throw c_exception{}; }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                [0]: main started
+                a_exception is handled.
+                [1]: main is running
+                b_exception is handled.
+                [2]: main is running
+                c_exception is handled.
+                [3]: main is running
+            */
+            std::cout << "[0]: main started\n";
+            
+            try {
+                a();
+            }
+            catch(...){
+                handle_exception();
+            }
+            
+            std::cout << "[1]: main is running\n";
+            
+            try {
+                b();
+            }
+            catch(...){
+                handle_exception();
+            }
+            
+            std::cout << "[2]: main is running\n";
+            
+            try {
+                c();
+            }
+            catch(...){
+                handle_exception();
+            }
+            
+            std::cout << "[3]: main is running\n";
+        }
+
+IDIOM -4
+    //..
+
+    /*
+        ADL Fallback : Aşağıdaki örnekleri inceleyelim.
+    */
+
+    * Örnek 1,
+        #include <iostream>
+        #include <vector>
+
+        namespace my_ns{
+            class Myclass{};
+            
+            void swap(Myclass, Myclass) { std::cout << "my_ns::swap(Myclass, Myclass) was called.\n"; }
+        }
+
+        template<typename T>
+        void func(T) {
+            T x, y;
+            
+            // [0]
+            // "T", bir "namespace" içerisindeki türdense ve o türe
+            // ilişkin bir "swap" fonksiyonu da varsa, "std" isim alanı 
+            // içerisindeki "swap" fonksiyonunun ÇAĞRILMA İHTİMALİ 
+            // KALMAYACAKTIR. 
+            swap(x, y); 
+            
+            
+            // [1]
+            // Dolayısıyla bizlerin "std" isim alanı veya başka isim 
+            // alanı içerisindeki aynı isimli fonksiyonu çağırabilmemiz 
+            // için, ilgili fonksiyonu çağırırken, o isim alanını nitelemeliyiz.
+            std::swap(x, y);
+            
+            // [2]
+            // İşte fonksiyonu çağırırken hedef isim alanını niteleyerek çağırmaktansa,
+            // "using-directive" kullanarak, hedef isim alanını kendimizinkine enjekte
+            // ediyoruz. Eğer "T" türüne ilişkin isim alanında "swap" fonksiyonu 
+            // bulunamazsa, "std" isim alanındaki "swap" fonksiyonu çağrılacaktır. 
+            using std::swap;
+            swap(x, y); // ADL, my_ns::swap(Myclass) was called.
+            
+        }
+
+        int main()
+        {
+            my_ns::Myclass mx, my;
+            
+            swap(mx, my); // ADL, my_ns::swap(Myclass) was called.
+            func(mx); // ADL, my_ns::swap(Myclass, Myclass) was called.
+        }
+
+    * Örnek 2,
+        #include <iostream>
+        #include <vector>
+
+        template<typename T>
+        void func(T x) {
+            T y;
+            
+            using std::swap;
+            
+            swap(x, y);
+        }
+
+        namespace nec {
+            class Foo{};
+            class Bar{};
+            void swap(Foo&, Foo&) {
+                std::cout << "nec::swap(Foo&, Foo&) was called.\n"; 
+            }
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+            */
+            
+            nec::Foo x;
+            nec::Bar y;
+            
+            // "nec" isim alanı içerisindeki "swap" fonksiyonunun
+            // parametresi "Foo" olduğundan, o çağrıldı. 
+            func(x); // nec::swap(Foo&, Foo&) was called.
+            
+            
+            // "nec" isim alanı içerisindeki "swap" fonksiyonunun
+            // parametresi "Foo" türünden olduğu için, "std" isim
+            // alanı içerisindeki "swap" fonksiyonu çağrıldı.
+            func(y);  
+        }
+
+IDIOM -5
+    //..
+
+    /*
+        Hidden Friend : "ADL" ile bulunma özelliğine sahip, istersek de  "ADL Fallback" den fayda sağladığımıza ilişkin bir örnek.
+    */
+
+    * Örnek 0,   
+        #include <iostream>
+        #include <vector>
+
+        class Myclass{
+            public:
+                friend void foo(int) {}; 
+                friend void bar(Myclass) {};
+        };
+
+        int main()
+        {
+            
+            // [0]
+            // İlgili "foo" fonksiyonu bir
+            // "member" fonksiyon DEĞİLDİR. 
+            // "Myclass" hangi isim alanındaysa,
+            // "foo" da o isim alanındadır. Ancak 
+            // "foo", o isim alanı içerisinde 
+            // görülür DEĞİLDİR. Sadece "ADL" ile 
+            // o ismi bulabiliriz. 
+            // foo(12); // ERROR: ‘foo’ was not declared in this scope
+            
+            // [1]
+            Myclass mx;
+            bar(mx); // OK 
+        }
+
+    * Örnek 1,
+        class Myclass{
+            public:
+                friend void bar(Myclass, Myclass) {};
+        };
+
+        int main()
+        {
+            Myclass mx, my;
+            bar(mx, my); // OK 
+        }
+
+    * Örnek 2.0,
+        struct A{};
+        struct B{};
+        struct C{};
+        struct D{};
+        struct E{};
+        struct F{};
+
+        A operator+(const A&, const A&);
+        B operator+(const B&, const B&);
+        C operator+(const C&, const C&);
+        D operator+(const D&, const D&);
+        E operator+(const E&, const E&);
+        F operator+(const F&, const F&);
+
+        class Nec{};
+
+        int main()
+        {
+            /* 
+                # OUTPUT #
+                main.cpp: In function ‘int main()’:
+                main.cpp:34:17: error: no match for ‘operator+’ (operand types are ‘Nec’ and ‘Nec’)
+                34 |     auto n3 = n1+n2;
+                    |               ~~^~~
+                    |               |  |
+                    |               |  Nec
+                    |               Nec
+                main.cpp:11:3: note: candidate: ‘A operator+(const A&, const A&)’
+                11 | A operator+(const A&, const A&);
+                    |   ^~~~~~~~
+                main.cpp:11:13: note:   no known conversion for argument 1 from ‘Nec’ to ‘const A&’
+                11 | A operator+(const A&, const A&);
+                    |             ^~~~~~~~
+                main.cpp:12:3: note: candidate: ‘B operator+(const B&, const B&)’
+                12 | B operator+(const B&, const B&);
+                    |   ^~~~~~~~
+                main.cpp:12:13: note:   no known conversion for argument 1 from ‘Nec’ to ‘const B&’
+                12 | B operator+(const B&, const B&);
+                    |             ^~~~~~~~
+                main.cpp:13:3: note: candidate: ‘C operator+(const C&, const C&)’
+                13 | C operator+(const C&, const C&);
+                    |   ^~~~~~~~
+                main.cpp:13:13: note:   no known conversion for argument 1 from ‘Nec’ to ‘const C&’
+                13 | C operator+(const C&, const C&);
+                    |             ^~~~~~~~
+                main.cpp:14:3: note: candidate: ‘D operator+(const D&, const D&)’
+                14 | D operator+(const D&, const D&);
+                    |   ^~~~~~~~
+                main.cpp:14:13: note:   no known conversion for argument 1 from ‘Nec’ to ‘const D&’
+                14 | D operator+(const D&, const D&);
+                    |             ^~~~~~~~
+                main.cpp:15:3: note: candidate: ‘E operator+(const E&, const E&)’
+                15 | E operator+(const E&, const E&);
+                    |   ^~~~~~~~
+                main.cpp:15:13: note:   no known conversion for argument 1 from ‘Nec’ to ‘const E&’
+                15 | E operator+(const E&, const E&);
+                    |             ^~~~~~~~
+                main.cpp:16:3: note: candidate: ‘F operator+(const F&, const F&)’
+                16 | F operator+(const F&, const F&);
+                    |   ^~~~~~~~
+                main.cpp:16:13: note:   no known conversion for argument 1 from ‘Nec’ to ‘const F&’
+                16 | F operator+(const F&, const F&);
+                    |             ^~~~~~~~
+            */
+            
+            Nec n1, n2;
+            
+            /*
+            *   Şimdi burada derleyici hem "Nec" sınıfı
+            *   içerisinde hem de "global" isim alanı 
+            *   içerisinde "operator+" fonksiyonu için 
+            *   uygun bir "overload" arayacaktır. Bundan 
+            *   dolayıdır ki derleyici yukarıdaki A...F
+            *   sınıflarının hepsinde uygun "overload" 
+            *   olup olmadığına bakacaktır. Bu da beraberinde
+            *   hem karmaşık hata mesajlarını getirecek hem de
+            *   derleme zamanının uzun sürmesine neden olacaktır.
+            *   Tabii diğer yandan uygun bir "Conversion Opt."
+            *   fonksiyonunun olup olmadığına da bakacaktır. 
+            */
+            auto n3 = n1+n2;
+        }
+
+    * Örnek 2.1, Derleme zamanını kısaltması ve hata mesajlarının daha net olmasına ilişkin bir örnek.
+        #include <iostream>
+        #include <vector>
+
+        // Artık aşağıdaki "operator+" fonksiyonları
+        // sadece "ADL" ile bulunabilirler. 
+
+        struct A{
+            friend A operator+(const A&, const A&);
+            //...
+        };
+
+        struct B{
+            friend B operator+(const B&, const B&);
+            //...
+        };
+
+        struct C{
+            friend C operator+(const C&, const C&);
+            //...
+        };
+
+        struct D{
+            friend D operator+(const D&, const D&);
+            //...
+        };
+
+        struct E{
+            friend E operator+(const E&, const E&);
+            //...
+        };
+
+        struct F{
+            friend F operator+(const F&, const F&);
+            //...
+        };
+
+        class Nec{};
+
+        int main()
+        {
+            /* 
+                # OUTPUT #  
+                main.cpp: In function ‘int main()’:
+                main.cpp:47:17: error: no match for ‘operator+’ (operand types are ‘Nec’ and ‘Nec’)
+                47 |     auto n3 = n1+n2;
+                    |               ~~^~~
+                    |               |  |
+                    |               |  Nec
+                    |               Nec
+            */
+            
+            Nec n1, n2;
+            
+            /*
+            *   İşte yukarıdaki "operator+" fonksiyonları sayesinde
+            *   üretilen hata mesajının daha açık, derleme zamanının
+            *   daha kısa olmasına neden oldu. 
+            */
+            auto n3 = n1+n2;
+        }
+
+    * Örnek 3, Örtülü dönüşümleri engellemesine ilişkin bir örnek. 
+        #include <iostream>
+        #include <vector>
+
+        namespace nec{
+            struct A{
+                friend void bar(A) { std::cout << "bar(A) was called.\n"; }
+            };  
+            
+            struct B{
+                operator A() { std::cout << "Cast from B to A\n"; return A{}; } // "A" türüne dönüştürme opt. fonksiyonu.
+            };
+            
+            void foo(A) { std::cout << "foo(A) was called.\n"; }
+        }
+
+        int main()
+        {
+            nec::B b;
+            
+            // Burada "B" sınıfı "operator A" fonksiyonuna sahip olduğundan,
+            // "A" sınıfına dönüştürülüyor. Sonrasında da "foo" fonksiyonuna 
+            // çağrı yapılıyor. Yani aslında ilgili operatör fonksiyonunun
+            // varlığı, örtülü dönüşüme neden oluyor. 
+            foo(b);
+            
+            // Ancak "A" sınıfındaki "hidden-friend" fonksiyonumuz,
+            // iş bu örtülü dönüşümün meydana gelmesini engellemekte. 
+            bar(b);
+        }
+
+IDIOM -6
+    //..
+
+    /*
+        Scope Guard : Anımsanacağı üzere otomatik ömürlü nesneler, "scope" larının sonunda "destroy" ediliyorlar. Eğer 
+        böylesi bir nesne "exception" gönderirse, ancak bu hata nesnesi yakalanırsa çalıştırılacak "Stack Unwinding" süreci içinde, o nesnelerin
+        "Dtor."fonksiyonları çağrılıyor. Yani otomatik ömürlü nesnelerin "Dtor." fonksiyon çağrıları için ya "scope" sonuna gelmesi ya da 
+        "Stack Unwinding" mekanizmasının çalıştırılması gerekmektedir. Bu mekanizmanın ilk akla gelen kullanımı, akıllı göstericilerdir. 
+        İşte akıllı göstericilerin daha genelleştirilmiş haline de "Scope Guard" denmektedir. Birden fazla uygulanış biçimi vardır. Aşağıdaki örnekleri inceleyelim:
+    */
+     
+    * Örnek 1.0, "scope" sonuna gelinmesinden dolayı "Dtor". çağrıldı, o da "clean_up" fonksiyonunu. 
+        #include <iostream>
+
+        template<typename Func>
+        class scope_guard {
+            public:
+                scope_guard(Func f) noexcept : m_f{f} {
+                    
+                }
+                
+                ~scope_guard() {
+                    if (m_call)
+                        m_f();
+                }
+                
+                scope_guard(const scope_guard&) = delete;
+                scope_guard& operator=(const scope_guard&) = delete;
+                
+                //...
+            private:
+                Func m_f; 
+                bool m_call{true};
+        };
+
+        void clean_up() {
+            std::cout << "clean_up called\n";
+        }
+
+        int main()
+        {
+            /* 
+                # OUTPUT #  
+                main basladi
+                clean_up called
+                main devam ediyor
+            */
+            
+            std::cout << "main basladi\n";
+            
+            if (1) {
+                scope_guard sg{ clean_up };
+            }
+            
+            std::cout << "main devam ediyor\n";
+        }
+
+    * Örnek 1.1, "Stack Unwinding" den dolayı "Dtor". çağrıldı, o da "clean_up" fonksiyonunu. 
+        #include <iostream>
+        #include <stdexcept>
+
+        template<typename Func>
+        class scope_guard {
+            public:
+                scope_guard(Func f) noexcept : m_f{f} {
+                    
+                }
+                
+                ~scope_guard() {
+                    if (m_call)
+                        m_f();
+                }
+                
+                scope_guard(const scope_guard&) = delete;
+                scope_guard& operator=(const scope_guard&) = delete;
+                
+                //...
+            private:
+                Func m_f; 
+                bool m_call{true};
+        };
+
+        void bar() {
+            throw std::runtime_error{ "An exception from bar" };
+        }
+
+        void clean_up() {
+            std::cout << "clean_up called\n";
+        }
+
+        void foo()
+        {
+            if (1) {
+                scope_guard sg{ clean_up };
+                
+                bar();
+            }
+        }
+
+        int main()
+        {
+            /* 
+                # OUTPUT #  
+                main basladi
+                clean_up called
+                Exception Caught: [An exception from bar]
+                main devam ediyor
+            */
+            
+            std::cout << "main basladi\n";
+            
+            try {
+                foo();
+            }
+            catch(const std::exception& ex) {
+                std::cout << "Exception Caught: [" << ex.what() << "]\n";
+            }
+            
+            std::cout << "main devam ediyor\n";
+        }
+
+    * Örnek 1.2, Tabii böylesi sınıflara "dismiss" amacı taşıyan fonksiyonlar da ekleyerek, "clean_up" fonksiyonlarının "Dtor." tarafından 
+    çağrılmasını da iptal edebiliriz. 
+        #include <iostream>
+        #include <stdexcept>
+
+        template<typename Func>
+        class scope_guard {
+            public:
+                scope_guard(Func f) noexcept : m_f{f} {
+                    
+                }
+                
+                ~scope_guard() {
+                    if (m_call)
+                        m_f();
+                }
+                
+                void dismiss() {
+                    m_call = false;
+                }
+                
+                scope_guard(const scope_guard&) = delete;
+                scope_guard& operator=(const scope_guard&) = delete;
+                
+                //...
+            private:
+                Func m_f; 
+                bool m_call{true};
+        };
+
+        void bar() {
+            throw std::runtime_error{ "An exception from bar" };
+        }
+
+        void clean_up() {
+            std::cout << "clean_up called\n";
+        }
+
+        void foo()
+        {
+            if (1) {
+                scope_guard sg{ clean_up };
+                
+                //...
+                
+                sg.dismiss();
+                
+                bar();
+            }
+        }
+
+        int main()
+        {
+            /* 
+                # OUTPUT #  
+                main basladi
+                clean_up called
+                Exception Caught: [An exception from bar]
+                main devam ediyor
+            */
+            
+            std::cout << "main basladi\n";
+            
+            try {
+                foo();
+            }
+            catch(const std::exception& ex) {
+                std::cout << "Exception Caught: [" << ex.what() << "]\n";
+            }
+            
+            std::cout << "main devam ediyor\n";
+        }
+
+IDIOM -7
+    //..
+
+    /*
+        Return Type Resolver : Örnekleri inceleyelim.
+    */
+
+    * Örnek 1,
+        #include <string>
+        #include <iostream>
+        #include "MyUtility.h"
+
+        class MyStringClass {
+        public:
+            MyStringClass(const char* p) : m{ p } {}
+
+            operator int() const { return std::stoi(m); }	
+            operator double() const { return std::stod(m); }
+            operator long long() const { return std::stoll(m); }
+
+        private:
+            std::string m;
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                123
+                123.456
+                123
+            */
+
+            MyStringClass s{"123.456"};
+
+            int i = s; std::cout << i << '\n';
+            double d = s; std::cout << d << '\n';
+            long long ll = s; std::cout << ll << '\n';
+            
+        } 
+
+    * Örnek 2,
+        #include <string>
+        #include <iostream>
+        #include <vector>
+        #include <list>
+        #include <set>
+        #include "MyUtility.h"
+
+        class MyRangeClass {
+        public:
+            MyRangeClass(int from, int to) : m_from{ from }, m_to{ to } {
+                if (to < from)
+                    throw std::runtime_error{ "Invalid range values!" };
+            }
+
+            template<typename C>
+            operator C() const
+            {
+                C the_container;
+                for (auto i{ m_from }; i < m_to; ++i)
+                    the_container.insert(the_container.end(), i);
+
+                return the_container;
+            }
+
+        private:
+            const int m_from;
+            const int m_to;
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                [10] => 0 1 2 3 4 5 6 7 8 9
+                [9] => 11 12 13 14 15 16 17 18 19
+                [9] => 21 22 23 24 25 26 27 28 29
+            */
+
+            std::vector<int> ivec = MyRangeClass(0, 10);
+            std::cout << "[" << ivec.size() << "] => ";
+            for (auto i : ivec)
+                std::cout << i << ' ';
+            std::cout << '\n';
+            
+            std::list<int> ilist = MyRangeClass(11, 20);
+            std::cout << "[" << ilist.size() << "] => ";
+            for (auto i : ilist)
+                std::cout << i << ' ';
+            std::cout << '\n';
+
+            std::set<int> iset = MyRangeClass(21, 30);
+            std::cout << "[" << iset.size() << "] => ";
+            for (auto i : iset)
+                std::cout << i << ' ';
+            std::cout << '\n';
+        } 
+
+IDIOM -8
+    //..
+
+    /*
+        NVI(non-virtual interface) : Taban sınıfın sanal fonksiyonlarını sınıfın "public" bölümüne değil, "protected" ya da "private"
+        bölümüne koyun. Taban sınıfın sanal olmayan fonksiyonlarını da "public" bölümüne koyun ve "protected" ya da "private" bölümüne koyduğumuz sanal
+        fonksiyonları çağırsın.  Bu şekilde bizler "interface" ile "implementation" kısmını birbirinden ayırmış olduk. Aksi halde "public" kısımdaki
+        "virtual" fonksiyonlarımız hem "interface" hem de "implementation" olacaktı. Fakat esas önemli avantajı ise taban sınıfın, sanal fonksiyon
+        çağrısından evvel, bir takım kontrolleri yapabilme imkanına sahip olmasıdır. Aksi halde direkt olarak türemiş sınıfa ilişkin "overload" çağrılacağından, 
+        taban sınıf tarafından ön kontrol yapabilme imkanı oluşmayacaktır.
+    */
+
+    * Örnek 1,
+        #include <iostream>
+        #include "MyUtility.h"
+
+        class Base {
+        public:
+            void foo() { // Interface
+                
+                /*
+                *   İşte bu noktada bizler bir takım ön işlemleri yapabilme imkanına 
+                *   sahibiz. Bu işlemlerden sonra türemiş sınıfa ilişkin "overload"
+                *   çağrılacaktır. 
+                */
+
+                foo_imp(); 
+            } 
+
+        private:
+            virtual void foo_imp() { // Implementation
+
+            } 
+        };
+
+        int main()
+        {
+            //...
+        } 
+
+    * Örnek 2.0, Aşağıdaki örneği ele alırsak, taban içerisinde "speak" fonksiyonuna ilişkin ön işlemler yapacak DURUMDA DEĞİLİZ. Dolayısıyla ön işlemleri 
+    türemiş sınıf içerisinde yapmak durumunudayız ki bu da aslında bir kod tekrarına neden olmaktadır. 
+        #include <iostream>
+        #include "MyUtility.h"
+
+        class Animal {
+        public:
+            virtual void speak()const = 0;
+        };
+
+        class Cat : public Animal {
+        public:
+            virtual void speak() const override {
+                std::cout << "Cat spoke\n";
+            }
+        };
+
+        class Dog : public Animal {
+        public:
+            virtual void speak() const override {
+                std::cout << "Dog spoke\n";
+            }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Cat spoke
+                Dog spoke
+            */
+
+            auto* Animal_Cat = new Cat;
+            auto* Animal_Dog = new Dog;
+
+            Animal_Cat->speak();
+            Animal_Dog->speak();
+
+            delete Animal_Cat;
+            delete Animal_Dog;
+        } 
+
+    * Örnek 2.1, Artık bir takım ön işlemleri yapabilecek durumdayız. 
+        #include <iostream>
+        #include "MyUtility.h"
+
+        class Animal {
+        public:
+            void speak() {
+                std::cout << "Bir takim on islemler...\n";
+
+                speak_imp();
+            }
+
+        private:
+            virtual void speak_imp()const = 0;
+        };
+
+        class Cat : public Animal {
+        public:
+            virtual void speak_imp() const override {
+                std::cout << "Cat spoke\n";
+            }
+        };
+
+        class Dog : public Animal {
+        public:
+            virtual void speak_imp() const override {
+                std::cout << "Dog spoke\n";
+            }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Bir takim on islemler...
+                Cat spoke
+                Bir takim on islemler...
+                Dog spoke
+            */
+
+            auto* Animal_Cat = new Cat;
+            auto* Animal_Dog = new Dog;
+
+            Animal_Cat->speak();
+            Animal_Dog->speak();
+
+            delete Animal_Cat;
+            delete Animal_Dog;
+        } 
+
+IDIOM -9
+    //..
+
+    /*
+        Fragile Base Class Problem : Taban sınıfta yapmış olduğumuz bazı değişikliklerin, türemiş sınıflardaki kodları hata durumuna düşürmesidir. 
+    */
+
+    * Örnek 1.0, "CountingSet" sınıfındaki "m_count" öğesinin değeri, ilgili "range" içerisindeki öğe sayısı kadar, olacaktır. 
+        #include <iostream>
+        #include <set>
+        #include "MyUtility.h"
+
+        class MySet {
+        public:
+            void add(int i) {
+                ms.insert(i);
+
+                add_impl(i); // Note that it is a virtual call.
+            }
+
+            void add_range(const int* begin, const int* end) {
+                ms.insert(begin, end); // --------(1)
+    
+                add_range_impl(begin, end); // Note that it is a virtual call.
+            }
+
+        private:
+            virtual void add_impl(int i) = 0;
+            virtual void add_range_impl(const int* begin, const int* end) = 0;
+
+        private:
+            std::set<int> ms;
+        };
+
+        class CountingSet : public MySet {
+        public:
+            int get_count() const {
+                return m_count;
+            }
+
+        private:
+            int m_count;
+            virtual void add_impl(int i) override {
+                m_count++; 
+            }
+            
+            virtual void add_range_impl(const int* begin, const int* end) override {
+                m_count += std::distance(begin, end);
+            }
+        };
+
+        int main()
+        {
+            CountingSet cs;
+            int a[]{ 3, 5, 6, 7, 8 };
+
+            cs.add_range(a, a + 5);
+            std::cout << cs.get_count() << '\n'; // 5
+        } 
+
+    * Örnek 1.1, "CountingSet" sınıfındaki "m_count" öğesinin değeri, ilgili "range" içerisindeki öğe sayısının iki katı kadar, olacaktır. Çünkü 
+    hem "add_range" içerisindeki "add_range_impl" hem de "add" içerisindeki "add_impl" çağrılarından dolayı iki defa arttırım olmuştur. 
+        #include <iostream>
+        #include <set>
+        #include "MyUtility.h"
+
+        class MySet {
+        public:
+            void add(int i) {
+                ms.insert(i);
+
+                add_impl(i); // Note that it is a virtual call.
+            }
+
+            void add_range(const int* begin, const int* end) {
+                auto b = begin;
+                auto e = end;
+                
+                while (b != e) add(*b++); // --------(1)
+                
+                add_range_impl(begin, end); // Note that it is a virtual call.
+            }
+
+        private:
+            virtual void add_impl(int i) = 0;
+            virtual void add_range_impl(const int* begin, const int* end) = 0;
+
+        private:
+            std::set<int> ms;
+        };
+
+        class CountingSet : public MySet {
+        public:
+            int get_count() const {
+                return m_count;
+            }
+
+        private:
+            int m_count;
+            virtual void add_impl(int i) override {
+                m_count++; 
+            }
+            
+            virtual void add_range_impl(const int* begin, const int* end) override {
+                m_count += std::distance(begin, end);
+            }
+        };
+
+        int main()
+        {
+            CountingSet cs;
+            int a[]{ 3, 5, 6, 7, 8 };
+
+            cs.add_range(a, a + 5);
+            std::cout << cs.get_count() << '\n'; // 10
+        } 
+
+IDIOM -10
+    //..
+
+    /*
+        CRTP : "Curiously recurring template pattern" olarka geçer. Türemiş sınıflar, taban sınıfın 
+        arayüzündeki fonksiyonları kullanabiliyorlar(eğer kalıtımın yapılış biçimi el verirse). Taban sınıfın iş bu
+        fonksiyonlarının implementasonunda, türemiş sınıfa ait öğeler de kullanılabilir. Yani taban sınıftan türemiş
+        sınıfa bir şekilde kod enjekte etmiş oluyoruz. Buradaki kilit nokta türemiş sınıf, taban sınıfın türemiş sınıf
+        açılımından, elde edilmektedir. Şöyleki;
+            * Örnek 1,
+                template<typename T>
+                class Base {
+                    //...
+                };
+
+                class Derived : public: Base<Derived> {
+                    //...
+                };
+        
+        Buradaki kalıtımın yapılış şeklinin, yani "public","protected","private" yapılması, doğrudan "CRTP" ile ilgili 
+        değildir. Duruma göre üçünden birisi de olabilir. Bu araç "static polymorphism" için alternatif bir araçtır, 
+        yani "virtual dispatch" mekanizmasını elimine ederek, kod seçiminin derleme zamanında yapılmasını sağlayabiliriz.
+        Yani "runtime polymorphism" i "compiletime polymorphism" e dönüştürüyoruz. Pekala "runtime polymorphism" den 
+        kaçınmak için "std::variant" da kullanabilir eğer şartlar uygunsa. Şimdi de örnekler üzerinden devam edelim;
+    */
+
+    * Örnek 1.0.0, Aşağıda kısıtlı bir "CRTP" örüntüsüne ilişkin örnek verilmiştir. Bu yaklaşım ile biz aslında
+    bütün "Counter" sınıfının ilgili türden açılımlarına ilişkin bilgi edinmiş oluruz. Çünkü o açılımların hepsi 
+    ayrı bir taban sınıf olarak kullanılmaktadır. 
+        #include <cstddef>
+        #include <iostream>
+
+        template<typename T>
+        class Counter {
+            public:
+                Counter() {
+                    ++total_live_objects;
+                    ++total_created_objects;
+                }
+                Counter(const Counter&) {
+                    ++total_live_objects;
+                    ++total_created_objects;
+                }
+                ~Counter() {
+                    --total_live_objects;
+                }
+                static std::size_t get_live_objects() { return total_live_objects; }
+                static std::size_t get_created_objects() { return total_created_objects; }
+            private:
+                inline static std::size_t total_live_objects{};
+                inline static std::size_t total_created_objects{};
+        };
+
+        class Derived_I : Counter<Derived_I> {
+            // "private" kalıtım yaptığımız için
+            // "Counter" sınıfındaki fonksiyonları
+            // sınıf dışında kullanamayız. Eğer 
+            // kullanmak istiyorsak, aşağıdaki
+            // "using" bildirimlerini eklememiz
+            // ya da "public" kalıtım yapmamız 
+            // gerekiyor. 
+
+        public:
+            // Artık ilgili fonksiyonların isimleri bizimkine 
+            // enjekte edildi. 
+            using Counter<Derived_I>::get_live_objects;
+            using Counter<Derived_I>::get_created_objects;
+        };
+
+        class Derived_II : public Counter<Derived_II> {
+        };
+
+        int main() {
+            // Burada "CRTP" örüntüsü kullanarak, taban
+            // sınıftaki "static" veri elemanlarının, 
+            // bütün türemiş sınıflar nezdinde, AYRI 
+            // olmasını sağladık. Çünkü "Derived_I"
+            // sınıfını oluştururken derleyici
+            // "Counter" ın "Derived_I" açılımını YAZDI
+            // ve "Derived_I" sınıfını da bu açılımdan 
+            // türetti. Yani "Derived_I" için "Counter<Derived_I>"
+            // açılımı kullanıldı. Aynı şey "Derived_II" için de 
+            // geçerlidir. 
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 0
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 0
+            
+            Derived_I mx, my;
+            {
+                Derived_I mz;
+            }
+            
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 2
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 3
+            
+            std::cout << "\n========================\n\n";
+            
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 0
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 0
+            
+            Derived_II ma, mb;
+            {
+                Derived_II mc;
+            }
+            
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 2
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 3
+        }
+
+    * Örnek 1.0.1, Pekala aşağıdaki yaklaşımı da kullanabiliriz, yukarıdakine alternatif olarak. Çünkü "closure-type"
+    varsayılan tür olarak kullanılmış. Dolayısıyla "Derived_I" ve "Derived_II" sınıflarının taban sınıfları da ayrıdır. 
+        #include <cstddef>
+        #include <iostream>
+
+        // template<auto N = []{}> // Non-type Template Parameter, needs C++20
+        template<typename T = decltype([]{})> // Type Template Parameter 
+        class Counter {
+            public:
+                Counter() {
+                    ++total_live_objects;
+                    ++total_created_objects;
+                }
+                Counter(const Counter&) {
+                    ++total_live_objects;
+                    ++total_created_objects;
+                }
+                ~Counter() {
+                    --total_live_objects;
+                }
+                static std::size_t get_live_objects() { return total_live_objects; }
+                static std::size_t get_created_objects() { return total_created_objects; }
+            private:
+                inline static std::size_t total_live_objects{};
+                inline static std::size_t total_created_objects{};
+        };
+
+        class Derived_I : Counter<> {
+
+        public:
+            using Counter::get_live_objects;
+            using Counter::get_created_objects;
+        };
+
+        class Derived_II : public Counter<> {
+        };
+
+        int main() {
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 0
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 0
+            
+            Derived_I mx, my;
+            {
+                Derived_I mz;
+            }
+            
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 2
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 3
+            
+            std::cout << "\n========================\n\n";
+            
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 0
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 0
+            
+            Derived_II ma, mb;
+            {
+                Derived_II mc;
+            }
+            
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 2
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 3
+        }
+
+    * Örnek 1.1, Aşağıda "CRTP" kullanılmadan kalıtım yapılmanın etkilerini göreceğiz. Görüldüğü üzere tek bir 
+    ortak sınıf "Counter" kullanıldığı için ilgili "static" veri elemanları, türemiş sınıflar nezdinde, tekil hale 
+    gelmiştir. Bu yaklaşım ile biz aslında bütün "Counter" sınıflarına ilişkin bilgi edinmiş oluruz.  
+        #include <cstddef>
+        #include <iostream>
+
+        class Counter {
+            public:
+                Counter() {
+                    ++total_live_objects;
+                    ++total_created_objects;
+                }
+                Counter(const Counter&) {
+                    ++total_live_objects;
+                    ++total_created_objects;
+                }
+                ~Counter() {
+                    --total_live_objects;
+                }
+                static std::size_t get_live_objects() { return total_live_objects; }
+                static std::size_t get_created_objects() { return total_created_objects; }
+            private:
+                inline static std::size_t total_live_objects{};
+                inline static std::size_t total_created_objects{};
+        };
+
+        class Derived_I : Counter {
+        public:
+            using Counter::get_live_objects;
+            using Counter::get_created_objects;
+        };
+
+        class Derived_II : public Counter {
+        };
+
+        int main() {
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 0
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 0
+            
+            Derived_I mx, my;
+            {
+                Derived_I mz;
+            }
+            
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 2
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 3
+            
+            std::cout << "\n========================\n\n";
+            
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 2
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 3
+            
+            Derived_II ma, mb;
+            {
+                Derived_II mc;
+            }
+            
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 4
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 6
+        }
+
+    * Örnek 2.0.0, "CRTP" yapısını kurarken yazım hatalarına karşı dikkatli olmalıyız. 
+        #include <iostream>
+
+        // CRTP Base:
+        template<typename Der>
+        class Base{
+            public:
+            Base() {
+                std::cout << typeid(Der).name() << '\n';
+            }
+        };
+
+        class Der_A : public Base<Der_A> {
+            public:
+            Der_A() {
+                std::cout << typeid(this).name() << '\n';
+            }
+        };
+
+        // Aslında amacımız "Base<Der_B>" türünden kalıtım yapmaktı. Yazım hatasından dolayı
+        // "Der_A" yazdık. Sonuç olarak herhangi bir sentaks hatası oluşmadı ancak "Der_B" ile 
+        // "Der_A" aslında aynı sınıflardır. 
+        class Der_B : public Base<Der_A> {
+            public:
+            Der_B() {
+                std::cout << typeid(this).name() << '\n';
+            }
+        };
+
+        int main(){
+            // 5Der_A
+            // P5Der_B 
+            Der_A da;
+            
+            // 5Der_A
+            // P5Der_B
+            Der_B db; 
+        }
+
+    * Örnek 2.0.1, Taban sınıf olarak kullanılan sınıf şablonunda, şablon parametresine "friend" vasfı verebiliyoruz. Eğer 
+    taban sınıfın kurucu işlevini de "private" kısma alırsak, ilgili şablon parametresine gelecek tür başka bir sınıftan 
+    olursa sentaks hatasına yol açmış oluruz. Böylelikle yazım hatasına karşı koruma getiririz. 
+        #include <iostream>
+
+        // CRTP Base:
+        template<typename Der>
+        class Base{
+            private:
+            friend Der;
+            Base(){
+                std::cout << typeid(Der).name() << '\n';
+            }
+        };
+
+        class Der_A : public Base<Der_A> {
+            
+        };
+
+        // error: ‘Base::Base() [with Der = Der_A]’ is private within this context
+        class Der_B : public Base<Der_A> {
+            
+        };
+
+        int main(){
+            Der_B bx;
+            // Taban sınıftakı "ctor." fonksiyonu "private" oldu. Türemiş sınıf ise 
+            // bunu çağıracaktır. Bu durumda ilgili "ctor." fonksiyonunun çağrılabilir 
+            // olması gerekmekte. Yapmış olduğumuz "friend" bildirimi, sadece türemiş 
+            // sınıfı kapsamakta. Dolayısıyla eğer türemiş sınıf söz konusu değilse,
+            // yani "Der" şablon parametresine karşılık gelen sınıf söz konusu değilse,
+            // "private" bölüme erişim hakkımız olmayacaktır. Ancak "Der" in yerine 
+            // geçecek sınıf için pekala bu erişim hakkı OLACAKTIR. 
+        }
+
+    * Örnek 2.1, Sonuç ekranından da görüleceği üzere bizler türemiş sınıf nesneleri ile taban sınıf fonksiyonuna çağrı
+    yapıyoruz. Fakat kendi sınıfımızdaki versiyonu çağrılmakta. 
+        #include <iostream>
+
+        // CRTP Base:
+        template<typename Der>
+        class Base{
+            public:
+            void Interface() {
+                // Some code here...
+                
+                std::cout << "Base::Interface\n";
+                
+                // Some code here...
+                
+                static_cast<Der*>(this)->Implementation(); 
+                // Tabii buradaki çağrı, türemiş sınıflarda da "Implementation"
+                // isimli bir fonksiyon olmasına dayanmaktadır. Burada 
+                // "Dependent Name" kullanıldığından, sentaks hatası 
+                // oluşmayacaktır. Tabii buradaki dönüşümü gösterici yerine
+                // referansa da yapabilirdik. 
+                
+                // Some code here...
+            }
+            
+            static void sInterface(){
+                // Some code here...
+                
+                std::cout << "Base::sInterface\n";
+                
+                // Some code here...
+                
+                Der::sImplementation();
+                // Tabii buradaki çağrı, türemiş sınıflarda da "sImplementation"
+                // isimli bir fonksiyon olmasına dayanmaktadır. Burada 
+                // "Dependent Name" kullanıldığından, sentaks hatası 
+                // oluşmayacaktır. 
+                
+                // Some code here...
+            }
+            
+            private:
+            //...
+        };
+
+        class Der_A : public Base<Der_A> {
+            public:
+            void Implementation() {
+                std::cout << "Der_A::Implementation\n";
+            }
+            
+            static void sImplementation(){
+                std::cout << "Der_A::sImplementation\n";
+            }
+        };
+
+        class Der_B : public Base<Der_B> {
+            public:
+            void Implementation() {
+                std::cout << "Der_B::Implementation\n";
+            }
+            
+            static void sImplementation(){
+                std::cout << "Der_B::sImplementation\n";
+            }
+            
+        };
+
+        int main(){
+            Der_A adx;
+            adx.Interface(); 
+            // Base::Interface
+            // Der_A::Implementation
+            
+            Der_B bdx;
+            bdx.Interface();
+            // Base::Interface
+            // Der_B::Implementation
+        }
+
+    * Örnek 2.2, Aşağıda da şöyle bir şey yapalım; türemiş sınıfların birer "print" işlevi gören fonksiyonları olduğuna 
+    güvenerek, türemiş sınıflara, bir "interface" enjekte edelim. Bu "interface" sayesinde bünyelerindeki "print" fonksiyonunun 
+    "N" kez çağrılması sağlansın. 
+        #include <iostream>
+
+        // CRTP Base:
+        template<typename Der>
+        class Base{
+            public:
+            void Interface(std::size_t n) const {
+                while (n--)
+                    static_cast<const Der&>(*this).Implementation(); 
+            }
+            private:
+            //...
+        };
+
+        class Der_A : public Base<Der_A> {
+            public:
+            void Implementation() const {
+                std::cout << "Der_A::Implementation\n";
+            }
+        };
+
+        class Der_B : public Base<Der_B> {
+            public:
+            void Implementation() const{
+                std::cout << "Der_B::Implementation\n";
+            }
+        };
+
+        int main(){
+            Der_A ax; 
+            ax.Interface(3);
+            // Der_A::Implementation
+            // Der_A::Implementation
+            // Der_A::Implementation
+            
+            std::cout << "\n===================\n\n";
+            
+            Der_B bx;
+            bx.Interface(2);
+            // Der_B::Implementation
+            // Der_B::Implementation
+        }
+
+    * Örnek 3, Şimdi de türemiş sınıflara şöyle bir "Interface" ekleyelim; "<" operatör fonksiyonunu "overload" ederek "==" ve "!="
+    karşılaştırmalarını mümkün hale getirelim.  
+        #include <string>
+        #include <iostream>
+
+        template<typename Der>
+        struct Equality {
+            const Der& derived() const {
+                return static_cast<const Der&>(*this);
+            }
+            
+            friend bool operator==(const Equality& lhs, const Equality& rhs) {
+                return not(lhs.derived() < rhs.derived()) and not(rhs.derived() < lhs.derived());
+            }
+            
+            friend bool operator!=(const Equality& lhs, const Equality& rhs) {
+                return not(lhs == rhs);
+            }
+        };
+
+        class Person : public Equality<Person> {
+            public:
+                Person(const std::string& name = "NoName") : m_name{ name } {}
+                bool operator<(const Person& other) const {
+                    return m_name < other.m_name;
+                }
+            
+            private:
+                std::string m_name{ "Ulya Yuruk" };
+        };
+
+        int main() {
+            Person p1{ "Ulya" }, p2{ "Ayse" };
+            std::cout << std::boolalpha << (p1 == p2) << '\n'; // false
+            std::cout << std::boolalpha << (p1 != p2) << '\n'; // true
+
+            // Görüldüğü üzere taban sınıftaki "operator==" ve "operator!="
+            // fonksiyonlarına çağrı yapılmış. O çağrı sonucunda da türemiş 
+            // sınıftaki ".operator<" fonksiyonu çağrılmıştır. 
+        }
+
+    * Örnek 4.0, Şimdi de daha gerçekçi bir örnek yapalım;
+        #include <iterator>
+        #include <cassert>
+        #include <iostream>
+
+        template<typename Der>
+        class Container {
+            private:
+                // Aşağıdaki iki fonksiyon tamamiyle yazım kolaylığı
+                // sağlaması, ortak kodu tek bir yerde toplamak amacıyla
+                // yazılmıştır. "private" olmaları hasebiyle de türemiş 
+                // sınıflarca çağrılamayacaklar. 
+                Der& derived() { return static_cast<Der&>(*this); }
+                const Der& derived() const { return static_cast<const Der&>(*this); }
+            
+            public:
+                // Türemiş sınıflara aşağıdaki "Interface" verilecektir. Ancak bunun 
+                // için türemiş sınıflar ".begin()", ".end()" ve ".operator*()"
+                // fonksiyonlarına sahip olması gerekmektedir. Yani fonksiyonların var
+                // olması GEREKİYOR.
+                decltype(auto) front() { return *derived().begin(); }
+                decltype(auto) back() { return *std::prev(derived().end()); }
+                decltype(auto) size() const { return std::distance(derived().begin(), derived().end()); }
+                decltype(auto) operator[] (std::size_t i) { return *std::next(derived().begin(), i); }
+        };
+
+        #include <memory>
+
+        template<typename T>
+        class DynArray : public Container<DynArray<T>> {
+            private:
+                std::size_t size_;
+                std::unique_ptr<T[]> updata_;
+                
+            public:
+                DynArray(std::size_t size) : size_{ size }, updata_{ std::make_unique<T[]>(size_) } {}
+                
+                T* begin() { return updata_.get(); }
+                const T* begin() const { return updata_.get(); }
+                
+                T* end() { return updata_.get() + size_; }
+                const T* end() const { return updata_.get() + size_; }
+        };
+
+        int main() {
+            DynArray<int> arr(10);
+            
+            arr.front() = 2;
+            arr[2] = 5;
+            arr.back() = 67;
+            
+            for(auto i: arr)
+                std::cout << i << ' '; // 2 0 5 0 0 0 0 0 0 67
+            std::cout << '\n';
+            
+            std::cout << "Size: " << arr.size() << '\n'; // Size: 10
+        }
+
+    * Örnek 5.0, Yine gerçekçi örneklerle devam edelim;
+        #include <memory>
+        #include <mutex>
+
+        template<typename TDerived>
+        class Singleton {
+        private:
+            inline static std::unique_ptr<TDerived> m_instance{};
+            inline static std::once_flag m_once{};
+
+        protected: 
+            Singleton() {}
+            
+        public:
+            ~Singleton() {}
+            Singleton(const Singleton&) = delete;
+            Singleton& operator=(const Singleton&) = delete;
+            
+            static TDerived& GetInstance() {
+                // Bu fonksiyon ilk çağrıldığında, programın akışı 
+                // "call_once" fonksiyonuna bir kez girecek. "GetInstance"
+                // fonksiyonuna yapılan diğer çağrılarda programın akışı 
+                // direkt "return" ifadesine gidecek. Böylelikle o türden 
+                // sadece bir adet nesnemiz olmuş olacak. 
+                
+                std::call_once(
+                    Singleton::m_once,
+                    [](){ Singleton::m_instance.reset(new TDerived()); }
+                );
+                
+                return *m_instance;
+            }
+        };
+
+        #include <iostream>
+
+        class Myclass : public Singleton<Myclass> {
+            public:
+                Myclass() { std::cout << "Myclass ctor.\n"; }
+                ~Myclass() { std::cout << "Myclass dtor.\n"; }
+                
+                void foo() { std::cout << "Myclass::foo().\n"; }
+        };
+
+        int main() {
+            Myclass::GetInstance().foo();
+            
+            // Myclass ctor.
+            // Myclass::foo().
+            // Myclass dtor.
+        }
+
+    * Örnek 6.1.0, Yine bir başka gerçekçi örneklerle devam edelim
+        #include <iostream>
+        #include <stdexcept>
+
+        // CRTP Base
+        template<class Der>
+        class Writer {
+            public:
+                void Write (const char* str) const {
+                    static_cast<const Der*>(this)->Write_Imp(str);
+                }
+        };
+
+        class FileWriter : public Writer<FileWriter> {
+            public:
+                friend class Writer<FileWriter>; 
+                // Bu "friend" bildiriminden dolayı taban sınıf,
+                // iş bu türemiş sınıfın "private" bölümüne erişim 
+                // sağlayabilmektedir. 
+                
+                FileWriter(const char* pFileName) : m_file{ std::fopen(pFileName, "w") } {
+                    using namespace std::literals;
+                    
+                    if (!m_file)
+                        throw std::runtime_error{ "file: "s + pFileName + "cannot being created\n" };
+                }
+                
+                ~FileWriter() {
+                    fclose(m_file);
+                }
+                
+            private:
+                void Write_Imp(const char* str) const {
+                    // Bu fonksiyonun "private" bölümde olmasına
+                    // dikkat edin. Taban sınıf, türemiş sınıfın "private"
+                    // bölümündeki bir fonksiyonu çağırabilmektedir.
+                    
+                    std::fprintf(m_file, "%s\n", str);
+                }
+                
+            private:
+                FILE* m_file;
+        };
+
+        class ConsoleWriter : public Writer<ConsoleWriter> {
+            public:
+                friend class Writer<ConsoleWriter>; 
+                
+            private:
+                void Write_Imp(const char* str) const {
+                    printf("%s\n", str);
+                }
+        };
+
+        int main() {
+            ConsoleWriter cw;
+            cw.Write("Ulya"); // Ulya
+            
+            FileWriter fw{ "deneme.txt" };
+            fw.Write("Yuruk"); // Yuruk
+        }
+
+    * Örnek 6.1.1, Pekala bizler taban sınıf olarak birden fazla sınıf kullanabiliriz. Yani "Multiple Inheritence".
+        #include <iostream>
+        #include <stdexcept>
+
+        // CRTP Base I
+        template<class Der>
+        class FileWriter {
+            public:
+                void WriteToFile (const char* str) const {
+                    static_cast<const Der*>(this)->WriteToFile_Impl(str);
+                }
+        };
+
+        // CRTP Base II
+        template<class Der>
+        class ConsoleWriter {
+            public:
+                void WriteToConsole (const char* str) const {
+                    static_cast<const Der*>(this)->WriteToConsole_Impl(str);
+                }
+        };
+
+        class Writer : public FileWriter<Writer>, public ConsoleWriter<Writer> {
+            public:
+                void WriteToFile_Impl(const char* str) const {
+                    FILE* fp = std::fopen("deneme.txt", "w");
+                    fprintf(fp, "%s\n", str);
+                    fclose(fp);
+                }
+                
+                void WriteToConsole_Impl(const char* str) const {
+                    printf("%s\n", str);
+                }
+        };
+
+        int main() {
+            Writer wr_1; 
+            
+            wr_1.WriteToFile("Ulya Yuruk");
+            
+            wr_1.WriteToConsole("Uskudar");
+        }
+
+    * Örnek 7, Birden fazla sınıfı kullanabildiğimiz gibi, türemiş sınıfı da şablon sınıf olarak kullanabiliriz.
+        #include <iostream>
+
+        template<typename Der>
+        struct MakeDouble {
+            Der get_double_version() const {
+                const auto& self = static_cast<const Der&>(*this);;
+            
+                // Bu sınıfı kullanacak müşteriler toplama operatörünün
+                // operandı olabilmelidir. 
+                return self + self; 
+            }
+        };
+
+        template<typename Der>
+        struct MakeTriple {
+            Der get_triple_version() const {
+                const auto& self = static_cast<const Der&>(*this);;
+            
+                // Bu sınıfı kullanacak müşteriler toplama operatörünün
+                // operandı olabilmelidir. 
+                return self + self + self; 
+            }
+        };
+
+        template<typename T>
+        class Val : public MakeDouble<Val<T>>, public MakeTriple<Val<T>> {
+            public:
+                Val(const T& val) : m_val{ val } {}
+                
+                Val operator+(const Val& other) const {
+                    return m_val + other.m_val;
+                }
+                
+                void print() const {
+                    std::cout << m_val << '\n';
+                }
+            private:
+                T m_val;
+        };
+
+        int main() {
+            using namespace std::literals;
+            
+            Val x(2023);
+            auto r1 = x.get_double_version();
+            r1.print(); // 4046
+            
+            Val y("Ulya Yuruk"s);
+            auto r2 = y.get_triple_version();
+            r2.print(); // Ulya YurukUlya YurukUlya Yuruk
+        }
+
+    * Örnek 8.0, Şimdi de parametre paketi kullanalım. Böylelikle "n" tane sınıfı taban sınıf olarak kullanabiliriz. 
+        #include <iostream>
+
+        template<typename T>
+        class A {
+            public:
+                void f1() {
+                    std::cout << "A::f1\n";
+                    static_cast<T*>(this)->f1_impl();
+                }
+        };
+
+        template<typename T>
+        class B {
+            public:
+                void f2() {
+                    std::cout << "B::f2\n";
+                    static_cast<T*>(this)->f2_impl();
+                }
+        };
+
+        template<typename T>
+        class C {
+            public:
+                void f3() {
+                    std::cout << "C::f3\n";
+                    static_cast<T*>(this)->f3_impl();
+                }
+        };
+
+        // Her bir elemanı "Template Template Parameter"
+        // olan, bir "Template Parameter Pack". Yani bu 
+        // pakette toplam "n" tane "Template Template Parameter"
+        // var ve her bir tanesi bir adet "Type Template Parameter"
+        // argümana sahip. Dolayısıyla "AB" sınıf şablonunu açarken,
+        // yukarıdaki "A" ve "B" gibi olan sınıf şablonlarından "n" 
+        // tanesini taban sınıf olarak kullanabiliriz. 
+        template< template<typename>typename... Alpha > 
+        class ABC: public Alpha<ABC<Alpha...>>... {
+        // Burada ">>" sembolünün,
+        // solundaki "..." atomu "ABC" sınıf şablonunun 
+        // "Variadic Template" olmasından ötürü; 
+        // sağındaki "..." atomu ise "Multiple Inheritence" 
+        // yapabilmek için. 
+            public:
+                void f1_impl(){
+                    std::cout << "AB::f1_impl\n";
+                }
+                
+                void f2_impl(){
+                    std::cout << "AB::f2_impl\n";
+                }
+                
+                void f3_impl(){
+                    std::cout << "AB::f3_impl\n";
+                }
+        };
+
+        int main() {
+            ABC<A, B, C> mx;
+            mx.f1();
+            mx.f2();
+            mx.f3();
+            /*
+                # OUTPUT #
+                A::f1
+                AB::f1_impl
+                B::f2
+                AB::f2_impl
+                C::f3
+                AB::f3_impl
+            */
+        }
+
+    * Örnek 8.1, İşte "n" tane sınıfı taban sınıf olarak kullanabileceğimiz, böylelikle istediğimiz "interface" i
+    sunan sınıfları, kendi sınıfımızda toplayabileceğimiz, gerçekçi bir örnek;
+        #include <iostream>
+
+        // CRTP Base I
+        template<class Der>
+        class FileWriter {
+            public:
+                void WriteToFile (const char* str) const {
+                    static_cast<const Der*>(this)->WriteToFile_Impl(str);
+                }
+        };
+
+        // CRTP Base II
+        template<class Der>
+        class ConsoleWriter {
+            public:
+                void WriteToConsole (const char* str) const {
+                    static_cast<const Der*>(this)->WriteToConsole_Impl(str);
+                }
+        };
+
+        template< template<typename>typename... WriterType > 
+        class FileConsoleWriter: public WriterType<FileConsoleWriter<WriterType...>>... {
+            public:
+                void WriteToFile_Impl (const char* str) const {
+                    if (str)
+                        WriteToFile_Handler(str);
+                }
+                
+                void WriteToConsole_Impl (const char* str) const {
+                    if (str)
+                        WriteToConsole_Handler(str);
+                }
+                
+            private:
+                void WriteToFile_Handler (const char* str) const {
+                    FILE* fp = std::fopen("deneme.txt", "w");
+                    fprintf(fp, "%s\n", str);
+                    fclose(fp);
+                }
+                
+                void WriteToConsole_Handler (const char* str) const {
+                    printf("%s\n", str);
+                }
+        };
+
+        using FCWriter = FileConsoleWriter<FileWriter, ConsoleWriter>;
+
+        int main() {
+            FCWriter wr1;
+            wr1.WriteToFile_Impl("Ulya Yuruk");
+            
+            FCWriter wr2;
+            wr2.WriteToConsole_Impl("Uskudar, Istanbul");
+        }
+
+    * Örnek 8.2.0, Ancak bunun da şöyle bir alternatif yolu daha vardır; "mixing" kullanmak. Yani bu sefer türemiş 
+    sınıflar, taban sınıftaki fonksiyonu çağırıyor, pekala taban sınıfta öyle bir fonksiyon olduğuna güvenerek. Yani 
+    aslında tersten gidiyoruz: 
+        #include <iostream>
+
+        template<typename Base>
+        class Skill_A : public Base {
+            public:
+                void handle_A () {
+                    Base::init_handle_A();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_A"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    //...
+                    
+                    std::cout << "Skill_A::handle_A\n";
+                }
+        };
+
+        template<typename Base>
+        class Skill_B : public Base {
+            public:
+                void handle_B () {
+                    Base::init_handle_A();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_A"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    Base::init_handle_B();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_B"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    //...
+                    
+                    std::cout << "Skill_B::handle_B\n";
+                }
+        };
+
+        template<typename Base>
+        class Skill_C : public Base {
+            public:
+                void handle_C () {
+                    Base::init_handle_A();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_A"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    Base::init_handle_B();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_B"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    Base::init_handle_C();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_C"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    //...
+                    
+                    std::cout << "Skill_C::handle_C\n";
+                }
+        };
+
+        class Base {
+            public:
+                void init_handle_A() {
+                    std::cout << "Base::init_handle_A\n";
+                }
+                
+                void init_handle_B() {
+                    std::cout << "Base::init_handle_B\n";
+                }
+                
+                void init_handle_C() {
+                    std::cout << "Base::init_handle_C\n";
+                }
+        };
+
+        int main() {
+            // Şimdi buradaki "Skill_A<Base>", "Skill_B<Base>" ve 
+            // "Skill_C<Base>" türleri ayrı birer sınıf türleridir. 
+            
+            Skill_A<Base>{}.handle_A();
+            // "Skill_A<Base>" açılımında taban sınıf aslında "Base"
+            // isimli sınıftır. 
+            
+            std::cout << "\n=========================\n";
+            Skill_B<Base>{}.handle_B();
+            // "Skill_B<Base>" açılımında taban sınıf aslında "Base"
+            // isimli sınıftır. 
+            
+            std::cout << "\n=========================\n";
+            Skill_C<Base>{}.handle_C();
+            // "Skill_C<Base>" açılımında taban sınıf aslında "Base"
+            // isimli sınıftır.     
+            
+        }
+
+    * Örnek 8.2.1, Yani bizler aslında "Base" sınıfına, başka sınıflar oluşturarak, yeni özellikler kazandırmış
+    olduk.
+        #include <iostream>
+
+        template<typename Base>
+        class Skill_A : public Base {
+            public:
+                void handle_A () {
+                    Base::init_handle_A();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_A"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    //...
+                    
+                    std::cout << "Skill_A::handle_A\n";
+                }
+        };
+
+        template<typename Base>
+        class Skill_B : public Base {
+            public:
+                void handle_B () {
+                    Base::init_handle_A();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_A"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    Base::init_handle_B();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_B"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    //...
+                    
+                    std::cout << "Skill_B::handle_B\n";
+                }
+        };
+
+        template<typename Base>
+        class Skill_C : public Base {
+            public:
+                void handle_C () {
+                    Base::init_handle_A();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_A"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    Base::init_handle_B();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_B"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    Base::init_handle_C();
+                    // Bu fonksiyon çağrısı, taban sınıfta "init_handle_C"
+                    // isimli bir fonksiyon olduğuna güvenilerek yazılmıştır. 
+                    
+                    //...
+                    
+                    std::cout << "Skill_C::handle_C\n";
+                }
+        };
+
+        class Base {
+            public:
+                void init_handle_A() {
+                    std::cout << "Base::init_handle_A\n";
+                }
+                
+                void init_handle_B() {
+                    std::cout << "Base::init_handle_B\n";
+                }
+                
+                void init_handle_C() {
+                    std::cout << "Base::init_handle_C\n";
+                }
+        };
+
+        using BaseWithSkill_A = Skill_A<Base>;
+        using BaseWithSkill_B = Skill_B<Base>;
+        using BaseWithSkill_C = Skill_C<Base>;
+
+        using BaseWithSkill_AB = Skill_B<Skill_A<Base>>;
+        using BaseWithSkill_BC = Skill_B<Skill_C<Base>>;
+        using BaseWithSkill_CA = Skill_C<Skill_A<Base>>;
+
+        using BaseWithSkill_ABC = Skill_A<Skill_B<Skill_C<Base>>>;
+
+        int main() {
+            BaseWithSkill_A a; a.handle_A();
+                                // Base::init_handle_A
+                                // Skill_A::handle_A
+            
+            std::cout << "\n=========================\n";
+            
+            BaseWithSkill_B b; b.handle_B();
+                                // Base::init_handle_A
+                                // Base::init_handle_B
+                                // Skill_B::handle_B
+
+            std::cout << "\n=========================\n";
+            BaseWithSkill_C c; c.handle_C();
+                                // Base::init_handle_A
+                                // Base::init_handle_B
+                                // Base::init_handle_C
+                                // Skill_C::handle_C
+            
+            std::cout << "\n=========================\n";
+            BaseWithSkill_AB ab; ab.handle_A(); ab.handle_B();
+                                // Base::init_handle_A
+                                // Skill_A::handle_A
+                                                // Base::init_handle_A
+                                                // Base::init_handle_B
+                                                // Skill_B::handle_B
+            
+            std::cout << "\n=========================\n";
+            BaseWithSkill_BC bc; bc.handle_B(); bc.handle_C();
+                                // Base::init_handle_A
+                                // Base::init_handle_B
+                                // Skill_B::handle_B
+                                                // Base::init_handle_A
+                                                // Base::init_handle_B
+                                                // Base::init_handle_C
+                                                // Skill_C::handle_C
+            
+            std::cout << "\n=========================\n";
+            BaseWithSkill_CA ca; ca.handle_C(); ca.handle_A();
+                                // Base::init_handle_A
+                                // Base::init_handle_B
+                                // Base::init_handle_C
+                                // Skill_C::handle_C
+                                                // Base::init_handle_A
+                                                // Skill_A::handle_A
+            
+            std::cout << "\n=========================\n";
+            BaseWithSkill_ABC abc; abc.handle_A(); abc.handle_B(); abc.handle_C();
+                                    // Base::init_handle_A
+                                    // Skill_A::handle_A
+                                                    // Base::init_handle_A
+                                                    // Base::init_handle_B
+                                                    // Skill_B::handle_B
+                                                                    // Base::init_handle_A
+                                                                    // Base::init_handle_B
+                                                                    // Base::init_handle_C
+                                                                    // Skill_C::handle_C
+        }
+
+    * Örnek 8.2.2, Görüleceği üzere oluşturduğumuz sınıflar aynı DEĞİL.
+        #include <iostream>
+        #include <type_traits>
+
+        template<typename T>
+        class SkillA : public T {};
+
+        template<typename T>
+        class SkillB : public T {};
+
+        template<typename T>
+        class SkillC : public T {};
+
+        class Nec {};
+
+        using type_1 = SkillA<SkillB<SkillC<Nec>>>; // ABC
+        using type_2 = SkillA<SkillC<SkillB<Nec>>>; // ACB
+        using type_3 = SkillB<SkillA<SkillC<Nec>>>; // BAC
+        using type_4 = SkillC<SkillA<SkillB<Nec>>>; // CAB
+        using type_5 = SkillB<SkillC<SkillA<Nec>>>; // BCA
+        using type_6 = SkillC<SkillB<SkillA<Nec>>>; // CBA
+
+        int main() {
+            static_assert(
+                !std::is_same_v<type_1, type_2> && 
+                !std::is_same_v<type_1, type_3> && 
+                !std::is_same_v<type_1, type_4> && 
+                !std::is_same_v<type_1, type_5> && 
+                !std::is_same_v<type_1, type_6>
+            ); // HOLDS
+        }
+
+    * Örnek 8.2.3, Şimdi gerçekçi bir örnek ile "mixing" yapısını irdeleyelim;
+        #include <string>
+        #include <utility>
+        #include <iostream>
+
+        template<typename Printable>
+        struct RepeatPrint: Printable {
+            explicit RepeatPrint(const Printable& printable) : Printable(printable) {}
+            
+            using Printable::Printable;
+            // Inherited "Ctor." : Taban sınıfın "ctor."
+            // fonksiyonunu türemiş sınıfta kullanabileceğiz. 
+            
+            void repeat(unsigned int n) const {
+                while (n-- > 0)
+                    this->print(); // Buradaki "this" kullanımı, isim arama için, zorunludur; şablon olduğu için. 
+            }
+        };
+
+        template<typename Printable>
+        RepeatPrint<Printable> repeat_print(const Printable& printable) {
+            return RepeatPrint<Printable>(printable);
+        }
+
+        class Name {
+            public:
+                Name(std::string first_name, std::string second_name) : m_first_name{ std::move(first_name) }, m_second_name{ std::move(second_name) } {}
+                void print() const {
+                    std::cout << m_second_name << ' ' << m_first_name << '\n';
+                }
+                
+            private:
+                std::string m_first_name;
+                std::string m_second_name;
+        };
+
+        using RepeatPrintableNames = RepeatPrint<Name>;
+        // "RepeatPrint" sınıfı, "Name" sınıfından, kalıtım 
+        // yoluyla oluşturulmuş olacak. 
+
+        int main() {
+            RepeatPrintableNames my_name{ Name{"Ulya", "Yuruk"} };
+            // "RepeatPrint" içerisindeki "explicit" olarak betimlenen
+            // ve taban sınıf türünden parametreye sahip "ctor."
+            // fonksiyondan dolayı, "Name" türünden bir argüman ile 
+            // çağrı yapabildik. 
+            
+            
+            
+            // Yuruk Ulya
+            repeat_print(my_name).repeat(1);
+            // "repeat_print" fonksiyonunun geri dönüş değeri "RepeatPrint<Name>"
+            // türünden. Geri dönüş değerini de biz, "my_name" ile hayata getirmiş 
+            // olduk. "RepeatPrint<Name>" olması hasebiyle, "repeat" fonksiyonunu 
+            // çağırabildik. 
+            
+            // Yuruk Ulya
+            // Yuruk Ulya
+            my_name.repeat(2);
+            // Hakeza bu şekilde de bir çağrı yapabilirdik. 
+            
+            
+            RepeatPrintableNames my_surname{ "Uskudar", "Istanbul" };
+            // "RepeatPrint" içerisindeki "using" bildiriminden dolayı, 
+            // taban sınıfın "ctor." fonksiyonuna çağrı yapabildik. Çünkü 
+            // o "ctor." fonksiyon ismi bizim alanımıza enjekte edildi.
+            
+            // Istanbul Uskudar
+            // Istanbul Uskudar
+            // Istanbul Uskudar
+            my_surname.repeat(3);
+        }
+
+    * Örnek 9.0, Aşağıda "chaining" mekanizmasına bir örnek verilmiştir;
+        #include <ostream>
+        #include <iostream>
+
+        class Printer {
+            public:
+                Printer(std::ostream& pstream) : m_stream(pstream) {}
+                
+                template<typename T>
+                Printer& print(const T& t, const char Del = '\0') {
+                    m_stream << t << Del;
+                    return *this;
+                }
+                
+            private:
+                std::ostream& m_stream;
+        };
+
+        int main() {
+            Printer(std::cout).print("Ulya ").print("Yuruk.", '\n'); // Ulya Yuruk.
+        }
+
+    * Örnek 9.1.0, Şimdi de onu "CRTP" örüntüsüne dönüştürelim; "CRTP with chaining". 
+        #include <ostream>
+        #include <iostream>
+
+        class Printer {
+            public:
+                Printer(std::ostream& pstream) : m_stream(pstream) {}
+                
+                template<typename T>
+                Printer& print(const T& t, const char Del = '\0') {
+                    m_stream << t << Del;
+                    return *this;
+                }
+                
+            private:
+                std::ostream& m_stream;
+        };
+
+        class ConsolePrinter : public Printer{
+            public:
+                ConsolePrinter() : Printer(std::cout) {}
+                
+                ConsolePrinter& set_color(int color) {
+                    std::cout << "Console Color is set: " << color << '\n'; return *this;
+                }
+        };
+
+        int main() {
+            ConsolePrinter().print("Ulya").set_color(12).print("Yuruk\n");
+            // ".print()" fonksiyonu "Printer" tür döndürmekte, dolayısıyla 
+            // ".set_color()" fonksiyonu da "Printer" içerisinde aranacak
+            // fakat bulunamayacak. 
+        }
+
+    * Örnek 9.1.1,
+        #include <ostream>
+        #include <iostream>
+
+        template<typename ConcretePrinter>
+        class Printer {
+            public:
+                Printer(std::ostream& pstream) : m_stream(pstream) {}
+                
+                template<typename T>
+                ConcretePrinter& print(const T& t, const char Del = '\0') {
+                    m_stream << t << Del;
+                    return static_cast<ConcretePrinter&>(*this);
+                }
+                
+            private:
+                std::ostream& m_stream;
+        };
+
+        class ConsolePrinter : public Printer<ConsolePrinter>{
+            public:
+                ConsolePrinter() : Printer(std::cout) {}
+                
+                ConsolePrinter& set_color(int color) {
+                    std::cout << "<Console Color is set: " << color << ">"; return *this;
+                }
+        };
+
+        int main() {
+            ConsolePrinter().print("Ulya").set_color(12).print("Yuruk\n"); // Ulya<Console Color is set: 12>Yuruk
+        }
+
+    * Örnek 10.0, "Virtual Dispatch" eliminasyonu, yani derleme zamanında kod seçimi,
+    yani "Static Polymorphism"; 
+        #include <iostream>
+
+        class Animal {
+            public:
+                virtual void call() = 0;
+        };
+
+        class Cat: public Animal {
+            public:
+                virtual void call() override { std::cout << "A cat sound!\n"; }
+        };
+
+        class Dog: public Animal {
+            public:
+                virtual void call() override { std::cout << "A dog sound!\n"; }
+        };
+
+        class Lamb: public Animal {
+            public:
+                virtual void call() override { std::cout << "A Lamb sound!\n"; }
+        };
+
+        int main() {
+            Cat cat; cat.call(); // A cat sound!
+            Dog dog; dog.call(); // A dog sound!
+            Lamb lamb; lamb.call(); // A Lamb sound!
+        }
+
+    * Örnek 10.1,
+        #include <iostream>
+
+        template<typename T>
+        class Animal {
+            public:
+                void call() {
+                    static_cast<T*>(this)->call_impl();
+                }
+        };
+
+        class Cat: public Animal<Cat> {
+            public:
+                void call_impl() { std::cout << "A cat sound!\n"; }
+        };
+
+        class Dog: public Animal<Dog> {
+            public:
+                void call_impl() { std::cout << "A dog sound!\n"; }
+        };
+
+        class Lamb: public Animal<Lamb> {
+            public:
+                void call_impl() { std::cout << "A Lamb sound!\n"; }
+        };
+
+        template<typename T>
+        void pet_call(Animal<T>& x) {
+            x.call();
+        }
+
+        int main() {
+            Cat cat; 
+            cat.call(); // A cat sound!
+            pet_call(cat); // A cat sound!
+            
+            Dog dog; 
+            dog.call(); // A dog sound!
+            pet_call(dog); // A dog sound!
+            
+            Lamb lamb; 
+            lamb.call(); // A Lamb sound!
+            pet_call(lamb); // A Lamb sound!
+
+            /*
+                Ancak "Cat", "Dog" ve "Lamb" türleri sınıf şablonundan türediğinden,
+                bu türleri "std::vector" gibi veri yapısında tutamıyoruz. "std::variant"
+                türünü kullanabiliriz ki o da zaten "virtual dispatch" için ayrı bir 
+                alternatif. Ancak şöyle bir şey yapabiliriz; ".call()" çağrısını bir fonksiyon
+                şablonuna alır, o fonksiyon üzerinden, ".call()" çağrısını yaptırtabiliriz. 
+            */
+        }
+
+IDIOM -11
+    //..
+
+    /*
+        Pipeline operator : Anımsanacağı üzere C dilindeki "enum" türlerini, sadece bir "bit" leri
+        "1" olacak şekilde, maskeleme amacıyla da kullanmaktayız. Şöyleki; 
+            * Örnek 1,
+                enum Color {
+                    yellow = 1, // 0001
+                    red = 2, // 0010
+                    blue = 4, // 0100
+                };
+
+                int main() {
+                    auto purple = red | blue;
+                    auto green = yellow | blue;
+                    auto orange = yellow | red;
+                }
+
+        Ancak bu tip "enum" türleri de şöyle handikaplara sahiptirler; "unscoped" olmaları, "int" türüne örtülü olarak dönüşmeleri,
+        vb. Modern C++ ile birlikte "scoped enum" kavramının da dile eklenmesiyle bu handikaplar giderildi. Fakat bu sefer de
+        "scoped enum" türünü, yukarıdaki örnekte olduğu gibi, varsayılan olarak "|" operatörüne operand yapamıyoruz. İşte bu problemi
+        çözmek için de "global" bir "operator |" fonksiyonu tanımlıyoruz. Hatırlarsanız "scoped enum" türleri bir sınıf olmadığından,
+        üye fonksiyon kavramı SÖZ KONUSU DEĞİLDİR. İşte "operator |" fonksiyonunu şu şekilde tanımlayabiliriz;
+    */
+
+    * Örnek 1,
+        #include <iostream>
+        #include <type_traits>
+
+        enum class Color {
+            yellow = 1, // 0001
+            red = 2, // 0010
+            blue = 4, // 0100
+        };
+
+        Color operator | (Color lhs, Color rhs) {
+            using underlying_type = std::underlying_type_t<Color>; 
+            // "Color" için sadece bildirim de olabilirdi, dolayısıyla
+            // arka plandaki türü öğrenmek için bu bildirim gerekmektedir.
+            
+            auto result = static_cast<underlying_type>(lhs) | static_cast<underlying_type>(rhs);
+            return static_cast<Color>(result);
+        }
+
+        std::ostream& operator<<(std::ostream& os, Color color) {
+            using underlying_type = std::underlying_type_t<Color>; 
+            return os << static_cast<underlying_type>(color);
+        }
+
+        int main() {
+            std::cout << Color::yellow << '\n'; // 1
+            std::cout << Color::red << '\n'; // 2
+            std::cout << Color::blue << '\n'; // 4
+            
+            std::cout << "\n==============\n\n";
+            
+            Color purple = Color::red | Color::blue; std::cout << purple << '\n'; // 2 + 4 = 6
+            auto green = Color::yellow | Color::blue; std::cout << green << '\n'; // 1 + 4 = 5
+            auto orange = Color::yellow | Color::red; std::cout << orange << '\n'; // 1 + 2 = 3
+        }
+
+IDIOM -12
+    //..
+
+    /*
+        Using 'Command Line Arguments' in one-line : Komut satırı argümanlarını, "std::vector<std::string_view>" içerisinde
+        saklamak isteyelim;
+    */
+
+    * Örnek 1,
+        #include <vector>
+        #include <string_view>
+        #include <iostream>
+
+        int main(int argc, char** argv) {
+            // Ulya Yuruk , Istanbul , Uskudar
+            
+            
+            std::vector<std::string_view> args{ argv, argv + argc };
+            for (auto i: args)
+                std::cout << i << ' '; // ./a.out Ulya Yuruk , Istanbul , Uskudar
+            std::cout << '\n';
+        }
+
+IDIOM -13
+    //..
+
+    /*
+        'printf' function : "print" fonksiyonu gibi formatlama özelliklerine sahip ancak ekrana yazma yerine bir
+        "std::string" döndüren bir fonksiyon yazalım;
+    */
+
+    * Örnek 1,
+        #include <cstdio>
+        #include <iostream>
+        #include <string>
+        #include <cstdarg>
+
+        // C dilindeki "Variadic" parametreli fonksiyon:
+        std::string printf_to_string(const char* fmt, ...) {
+            va_list args_main;
+            va_list args_copy;
+            
+            va_start(args_main, fmt); // Inits "args_main".
+            va_copy(args_copy, args_main); // Copyies "args_main" to "args_copy".
+            
+            std::string str(
+                vsnprintf(nullptr, 0, fmt, args_copy) + 1, // Toplam karakter adedi
+                '\0' // Her bir karakter
+            ); // "Fill Ctor."
+            
+            va_end(args_copy); // Stops "args_copy".
+
+            vsprintf(str.data(), fmt, args_main); // Fills the "str".
+            
+            va_end(args_main); // Stops "args_main".
+            
+            str.pop_back(); 
+            // Yazının sonundaki '\0' karakteri de metne dahil edildiğinden,
+            // onu çıkartıyoruz. 
+            
+            return str;
+        }
+
+        int main(int argc, char** argv) {
+            char name[] = "Ulya Yuruk";
+            int age = 28;
+            double wage = 25000.5;
+            
+            printf("Name: %s, Age: %d, Wage: %.1f", name, age, wage);
+            // Name: Ulya Yuruk, Age: 28, Wage: 25000.5
+            
+            std::cout << "\n=================\n";
+            
+            auto the_string = printf_to_string("Name: %s, Age: %d, Wage: %.1f", name, age, wage);
+            std::cout << the_string;
+            // Name: Ulya Yuruk, Age: 28, Wage: 25000.5
+        }
+
+IDIOM -14
+    //..
+
+    /*
+        Pimpl Idiom : Anımsanacağı üzere göstericilerde iki farklı "const" türü vardır. Bunlar,
+
+            "Top Level const" ve "Low Level const"
+
+        isimleriyle geçmektedir. "Top Level const" söz konusu olduğunda göstericinin bizzat kendisi "const" iken, "Low Level const" 
+        söz konusu olduğunda gösterilen nesnenin bizzat kendisi "const" olmaktadır. Şöyleki;
+    */
+
+    * Örnek 1, Göstericiler söz konusu olduğunda durum aşağıdaki gibidir. 
+        int main() {
+            // No constness:
+            {
+                int x = 10;
+                int y = 100;
+                int* ptr_x = &x; // "ptr_x" is a POINTER to "x". 
+                *ptr_x = 20; // OK: "x" is now "20"
+                ptr_x = &y; // OK: "ptr_x" is a POINTER to "y". 
+                *ptr_x = 40; // OK: "y" is now "20"
+            }
+
+            // Top Level const: 
+            {
+                int x = 10;
+                int y = 100;
+                int* const c_ptr_x = &x; // "c_ptr_x" is a "CONST POINTER" to "x".
+                *c_ptr_x = 20; // OK: "x" is now "20"
+                // c_ptr_x = &y; // ERROR: cannot bind "CONST POINTER" to another value. 
+                *c_ptr_x = 40; // OK: "x" is now "40"
+            }
+
+            // Low Level const:
+            {
+                int x = 10;
+                int y = 100;
+                const int* ptr_c_x = &x; // "ptr_c_x" is a "POINTER" to "const x".
+                // *ptr_c_x = 20; // ERROR: cannot change the value of a "const" variable.
+                ptr_c_x = &y; // OK: "ptr_c_x" is a POINTER to "y". 
+                // *ptr_c_x = 40; // ERROR: cannot change the value of a "const" variable.
+            }
+
+            // Full of const:
+            {
+                int x = 10;
+                int y = 100;
+                const int* const c_ptr_c_x = &x; // "c_ptr_c_x" is a "CONST POINTER" to "const x".
+                // *c_ptr_c_x = 20; // ERROR: cannot change the value of a "const" variable.
+                // c_ptr_c_x = &y; // ERROR: cannot bind "CONST POINTER" to another value. 
+                // *c_ptr_c_x = 40; // ERROR: cannot change the value of a "const" variable.
+            }
+        }
+
+    * Örnek 2, İteratörler söz konusu olduğunda da durum aşağıdaki gibidir.
+        #include <vector>
+
+        int main() {
+            // No constness:
+            {
+                std::vector ivec{ 17, 9, 1993 };
+                std::vector<int>::iterator iter = ivec.begin(); // "iter" is a "ITERATOR" to the "first element of the vector". 
+                *iter = 20; // OK: The "first element of the vector" is "20" now. 
+                iter = ivec.end() - 1; // OK: "iter" is a ITERATOR to previous of ".end()". 
+                *iter = 2024; // OK: "1993" is now "2024"
+            }
+
+            // Top Level const: 
+            {
+                std::vector ivec{ 17, 9, 1993 };
+                // const auto iter = ivec.begin();
+                const std::vector<int>::iterator iter = ivec.begin(); // "iter" is a "CONST ITERATOR" to the "first element of the vector". 
+                *iter = 20; // OK: The "first element of the vector" is "20" now. 
+                // iter = ivec.end() - 1; // ERROR: cannot bind "CONST ITERATOR" to another value. 
+                *iter = 2024; // OK: The "first element of the vector" is "2024" now. 
+            }
+            
+            // Low Level const:
+            {
+                std::vector ivec{ 17, 9, 1993 };
+                // auto c_iter = ivec.cbegin();
+                std::vector<int>::const_iterator c_iter = ivec.begin(); // "iter" is a "CONST_ITERATOR" to the "first element of the vector". 
+                // *c_iter = 20; // ERROR: cannot change the value of a "const" variable. 
+                c_iter = ivec.end() - 1; // OK: "iter" is a ITERATOR to previous of ".end()". 
+                // *c_iter = 2024; // ERROR: cannot change the value of a "const" variable.
+            }
+
+            // Full of const:
+            {
+                std::vector ivec{ 17, 9, 1993 };
+                // const auto c_iter = ivec.cbegin();
+                const std::vector<int>::const_iterator c_iter = ivec.begin(); // "iter" is a "CONST CONST_ITERATOR" to the "first element of the vector". 
+                // *c_iter = 20; // ERROR: cannot change the value of a "const" variable. 
+                // c_iter = ivec.end() - 1; // ERROR: cannot bind "CONST ITERATOR" to another value. 
+                // *c_iter = 2024; // ERROR: cannot change the value of a "const" variable.
+            }
+        }
+
+    İşte "const" konusundaki bu farklılık lojik açıdan geçersiz ancak sentaks açısından geçerli durumların meydana gelmesine neden 
+    olabilmektedir. Şöyleki;
+        * Örnek 1.0, Aşağıdaki örnekteki "Erg" sınıfının "g" fonksiyonu bir "const" fonksiyondur, yani bu fonksiyon çağrısı sonucunda 
+        nesnenin problem düzleminde ima ettiği şeyin değişmemesi, yani "state" bilgisinin aynı kalması gerekmektedir. Fakat bünyesinde 
+        yapılan "foo_non_const" çağrısından dolayı lojik açıdan geçersiz durum oluşturmaktadır. 
+            #include <iostream>
+
+            class Neco {
+            public:
+                void foo_non_const() { std::cout << "non_const\n"; }
+                void foo_const() const { std::cout << "const\n"; }
+            };
+
+            class Erg {
+            public:
+                void f() {
+                    ptr->foo_non_const(); // OK
+                    ptr->foo_const(); // OK
+
+                    // c_ptr->foo_non_const(); // cannot call "non-const" functions w/ "const" variables. 
+                    c_ptr->foo_const(); // OK
+                }
+
+                void g() const {
+                    ptr->foo_non_const(); // OK
+                    ptr->foo_const(); // OK
+
+                    // c_ptr->foo_non_const(); // cannot call "non-const" functions w/ "const" variables. 
+                    c_ptr->foo_const();
+                }
+            private:
+                Neco* ptr{};
+                const Neco* c_ptr{};
+            };
+
+            int main() {
+                Erg erg; 
+
+                erg.f();
+                // non_const
+                // const
+                
+                erg.g();
+                // non_const
+                // const
+
+                const Erg c_erg;
+                
+                // c_erg.f(); 
+                // cannot call "non-const" functions w/ "const" variables. 
+                
+                c_erg.g();
+                // non_const
+                // const
+            }
+
+    İşte bu probleme ilişkin şöyle bir çözümler üretilebilir;
+        * Örnek 1,
+            #include <iostream>
+
+            class Neco {
+            public:
+                void foo_non_const() { std::cout << "non_const\n"; }
+                void foo_const() const { std::cout << "const\n"; }
+            };
+
+            class Erg {
+            public:
+                void f() {
+                    to_ptr()->foo_non_const(); // OK
+                    to_ptr()->foo_const(); // OK
+
+                }
+
+                void g() const {
+                    // to_ptr()->foo_non_const(); // cannot call "non-const" functions w/ "const" variables. 
+                    to_ptr()->foo_const(); // OK
+
+                }
+            private:
+                const auto* to_ptr() const { return ptr; }
+                auto* to_ptr() { return ptr; }
+                Neco* ptr{};
+            };
+
+            int main() {
+                Erg erg; 
+
+                erg.f();
+                // non_const
+                // const
+                
+                erg.g();
+                // non_const
+                // const
+            }
+
+        * Örnek 2,
+            #include <iostream>
+
+            template<typename T>
+            class const_ptr {
+            public:
+                explicit const_ptr(T* ptr) : m_ptr{ ptr } {}
+
+                const T& operator*()const { return *m_ptr; }
+                const T* operator->()const { return m_ptr; }
+                T& operator*(){ return *m_ptr; }
+                T* operator->(){ return m_ptr; }
+
+            private:
+                T* m_ptr;
+            };
+
+            class Neco {
+            public:
+                void foo_non_const() { std::cout << "non_const\n"; }
+                void foo_const() const { std::cout << "const\n"; }
+            };
+
+            class Erg {
+            public:
+                void f() {
+                    ptr->foo_non_const(); // OK
+                    ptr->foo_const(); // OK
+
+                }
+
+                void g() const {
+                    ptr->foo_non_const(); // cannot call "non-const" functions w/ "const" variables. 
+                    ptr->foo_const(); // OK
+
+                }
+            private:
+                const_ptr<Neco> ptr;
+            };
+
+            int main() {
+
+            }
+
+    Üretilen çözümlerden de görüleceği üzere esas sınıfımızın "private" kısmında sadece gösterici bulunmaktadır. İş bu gösterici ise
+    eskiden "private" bölümde olan şeyleri tutan bir yapı/sınıf türünden. Böylelikle bizler sınıfın "interface" i ile implementasonu
+    arasındaki bağımlılığı kaldırmış oluyoruz. Böylelikle implementasyon tarafında bir değişiklik olduğunda "interface" de değişmeyecek
+    ve bu "interface" i kullanan "client" kodların değiştirilmesine ve yeniden derlenmesine de gerek yoktur. İşte "pimpl" deyimi ile kastedilen 
+    de bu mekanizmadır. Peki neden bizler yeniden derleme ihtiyacı hissederiz? Şu nedenlerden dolayı;
+
+        -> Sınıfımıza yeni veri elemanı eklersek, halihazırdaki bir veri elemanını çıkartırsak ve/veya veri elemanının yerini 
+        değiştirirsek sınıfın "binary compatibility" bozulacaktır. Yani bu sınıfın "include" eden kodların yeniden derlenmesi 
+        gerekir. Çünkü sınıf nesnesinin "layout" u tamamen değişmektedir. Çünkü veri elemanlarının o sınıf türünden nesne 
+        içindeki konumları, dolayısıyla sınıf nesnesinin "storage" ihtiyacı değişmiş olacaktır. Daha önceki duruma göre 
+        derlenmiş kodlar, programın çalışma zamanında uyumlu olmayacaklar. Örneğin, yapı nesnesinin adresinden sonraki şu
+        "offset" noktasında şu veri elemanı olduğuna güvenerek kod yazıldığını düşünelim. Fakat bir noktada sınıfa yeni bir 
+        veri elemanı eklenmiş, dolayısıyla "offset" noktası da kaymış olsun. Artık "offset" noktası kaymış olacağı için, 
+        çalışma zamanında istenmeyen sonuçlar elde edebiliriz. 
+
+        -> Sınıfımızın "private" bölümünde bulunan fonksiyonların başka bölüme alınması veya "private" bölüme yeni fonksiyonların 
+        eklenmesi de "binary compatibility" bozacaktır, her ne kadar iş bu fonksiyonlar sınıf nesnesi içerisinde yer kaplamadığı ve 
+        dışarıdan çağrılabilir olmasalar da. Çünkü "Function Overload Resolution" dan ötürü. "FO" ya yeni fonksiyonlar da girebileceği
+        için, başka fonksiyonların da seçilme ihtimali olacak. Anımsanacağı üzere önce "FO", daha sonra "access control" yapılmakta. 
+
+    Buradan hareketle diyebiliriz ki bu mekanizmayla birlikte sınıfın "private" bölümünde olan veri elemanları ve üye fonksiyonlar 
+    taşınmalıdır. Pekiyi bu mekanizmanın avantajlarına değinecek olursak;
+
+        -> "interface" ile implementason ayrılacağı için daha stabil, kararlı bir sistem kurabileceğiz. 
+        -> Derleme zamanının daha kısa sürmesini sağlatabiliriz. 
+        -> Başlık dosyalar normal "text" dosyaları, dolayısıyla programcılar normal bir şekilde gözlemleyebilirler, bu da bizim 
+        kullandığımız tekniklerin de gözlemlenebilir olması demek. Eğer yöntemlerimizi gizlemek istiyorsak da bu mekanizmayı 
+        kullanabiliriz. 
+
+    Öte yandan bu mekanizmanın da bir takım dezavantajları da yok değildir, dolayısıyla bütün sınıflarımız için bu deyimi kullanmak da
+    mantıksız olur. Şöyleki;
+        
+        -> Çünkü esas sınıfımızın veri elemanı olan göstericinin gösterdiği "impl" şey, dinamik ömürlü olacaktır. Bu da zamanı geldiğinde
+        yetersiz bellek alanı oluşmasına neden olabilir.
+        -> Gösterici kullandığımız için işlemlerimizde ilk olarak "dereference" uygulanması gerekmektedir. 
+        -> "private" bölümünde olan fonksiyonlar "inline" olarak ele alınarak bir takım optimizasyonlara tabi tutulabilirdi, ancak 
+        gösterici kullandığımız için derleyiciler artık tanımlarını o başlık dosyasında göremeyeceği için, optimizasyon imkanı da 
+        kalmamış olacaktır. 
+        -> "debug" sürecinin zorlaşması. 
+        
+    Diğer yandan bu deyim "Opaque Pointer", "Handle-Body", "D Pointer", "Chesire Cat" ve "Compiler Firewall" olarak da geçer. Şimdi de 
+    örnekler ile bu deyimi irdeleyelim;
+        * Örnek 1.0, "without pimpl idiom": 
+            // student.h
+                #include <string>
+                #include <vector>
+                //...
+
+                class Student {
+                    public: 
+                        Student(const char* p_name, const char* p_surname);
+                        void add_grade(int);
+                        void print() const;
+                        //...
+                        
+                    private:
+                        std::string m_name;
+                        std::string m_surname;
+                        std::vector<int> m_grades;
+                        //...
+                };
+
+            // student.cpp 
+                #include "student.h"
+                #include <iostream>
+
+                Student::Student(const char* p_name, const char* p_surname) : m_name{ p_name }, m_surname{ p_surname } {}
+
+                void Student::add_grade(int grade) { m_grades.emplace_back(grade); }
+
+                void Student::print() const {
+                    std::cout << "name   : " << m_name << '\n'
+                            << "surname: " << m_surname << '\n'
+                            << "grades : ";
+                    
+                    for (auto i: m_grades) 
+                        std::cout << i << ' ';
+                    std::cout << '\n';
+                }
+
+            // main.cpp 
+                #include "student.h"
+
+                int main() {
+                    Student s{ "Ulya", "Yuruk" };
+                    s.add_grade(17);
+                    s.add_grade(9);
+                    s.add_grade(1993);
+                    s.print();
+                    
+                    /*
+                        # OUTPUT # 
+                        name   : Ulya
+                        surname: Yuruk
+                        grades : 17 9 1993 
+                    */
+                }
+
+        * Örnek 1.1.0, "with pimpl idiom using nested type": 
+            // Student.h 
+                #include <memory>
+
+                class Student {
+                    public: 
+                        Student(const char*, const char*);
+                        Student(const Student&);
+                        Student(Student&&) noexcept;
+                        Student& operator=(Student);
+                        Student& operator=(Student&&) noexcept;
+                        
+                        /*
+                        *   Derleyici tarafından "default" edilen "dtor." fonksiyonu
+                        *   sınıfın veri elemanlarını sonlandıracak. Veri elemanımız 
+                        *   akıllı gösterici türünden olduğu için, onu yok edecek. 
+                        *   Akıllı Gösterici nesnesinin yok edilmesi demek, Akıllı Gösterici'nin 
+                        *   "deleter" ın sarmaladığı göstericiyi "delete" etmesi demektir. Biz 
+                        *   "incomplete" tür kullandığımız için sentaks hatası alacağız. Çünkü 
+                        *   derleyici "Dtor." fonksiyonunu "inline" olarak başlık dosyası içinde 
+                        *   yazacaktır. İşte başlık dosyası içerisinde bir tanım olması sentaks 
+                        *   hatası oluşturacaktır. Aynı durum, eğer diğer özel üye fonksiyonlar da
+                        *   Akıllı Göstericiler için "complete" tür gerektiriyorsa, diğer özel 
+                        *   üye fonksiyonlar için de geçerlidir. İşte böylesi durumlarda bizler 
+                        *   "Dtor." fonksiyonunda sadece bildiriyor, ".cpp" dosyasında da "default"
+                        *   ediyoruz. 
+                        */
+                        ~Student(); 
+                        
+                        void add_grade(int);
+                        
+                        void print() const;
+                        
+                        void swap(Student&) noexcept; // Will be used for "Copy-Swap" idiom.
+                        //...
+                        
+                    private:
+                        class StudentImpl;
+                        StudentImpl* pimpl() { return m_ptr.get(); }
+                        const StudentImpl* pimpl() const { return m_ptr.get(); }
+                        std::unique_ptr<StudentImpl> m_ptr;
+                };
+
+            // Student.cpp 
+                #include "student.h"
+                #include <iostream>
+                #include <vector>
+                #include <string>
+
+                class Student::StudentImpl {
+                    public:
+                        StudentImpl(const char* p_name, const char* p_surname) : m_name{ p_name }, m_surname{ p_surname } {}
+                        void add_grade(int grade) { m_grades.emplace_back(grade); }
+                        void print() const {
+                            std::cout << "name   : " << m_name << '\n'
+                                    << "surname: " << m_surname << '\n'
+                                    << "grades : ";
+                            
+                            for (auto i: m_grades) 
+                                std::cout << i << ' ';
+                            std::cout << '\n';
+                        }
+                    private:
+                    // İş bu veri elemanların sınıfın hangi bölümünde olduğu artık önemli değil. 
+                        std::string m_name;
+                        std::string m_surname;
+                        std::vector<int> m_grades{};
+                        //...
+                };
+
+                Student::Student(const char* p_name, const char* p_surname) : m_ptr{ std::make_unique<StudentImpl>(p_name, p_surname) } {}
+                Student::Student(const Student& other) : m_ptr{ std::make_unique<StudentImpl>(*other.m_ptr) } {}
+                Student& Student::operator=(Student other) {
+                    // Programın akışı iş başta parametre değişkeni için "Copy Ctor." 
+                    // fonksiyonuna girecek. Eğer orada "exception" fırlatılırsa, akış 
+                    // bu bloğa hiç girmeyecek. Eğer fırlatılmazsa girecek. Zaten kendi 
+                    // fonksiyonumuz olan "swap" da "exception" için garanti verdiğinden, 
+                    // oradan da fırlatılma olmayacak. Çünkü "std::swap" fonksiyonunun 
+                    // "exception" fırlatmama garantisi verdiğini, ona güvenebileceğimizi 
+                    // biliyoruz. Bizimki de zaten "noexcept" olduğundan sıkıntı yok. 
+                    swap(other);
+                    
+                    return *this;
+                }
+                Student::Student(Student&&) noexcept = default;
+                Student& Student::operator=(Student&&) noexcept = default;
+                Student::~Student() = default;
+                void Student::add_grade(int value) { pimpl()->add_grade(value); }
+                void Student::print() const { pimpl()->print(); }
+                void Student::swap(Student& other) noexcept { std::swap(m_ptr, other.m_ptr); }
+
+            // main.cpp 
+                #include "student.h"
+
+                int main() {
+                    Student s{ "Ulya", "Yuruk" };
+                    s.add_grade(17);
+                    s.add_grade(9);
+                    s.add_grade(1993);
+                    s.print();
+                    
+                    /*
+                        # OUTPUT # 
+                        name   : Ulya
+                        surname: Yuruk
+                        grades : 17 9 1993 
+                    */
+                }
+
+        * Örnek 1.1.1, "with pimpl idiom without using nested type": 
+            // Student.h
+                #include <memory>
+
+                class Student {
+                    public: 
+                        Student(const char*, const char*);
+                        Student(const Student&);
+                        Student(Student&&) noexcept;
+                        Student& operator=(Student);
+                        Student& operator=(Student&&) noexcept;
+                        
+                        /*
+                        *   Derleyici tarafından "default" edilen "dtor." fonksiyonu
+                        *   sınıfın veri elemanlarını sonlandıracak. Veri elemanımız 
+                        *   akıllı gösterici türünden olduğu için, onu yok edecek. 
+                        *   Akıllı Gösterici nesnesinin yok edilmesi demek, Akıllı Gösterici'nin 
+                        *   "deleter" ın sarmaladığı göstericiyi "delete" etmesi demektir. Biz 
+                        *   "incomplete" tür kullandığımız için sentaks hatası alacağız. Çünkü 
+                        *   derleyici "Dtor." fonksiyonunu "inline" olarak başlık dosyası içinde 
+                        *   yazacaktır. İşte başlık dosyası içerisinde bir tanım olması sentaks 
+                        *   hatası oluşturacaktır. Aynı durum, eğer diğer özel üye fonksiyonlar da
+                        *   Akıllı Göstericiler için "complete" tür gerektiriyorsa, diğer özel 
+                        *   üye fonksiyonlar için de geçerlidir. İşte böylesi durumlarda bizler 
+                        *   "Dtor." fonksiyonunda sadece bildiriyor, ".cpp" dosyasında da "default"
+                        *   ediyoruz. 
+                        */
+                        ~Student(); 
+                        
+                        void add_grade(int);
+                        
+                        void print() const;
+                        
+                        void swap(Student&) noexcept; // Will be used for "Copy-Swap" idiom.
+                        //...
+                        
+                    private:
+                        class StudentImpl* pimpl() { return m_ptr.get(); }
+                        const class StudentImpl* pimpl() const { return m_ptr.get(); }
+                        std::unique_ptr<class StudentImpl> m_ptr;
+                };
+
+            // Student.cpp
+                #include "student.h"
+                #include <iostream>
+                #include <vector>
+                #include <string>
+
+                class StudentImpl {
+                    public:
+                        StudentImpl(const char* p_name, const char* p_surname) : m_name{ p_name }, m_surname{ p_surname } {}
+                        void add_grade(int grade) { m_grades.emplace_back(grade); }
+                        void print() const {
+                            std::cout << "name   : " << m_name << '\n'
+                                    << "surname: " << m_surname << '\n'
+                                    << "grades : ";
+                            
+                            for (auto i: m_grades) 
+                                std::cout << i << ' ';
+                            std::cout << '\n';
+                        }
+                    private:
+                    // İş bu veri elemanların sınıfın hangi bölümünde olduğu artık önemli değil. 
+                        std::string m_name;
+                        std::string m_surname;
+                        std::vector<int> m_grades{};
+                        //...
+                };
+
+                Student::Student(const char* p_name, const char* p_surname) : m_ptr{ std::make_unique<StudentImpl>(p_name, p_surname) } {}
+                Student::Student(const Student& other) : m_ptr{ std::make_unique<StudentImpl>(*other.m_ptr) } {}
+                Student& Student::operator=(Student other) {
+                    // Programın akışı iş başta parametre değişkeni için "Copy Ctor." 
+                    // fonksiyonuna girecek. Eğer orada "exception" fırlatılırsa, akış 
+                    // bu bloğa hiç girmeyecek. Eğer fırlatılmazsa girecek. Zaten kendi 
+                    // fonksiyonumuz olan "swap" da "exception" için garanti verdiğinden, 
+                    // oradan da fırlatılma olmayacak. Çünkü "std::swap" fonksiyonunun 
+                    // "exception" fırlatmama garantisi verdiğini, ona güvenebileceğimizi 
+                    // biliyoruz. Bizimki de zaten "noexcept" olduğundan sıkıntı yok. 
+                    swap(other);
+                    
+                    return *this;
+                }
+                Student::Student(Student&&) noexcept = default;
+                Student& Student::operator=(Student&&) noexcept = default;
+                Student::~Student() = default;
+                void Student::add_grade(int value) { pimpl()->add_grade(value); }
+                void Student::print() const { pimpl()->print(); }
+                void Student::swap(Student& other) noexcept { std::swap(m_ptr, other.m_ptr); }
+
+            // main.cpp
+                #include "student.h"
+
+                int main() {
+                    Student s{ "Ulya", "Yuruk" };
+                    s.add_grade(17);
+                    s.add_grade(9);
+                    s.add_grade(1993);
+                    s.print();
+                    
+                    /*
+                        # OUTPUT # 
+                        name   : Ulya
+                        surname: Yuruk
+                        grades : 17 9 1993 
+                    */
+                }
+
+IDIOM -15
+    //..
+
+    /*
+        Fast Pimpl Idiom : Bu "pimpl" deyiminin en büyük maliyet kalemi şüphesiz dinamik bellek yönetiminde. İşte bu
+        maliyetten kaçınmak adına geliştirilen mekanizmanın adıdır, "fast pimpl idiom".
+    */
+
+    * Örnek 1,
+        // placement.h 
+            template<typename T>
+            void placement_new(void* buffer, std::size_t buffer_size) 
+            {
+                new(buffer) T();
+            }
+
+            template<typename T>
+            T* placement_cast(void* buffer) 
+            {
+                return reinterpret_cast<T*>(buffer);
+            }
+
+            ///call the destructor of type T at a given address
+            template<typename T>
+            void placement_delete(void* buffer) 
+            {
+                placement_cast<T>(buffer)->~T();
+            }
+
+        // logger.h 
+            #pragma once
+
+            #include <string>
+            #include <type_traits>
+            #include <cstddef>
+
+            class Logger {
+            public:
+                Logger();
+                ~Logger();
+                void log(const std::string& str);
+                //other functions
+            private:
+                constexpr static std::size_t size = 1024;
+                std::aligned_storage_t<size, std::alignment_of_v<std::max_align_t>> impl{};
+            };
+
+        // logger.cpp 
+            #include "logger.h"
+            #include "placement.h"
+            #include <fstream>
+            #include <iostream>
+
+            class LoggerImpl {
+            public:
+                void log(const std::string& str)
+                {
+                    std::cout << "message : " << str << std::endl;
+                    ofs << str << std::endl;
+                }
+            private:
+                std::ofstream ofs;
+            };
+
+            Logger::Logger()
+            {
+                static_assert(size >= sizeof(LoggerImpl));
+
+                placement_new<LoggerImpl>(&impl, sizeof(LoggerImpl));
+            }
+
+            Logger::~Logger()
+            {
+                placement_delete<LoggerImpl>(&impl);
+            }
+
+            void Logger::log(const std::string &str)
+            {
+                placement_cast<LoggerImpl>(&impl)->log(str);
+            }
+
+        // main.cpp 
+            #include "logger.h"
+
+            int main()
+            {
+                Logger mylogger{};
+
+                mylogger.log("necati ergin");
+            }
+
+IDIOM -16
+    //..
+
+    /*
+        Copy-Swap Idiom : Sınıfın "operator=()" fonksiyonlarının yazılmasında kullanılır ve şu avantajlara sahiptir;
+    
+            -> İş bu fonksiyonlara "strong exception guarantee" sağlatmak. Anımsanacağı üzere "strong guarantee" verildiğinde o fonksiyon
+            ya işini tam manasıyla yapacak ya da nesnenin durumu o fonksiyon çağrılmadan evvelki durumunda olacak. Bir diğer deyişle
+            "commit-or-roll_back". Bu durumda bizlerin ayrı bir nesneye daha ihtiyacımız var ki işlemleri o ayrı bir nesne üzerinde
+            gerçekleştirip, herhangi bir problem olmadığını gördükten sonra, ayrı nesnemizi orjinal nesnemize atayabilelim. İşte kullanılan
+            bu ayrı nesneden ötürü de maliyetlidir, "strong exception guarantee" sunmak. Dolayısıyla böyle bir garanti verme zorunluluğumuz
+            yoksa, bu maliyetten kaçınmalıyız.
+            -> Ortak kodu tek bir yerde toplamak.  
+            -> "Self Assignment" kontrolüne gerek kalmaması, onun getirdiği maliyetin kaldırılması.
+
+        İşte bunları sağlaması için "std::swap" fonksiyonunu kullanıyoruz. Çünkü bu fonksiyonun "strong exception" garantisi verme hususunda
+        bizlere garanti vermektedir, yani bu fonksiyonun "exception" fırlatmayacağına güvenebiliriz.
+    */
+
+    * Örnek 1,
+        #include <iostream>
+        #include <algorithm>
+
+        template<typename T>
+        class Array {
+            public:
+                Array(T* pa, std::size_t size) : m_pa{ pa }, m_size{ size } {}
+                Array(const Array& other) : m_pa{ new T[other.m_size] }, m_size{ size } {
+                    std::copy_n(other.m_pa, m_size, m_pa);
+                }
+                Array(Array&& other) : m_pa{ std::exchange(other.m_pa, nullptr) }, m_size{ std::exchange(other.m_size, 0) } {}
+                ~Array() {
+                    if (m_pa)
+                        delete[] m_pa;
+                }    
+                
+                T& operator[](std::size_t idx) {
+                    return m_pa[idx];
+                }
+                
+                const T& operator[](std::size_t idx) const {
+                    return m_pa[idx];
+                }
+                
+                std::size_t size() const {
+                    return m_size;
+                }
+                
+                // A-must function to swapping:
+                friend void swap(Array& lhs, Array& rhs) noexcept {
+                    // Aşağıdaki "using" bildiriminden dolayı ilk 
+                    // olarak "swap" ismi sınıf içerisinde aranacak, 
+                    // bulunamazsa "std" içerisinde aranacak. Yani veri 
+                    // elemanlarımızın türleri olan sınıflar kendi özel 
+                    // "swap" fonksiyonları varsa onlar, onlar uygun 
+                    // değilse "std" içerisindeki. 
+                    using std::swap;
+                    swap(lhs.m_pa, rhs.m_pa);
+                    swap(lhs.m_size, rhs.m_pa)
+                }
+                
+                // Usage of "Copy-Swap" Idiom:
+                    /*  // Way - I
+                        Array& operator=(const Array& other) {
+                            Array temp(other); // Bahsi geçen ayrı nesne. 
+                            swap(*this, temp); 
+                            return *this;
+                        }
+                    */
+                    
+                    // Way - II 
+                    Array& operator=(Array other) { // Burada ilkin "Copy ctor." çağrılacak. 
+                        // Daha sonra bu ".operator=" fonksiyonu. 
+                        swap(*this, other); 
+                        // Sonrasında da "swap" fonksiyonu. 
+                        return *this;
+                    }
+            private:
+                T* m_pa; 
+                std::size_t m_size;
+        };
+
+        int main() {
+            
+        }
+
+IDIOM -17
+    //..
+
+    /*  
+        Polymorphic Exception : Varsayalım ki elimizde bir "exception" nesnesi var ve türü "std::exception" ailesinden 
+        bir sınıfa ait ve bizler de elimizdeki bu "exception" nesnesini bir fonksiyona gönderterek, o fonksiyonun yine aynı sınıf türünden 
+        bir "exception" göndermesini istiyoruz. Yani dinamik tür koruyarak, bir fonksiyon vasıtasıyla, aynı türden bir "exception" nesnesi
+        daha oluşturmak istiyoruz. 
+    */
+
+    * Örnek 1.0, Aşağıdaki bu konuya ilişkin bir problem örneği verilmiştir:
+        #include <iostream>
+
+        class Ex_Base {};
+        class Ex_Der_I : public Ex_Base {};
+        class Ex_Der_II : public Ex_Der_I {};
+        class Ex_Der_III : public Ex_Der_II {};
+
+        void f(Ex_Base& ex) {
+            //...
+            
+            // --->(1) : Ex_Base
+            // Burada "Object Slicing" olacak.
+            // Dolayısıyla "Ex_Base" türünden 
+            // bir nesne oluşturulup gönderilecek. 
+            // Dinamik tür korunmamış olacak. 
+            // throw ex;
+            
+            // "re-throw" yapılabilmesi için "f"
+            // fonksiyon çağrısının "catch" bloğu 
+            // içerisinde, yani yakalanmış bir 
+            // nesne sonrasında, yapılmış olması 
+            // gerekir. Aksi halde "std::terminate"
+            // çağrılır.
+            // throw;
+        }
+
+        int main() {
+            Ex_Der_II ex; 
+            try {
+                f(ex); // --->(1)
+            }
+            catch(Ex_Der_III) {
+                std::cout << "Ex_Der_III\n";
+            }
+            catch(Ex_Der_II) {
+                std::cout << "Ex_Der_II\n";
+            }
+            catch(Ex_Der_I) {
+                std::cout << "Ex_Der_I\n";
+            }
+            catch(Ex_Base) {
+                std::cout << "Ex_Base\n";
+            }
+            catch(...) {
+                std::cout << "Unknown\n";
+            }
+        }
+
+    * Örnek 1.1, Taban sınıfı "virtual" hale getirerek "virtual dispatch" mekanizmasından fayda sağlayabiliriz. 
+        #include <iostream>
+
+        class Ex_Base {
+            public:
+                virtual ~Ex_Base() = default; // A-must for virtual classes. 
+                virtual void raise() {
+                    throw *this;
+                }
+        };
+        class Ex_Der_I : public Ex_Base {
+            public:
+                virtual void raise() override {
+                    throw *this;
+                }
+        };
+        class Ex_Der_II : public Ex_Der_I {
+            public:
+                virtual void raise() override {
+                    throw *this;
+                }
+        };
+        class Ex_Der_III : public Ex_Der_II {
+            public:
+                virtual void raise() override {
+                    throw *this;
+                }
+        };
+
+        void f(Ex_Base& ex) {
+            //...
+            
+            ex.raise();
+        }
+
+        int main() {
+            Ex_Der_II ex; 
+            try {
+                f(ex); // Ex_Der_II
+            }
+            catch(Ex_Der_III) {
+                std::cout << "Ex_Der_III\n";
+            }
+            catch(Ex_Der_II) {
+                std::cout << "Ex_Der_II\n";
+            }
+            catch(Ex_Der_I) {
+                std::cout << "Ex_Der_I\n";
+            }
+            catch(Ex_Base) {
+                std::cout << "Ex_Base\n";
+            }
+            catch(...) {
+                std::cout << "Unknown\n";
+            }
+        }
+
+    * Örnek 1.2, Pekala "f" fonksiyonunu fonksiyon şablonu haline getirerek de benzer sonucu elde edebilirdik. 
+        #include <iostream>
+
+        class Ex_Base {};
+        class Ex_Der_I : public Ex_Base {};
+        class Ex_Der_II : public Ex_Der_I {};
+        class Ex_Der_III : public Ex_Der_II {};
+
+        template<typename T>
+        void f(T&& ex) {
+            //...
+            
+            throw T(ex);
+        } 
+
+        int main() {
+            Ex_Der_II ex; 
+            try {
+                f(ex); // Ex_Der_II
+            }
+            catch(Ex_Der_III) {
+                std::cout << "Ex_Der_III\n";
+            }
+            catch(Ex_Der_II) {
+                std::cout << "Ex_Der_II\n";
+            }
+            catch(Ex_Der_I) {
+                std::cout << "Ex_Der_I\n";
+            }
+            catch(Ex_Base) {
+                std::cout << "Ex_Base\n";
+            }
+            catch(...) {
+                std::cout << "Unknown\n";
+            }
+        }
+
+IDIOM -18
+    //..
+
+    /*
+        Attorney Client Idiom : "friend" bildirimleriyle ilgilidir. Anımsanacağı üzere sınıflar "friend" bildirimleri 
+        ile kendi "private" kısımlarını başka kodlara açmaktadır. Ancak kısıtlama getiremiyoruz; ya bütün "private" kısmım ya da hiç biri. 
+        İşte bir takım yöntemler ile kısıtlama getirebiliriz. 
+    */
+
+    * Örnek 1.0, Aşağıdaki kodda bulunan "friend" bildirimini yorum satırı olmaktan çıkartırsak, ilgili sentaks hataları da 
+    gitmiş olacaktır. 
+        #include <iostream>
+
+        class Neco {
+            // -----> (1)
+            friend class Erg;
+            private:
+                void foo() { std::cout << "private foo\n"; }
+                void bar() { std::cout << "private bar\n"; }
+                void baz() { std::cout << "private baz\n"; }
+        };
+
+        class Erg {
+            public:
+                void func(Neco other) {
+                                 // -----> (1)
+                    other.foo(); // ERROR: ‘void Neco::foo()’ is private within this context
+                    other.bar(); // ERROR: ‘void Neco::bar()’ is private within this context
+                    other.baz(); // ERROR: ‘void Neco::baz()’ is private within this context
+                }
+        };
+
+        int main() {
+            /*  // -----> (1)
+                # OUTPUT #
+                private foo
+                private bar
+                private baz
+            */
+            
+            Erg e1; 
+            e1.func(Neco{});
+        }
+
+    * Örnek 1.1,
+        #include <iostream>
+
+        class Neco {
+                void foo() { std::cout << "private foo\n"; }
+                void bar() { std::cout << "private bar\n"; }
+                void baz() { std::cout << "private baz\n"; }
+                
+            friend class Neco_Erg;
+        };
+
+        class Neco_Erg {
+            static void func_to_foo(Neco other) {
+                other.foo();
+            }
+            
+            // "Erg" sınıfı "Neco_Erg" sınıfının "private" bölümüne
+            // erişebilir. Bizler "private" bölümdeki "func_to_foo"
+            // fonksiyonuna sadece ".foo()" çağrısı eklediğimiz için
+            // sadece o fonksiyon çağrıldı. Böylelikle "Erg" sınıfı 
+            // "Neco" sınıfının bütün "private" bölümüne değil, sadece 
+            // kendisine sunulan bölümüne erişti. Artık "Neco_Erg" 
+            // sınıfına ekleyeceğimiz fonksiyonlar üzerinden "Neco" 
+            // sınıfı "Erg" sınıfına kısmi "friend" verebilir. 
+            friend class Erg;
+        };
+
+        class Erg {
+            public:
+                void func(Neco other) {
+                    Neco_Erg::func_to_foo(other);
+                }
+        };
+
+        int main() {
+            /*  
+                # OUTPUT #
+                private foo
+            */
+            
+            Erg e1; 
+            e1.func(Neco{});
+        }
+
+IDIOM -19
+    //..
+
+    /*
+        Nifty Counter : Anımsanacağı üzere farklı modül dosyalarındaki statik ömürlü nesnelerin, yani "global" isim
+        alanındaki değişkenler ile sınıfların statik veri elemanlarının, hayata gelme sırası öngörülebilir değildi(bkz. "Static Init. Fiasco"). 
+        Aşağıdaki örneği inceleyelim;
+    */
+
+    * Örnek 1, Aşağıdaki örnekte her bir modül kendine has "g_mystream_init" değişkenine sahip olacaktır. Derleme sırasında "MyStream"
+    başlık dosyasını "include" eden modüllerin birisinde ilk defa "g_mystream_init" nesnesi hayata gelecektir. Dolayısıyla "nifty_counter"
+    değeri bir olacak, "MyStreamBuffer" adresinde "s_cout" nesnesi hayata gelecektir. "s_cout" nesnesi "inline" oldığından, tek bir tane 
+    olacaktır. 
+
+        // MyStream.h
+            #ifndef MY_STREAM_H
+            #define MY_STREAM_H
+
+            // My Real Class
+            struct MyStream {
+                MyStream();
+                ~MyStream();
+            };
+
+            // "extern" bildirimi
+            extern MyStream& s_cout; 
+
+            // An Init. Class for My Real Class
+            struct MyStream_Init {
+                MyStream_Init();
+                ~MyStream_Init();
+            };
+
+            // Internal Linkage: Bu başlık dosyasını "include"
+            // eden her bir modül, kendine has bir "g_mystream_init"
+            // değişkenine sahip olacak. 
+            static MyStream_Init g_mystream_init{};
+
+            #endif
+
+        // MyStream.cpp
+            #include "MyStream.h"
+            #include <new> // For 'placement new'
+            #include <type_traits> // For 'aligned_storage'
+
+            // Internal Linkage; Zero Init.
+            static int nifty_counter;
+
+            // Internal Linkage; Memory for the 's_cout' object. 
+            static typename std::aligned_storage_t<sizeof(MyStream), alignof(MyStream)> MyStreamBuffer;
+
+            MyStream& s_cout = reinterpret_cast<MyStream&>(MyStreamBuffer);
+
+            MyStream::MyStream() {
+                // The Ctor. for My Real Class
+            }
+
+            MyStream::~MyStream() {
+                // The Dtor. for My Real Class
+            }
+
+            MyStream_Init::MyStream_Init() {
+                if (nifty_counter++ == 0) {
+                    new (&s_cout) MyStream(); // A call for 'placement new'
+                }
+            }
+
+            MyStream_Init::~MyStream_Init() {
+                if (--nifty_counter == 0) {
+                    (&s_cout)->~MyStream();
+                }
+            }
+
+IDIOM -20
+    //..
+
+    /*
+        Strategy Pattern : Müşteri kodlara, strateji seçimi imkanı verilebilmektedir. 
+    */
+
+    * Örnek 1,
+        #include <string>
+        #include <iostream>
+        #include <memory>
+
+        /**
+        * The Strategy interface declares operations common to all supported versions
+        * of some algorithm.
+        *
+        * The Context uses this interface to call the algorithm defined by Concrete
+        * Strategies.
+        */
+        class Strategy
+        {
+        public:
+            virtual ~Strategy() = default;
+            virtual std::string doAlgorithm(std::string_view data) const = 0;
+        };
+
+        /**
+        * The Context defines the interface of interest to clients.
+        */
+
+        class Context
+        {
+            /**
+            * @var Strategy The Context maintains a reference to one of the Strategy
+            * objects. The Context does not know the concrete class of a strategy. It
+            * should work with all strategies via the Strategy interface.
+            */
+        private:
+            std::unique_ptr<Strategy> strategy_;
+        public:
+            /**
+            * Usually, the Context accepts a strategy through the constructor, but also
+            * provides a setter to change it at runtime.
+            */
+            explicit Context(std::unique_ptr<Strategy> &&strategy = {}) : strategy_(std::move(strategy)){}
+            
+            /**
+            * Usually, the Context allows replacing a Strategy object at runtime.
+            */
+            void set_strategy(std::unique_ptr<Strategy> &&strategy)
+            {
+                strategy_ = std::move(strategy);
+            }
+            
+            /**
+            * The Context delegates some work to the Strategy object instead of
+            * implementing +multiple versions of the algorithm on its own.
+            */
+            void doSomeBusinessLogic() const
+            {
+                if (strategy_) {
+                    std::cout << "Context: Sorting data using the strategy (not sure how it'll do it)\n";
+                    std::string result = strategy_->doAlgorithm("aecbd");
+                    std::cout << result << "\n";
+                } 
+                else {
+                    std::cout << "Context: Strategy isn't set\n";
+                }
+            }
+        };
+
+        /**
+        * Concrete Strategies implement the algorithm while following the base Strategy
+        * interface. The interface makes them interchangeable in the Context.
+        */
+        class ConcreteStrategyA : public Strategy
+        {
+        public:
+            std::string doAlgorithm(std::string_view data) const override
+            {
+                std::string result(data);
+                std::sort(std::begin(result), std::end(result));
+
+                return result;
+            }
+        };
+
+        class ConcreteStrategyB : public Strategy
+        {
+            std::string doAlgorithm(std::string_view data) const override
+            {
+                std::string result(data);
+                std::sort(std::begin(result), std::end(result), std::greater<>());
+
+                return result;
+            }
+        };
+
+        /**
+        * The client code picks a concrete strategy and passes it to the context. The
+        * client should be aware of the differences between strategies in order to make
+        * the right choice.
+        */
+
+        void clientCode()
+        {
+            Context context(std::make_unique<ConcreteStrategyA>());
+            std::cout << "Client: Strategy is set to normal sorting.\n";
+            context.doSomeBusinessLogic();
+            
+            std::cout << "\n";
+            
+            std::cout << "Client: Strategy is set to reverse sorting.\n";
+            context.set_strategy(std::make_unique<ConcreteStrategyB>());
+            context.doSomeBusinessLogic();
+        }
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Client: Strategy is set to normal sorting.
+                Context: Sorting data using the strategy (not sure how it'll do it)
+                abcde
+                
+                Client: Strategy is set to reverse sorting.
+                Context: Sorting data using the strategy (not sure how it'll do it)
+                edcba
+            */
+            
+            clientCode();
+            
+            return 0;
+        }
+
+IDIOM -21
+    //..
+
+    /*
+        Thread-Safe Interface : Sınıf türünden nesnelerin "Internal Synchronization" ile "thread-safe" hale
+        getirilmesidir. Yani "public interface" de bulunan bütün fonksiyonlar bir kilit kullanacak ama bu fonksiyonların kullandığı implementasyon
+        ("private" ve "protected" bölümdekiler) fonksiyonları kilit kullanmayacak. Dolayısıyla "public" fonksiyonlar sadece "protected" ve "private" 
+        bölümündekileri çağırmalı, "public" bölümdeki diğer fonksiyonları ÇAĞIRMAMALIDIR. Böylece "dead_lock" oluşmayacak, "recursive_mutex"
+        kullanmaya gerek kalmayacak vs. Tabii sınıfın "non-const static" veri elemanları da varsa, yine bunları da senkronize etmek 
+        gerekmektedir. Yine "virtual-dispatch" varsa, "override" edilen fonksiyonların da kilit altında çalıştırılması gerekmektedir. Son 
+        olarak referans döndüren fonksiyon çağrıları sonucunda sınıfın veri elemanına doğrudan erişim mümkün olduğu için, "mutex" kapsamından 
+        çıkılmış olmaktadır. 
+    */
+
+    * Örnek 1,
+        #include <mutex>
+        #include <iostream>
+        #include <thread>
+
+        class Myclass_TSI {
+            public:
+                void foo() {
+                    std::scoped_lock sl{ mtx };
+                    fx_impl();
+                }
+                
+                void bar() {
+                    std::scoped_lock sl{ mtx };
+                    fx_impl();
+                    fy_impl();
+                }
+                
+                void baz() {
+                    std::scoped_lock sl{ mtx };
+                    fx_impl();
+                    fy_impl();
+                    fz_impl();
+                }
+                
+            private:
+                void fx_impl() {
+                    std::cout << "fx_impl: [" << std::this_thread::get_id() << "]\n";
+                }
+                
+                void fy_impl() {
+                    std::cout << "fy_impl: [" << std::this_thread::get_id() << "]\n";
+                }
+                
+                void fz_impl() {
+                    std::cout << "fz_impl: [" << std::this_thread::get_id() << "]\n";
+                }
+                
+            private:
+                mutable std::mutex mtx;
+        };
+
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                fx_impl: [139770356966976]
+                fx_impl: [139770348574272]
+                fy_impl: [139770348574272]
+                fx_impl: [139770340181568]
+                fy_impl: [139770340181568]
+                fz_impl: [139770340181568]  
+            */
+            
+            Myclass_TSI test_object;
+            
+            std::jthread t_main{ [&]{ test_object.foo(); } };
+            
+            {
+                std::jthread t1{ [&]{ test_object.bar(); } };
+                std::jthread t2{ [&]{ test_object.baz(); } };
+            }
+            
+            return 0;
+        } 
+
+IDIOM -22
+    //..
+
+    /*
+        Type Erasure : Birden çok formu vardır. Örneğin, C dilinde fonksiyonların parametrelerinin "void*" 
+        yapılmaları, C++ dilinde kalıtım hiyerarşisi kullanmak suretiyle fonksiyonların parametrelerinin taban sınıf türünden gösterici/referans 
+        olmaları vb. Dolayısıyla buradaki kritik nokta ortak bir takım özelliklere sahip farklı türlerin bir arada kullanılmasıdır. Yani bir kap 
+        içerisinde "printable" özellikte fakat farklı türden değişkenleri tutmak isteyelim. Bunun için kalıtım kullanamam çünkü "primitive" türler 
+        için kalıtım uygulanamaz. "std::variant" da kullanamam çünkü kapalı bir hiyerarşi oluşturmuş olurum, ileride genişletemem. İşte bunu 
+        gerçekleştiren örnek aşağıdaki gibi olacaktır:
+    */
+
+    * Örnek 1,
+        #include <string>
+        #include <iostream>
+        #include <vector>
+        #include <memory>
+
+        /*
+        *   Aşağıdaki örnekte "printable" özelliğinde olan sınıfları
+        *   tek bir "container" içerisinde saklandı. Dolayısıyla 
+        *   ilgili sınıfların "get_name()" isminde bir sınıfı bünyelerinde 
+        *   barındırması gerekmektedir. 
+        */
+
+        struct Foo {
+            std::string get_name() const
+            {
+                return "Foo";
+            }
+        };
+
+        struct Bar {
+            std::string get_name() const
+            {
+                return "Bar";
+            }
+        };
+
+        struct Baz {
+            std::string get_name() const
+            {
+                return "Baz";
+            }
+        };
+
+
+        class Object {
+        public:
+            template <typename T>
+            Object(T&& val) : m_concept_ptr(std::make_shared<Model<T>>(std::forward<T>(val))) {}
+
+            std::string get_name()const
+            {
+                return m_concept_ptr->get_name();
+            }
+
+            struct Concept {
+                virtual ~Concept() = default;
+                virtual std::string get_name()const = 0;
+            };
+
+            template <typename T>
+            struct Model : Concept {
+                Model(const T& tval) : m_object(tval) {}
+                virtual std::string get_name()const override
+                {
+                    return m_object.get_name();
+                }
+
+                T m_object;
+            };
+
+        private:
+            std::shared_ptr<const Concept> m_concept_ptr;
+        };
+
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Foo
+                Bar
+                Baz
+                Foo
+                Bar
+                Baz
+            */
+
+            std::vector<Object> vec{ Object(Foo()), Object(Bar()), Object(Baz()) };
+
+            Foo foo;
+            Bar bar;
+            Baz baz;
+
+            vec.push_back(foo);
+            vec.push_back(bar);
+            vec.push_back(baz);
+
+
+            for (auto& x : vec)
+                std::cout << x.get_name() << '\n';
+        }
+
+    * Örnek 2,
+        #include <memory>
+
+        class Animal {
+        public:
+            template <typename T>
+            Animal(T&& tval) : mptr(std::make_unique<AnimalModel<T>>(std::forward<T>(tval))) {}
+            Animal(const Animal& other) : mptr(other.mptr->clone()) {}
+
+            Animal& operator=(const Animal& other)
+            {
+                return *this = Animal(other);
+            }
+
+            Animal(Animal&&)noexcept = default;
+            Animal& operator=(Animal&&)noexcept = default;
+
+            void cry()
+            {
+                mptr->cry();
+            }
+
+        private:
+            struct AnimalConcept {
+                virtual ~AnimalConcept() = default;
+                virtual std::unique_ptr<AnimalConcept> clone()const = 0;
+                virtual void cry() = 0;
+            };
+
+            template <typename T>
+            struct AnimalModel : public AnimalConcept {
+                AnimalModel(const T& t) : m_object(t) {}
+
+                std::unique_ptr<AnimalConcept> clone()const override
+                {
+                    return std::make_unique<AnimalModel>(*this);
+                }
+
+                void cry() override
+                {
+                    m_object.cry();
+                }
+
+                T m_object;
+            };
+
+            std::unique_ptr<AnimalConcept> mptr;
+        };
+
+        #include <iostream>
+        #include <vector>
+
+
+        class Cat {
+        public:
+            void cry()
+            {
+                std::cout << "miyav miyav miyav\n";
+            }
+        };
+
+        class Dog {
+        public:
+            void cry()
+            {
+                std::cout << "hav hav hav\n";
+            }
+        };
+
+        class Bird {
+        public:
+            void cry()
+            {
+                std::cout << "cik cik cik\n";
+            }
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                miyav miyav miyav
+                hav hav hav
+                cik cik cik
+                hav hav hav
+                miyav miyav miyav
+                cik cik cik
+            */
+
+            Animal a1{ Cat{} };
+            Animal a2{ Dog{} };
+            Animal a3{ Bird{} };
+
+            a1.cry();
+            a2.cry();
+            a3.cry();
+
+            std::vector<Animal> avec;
+
+            avec.emplace_back(Dog{});
+            avec.emplace_back(Cat{});
+            avec.emplace_back(Bird{});
+
+            for (auto& a : avec)
+                a.cry();
+        }
+
+> Hatırlatıcı Notlar:
+    >> "C++ Idioms" için kaynak: https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms

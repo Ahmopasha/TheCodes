@@ -1,0 +1,110 @@
+> "std::exchange" : C++14 ile dile eklenmiştir. Bir değişkene yeni değerini atayan, geri dönüş değeri de o değişkenin eski 
+değeri olan bir fonksiyondur. "utility" başlık dosyasındadır. 
+    * Örnek 1, Temsili implementasyonu aşağıdaki gibidir;
+        #include <type_traits>
+
+        template<class T, class U = T>
+        constexpr // Since C++20
+        T exchange(T& obj, U&& new_value)
+        noexcept (
+            std::is_nothrow_move_constructible_v<T> && std::is_nothrow_assignable_v<T&, U>
+            ) // Since C++23
+        {
+            T old_value = std::move(obj);
+            obj = std::forward<U>(new_value);
+            return old_value;
+        }
+
+    * Örnek 2, Tipik kullanım yerlerinden bir tanesi de "Move Ctor." fonksiyonlardadır. 
+        #include <utility>
+        #include <iostream>
+
+        class Myclass {
+        public:
+            Myclass(Myclass&& other) noexcept : m_val{ std::exchange(other.m_val, 0) } {
+                // Böylelikle hem "other.m_val" in değerini "m_val" değişkenine,
+                // hem de "other.m_val" değişkeninin değerini "0" a çekmiş olduk. 
+                // Ek olarak daha az kod yazmış olduk.
+            }
+
+            Myclass& operator=(Myclass&& other) noexcept {
+                if (this != &other)
+                    m_val = std::exchange(other.m_val, 0);
+
+                return *this;
+            }
+
+        private:
+            int m_val;
+        };
+
+    * Örnek 3, C dilindeki "strcpy" fonksiyonunu da iş bu fonksiyon ile düzenleyebiliriz. 
+        #include <utility>
+
+        // In C,
+        char* strcpy_1(char* pdest, const char* psource) {
+            while (*pdest++ = *psource++)
+                ; // Null Statement
+
+            return pdest;
+        }
+
+        // In Cpp,
+        char* strcpy_2(char* pdest, const char* psource) {
+            for (;;) {
+                auto source = std::exchange(psource, psource + 1);
+                auto destiny = std::exchange(pdest, pdest + 1);
+                *destiny = *source;
+                if (*destiny == '\0')
+                    break;
+            }
+
+            return pdest;
+        }
+
+    * Örnek 4, "fibbo" açılımında da kullanılabilir.
+        #include <utility>
+        #include <print>
+
+        int main() {
+            /*
+                # OUTPUT #
+                Fib of 0 = 0
+                Fib of 1 = 1
+                Fib of 2 = 1
+                Fib of 3 = 2
+                Fib of 4 = 3
+                Fib of 5 = 5
+                ...
+                Fib of 85 = 259695496911122585
+                Fib of 86 = 420196140727489673
+                Fib of 87 = 679891637638612258
+                Fib of 88 = 1100087778366101931
+                Fib of 89 = 1779979416004714189
+            */
+            for (auto counter{ 0LL }, index_1{ 0LL }, index_2{ 1LL }; counter < 90; index_1 = std::exchange(index_2, index_1 + index_2), ++counter) {
+                std::print("Fib of {} = {}\n", counter, index_1);
+            }
+        }
+
+    * Örnek 5,
+        #include <utility>
+        #include <iostream>
+
+        void foo() {
+            std::cout << "foo\n";
+        }
+
+        void bar() {
+            std::cout << "bar\n";
+        }
+
+        int main() {
+            auto f_ptr = foo;
+            f_ptr(); // foo
+
+            auto f_ptr_old = std::exchange(f_ptr, bar);
+            f_ptr_old(); // foo
+            f_ptr(); // bar
+
+        }

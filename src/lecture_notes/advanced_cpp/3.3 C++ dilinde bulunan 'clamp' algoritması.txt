@@ -1,0 +1,50 @@
+> "std::clamp" : İki tane "overload" versiyonu vardır. Dİğer versiyonu, bir adet karşılaştırma kriteri alır ki varsayılan durumda 
+"std::less" dir. "algorithm" başlık dosyasındadır. İşlevi şudur: Bizim bir aralığımız var. Elimizde de değerler var. Elimizdeki
+değerlerden;
+
+    -> Aralığın başlangıç değerinden küçük olanlarını, aralığın başlangıç değerine eşitliyoruz.
+    -> Aralığın bitiş değerinden büyük olanlarını, aralığın bitiş değerine eşitliyoruz.   
+    -> Aralıktaki diğer değerler kendi değerlerinde kalıyor. 
+    
+    * Örnek 1, Temsili implementasyonu aşağıdaki gibidir;
+        template<class T>
+        constexpr const T& clamp(const T& value, const T& low, const T& high) {
+            return clamp(value, low, high, std::less{});
+        }
+
+        template<class T, class Compare>
+        constexpr const T& clamp(const T& value, const T& low, const T& high, Compare comp) {
+            return comp(value, low) ? low : comp(high, value) ? high : value;
+        }
+
+    * Örnek 2.0,
+        #include <algorithm>
+        #include <iostream>
+
+        int main() {
+            int low = 5;
+            int high = 45;
+
+            std::cout << std::clamp(0, low, high) << '\n'; // 5
+            std::cout << std::clamp(31, low, high) << '\n'; // 31
+            std::cout << std::clamp(100, low, high) << '\n'; // 45
+        }
+
+    * Örnek 2.1,
+        #include <algorithm>
+        #include <iostream>
+        #include <array>
+
+        int main() {
+            std::array arr{ -3, 12, 9, 21, -6, 56, -8, 5, -4, 12 };
+            for (auto i : arr)
+                std::cout << i << ' '; // -3 12 9 21 -6 56 -8 5 -4 12
+            
+            std::cout << '\n';
+
+            int low{ 0 }, high{ 15 };
+            std::transform(begin(arr), end(arr), begin(arr), [low, high](int x) { return std::clamp(x, low, high); });
+            for (auto i : arr)
+                std::cout << i << ' '; // 0  12 9 15  0 15  0 5  0 12
+            std::cout << '\n';
+        }

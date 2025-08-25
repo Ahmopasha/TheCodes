@@ -1,0 +1,291 @@
+> "strong types" : "chrono" kütüphanesindeki "duration" türleri çok güzel bir örnek olarak verilebilir. Gerçek hayattaki şeyler için 
+dilin "primitive type" larını sarmalanması konusudur. Örneğin, mesafe bilgisi için bizler "float" değişken kullandığımızı varsayalım. 
+Bu değişken için "int" türden bir sabit atarsak, şöyle problemler ile karşılaşabiliriz;
+
+    -> Örtülü tür dönüşümü gerçekleşebilir. 
+    -> Okunabilirlik azalır. 
+
+İşte bu gibi problemleri gidermek adına, tıpkı "chrono" kütüphanesindeki "milliseconds" tür eş isminde olduğu gibi, temel türlerimizi 
+bir şekilde sarmalıyoruz. "Assembly" düzeyinde yine "primitive type" lar üzerinde işlem yapılırken, dil katmanında sarmalanmış halleri 
+üzerinde işlem yapılmaktadır. 
+    * Örnek 1, İşte bir milisaniyeyi temsil etmesi için standart kütüphanedeki "std::chrono::milliseconds" isimli bir tür 
+    kullanılmıştır. 
+        #include <chrono>
+        #include <iostream>
+        #include <typeinfo>
+
+        int main() {
+            std::cout << "Type: " << typeid(std::chrono::milliseconds).name() << '\n';
+            // Type: class std::chrono::duration<__int64,struct std::ratio<1,1000> >
+        }
+
+Şimdi de bizler bu amaca yönelik olarak bir "stront_type" oluşturalım;
+    * Örnek 1, "double" türünün "Kilogram" ile temsil edilmesi;
+        #include <chrono>
+        #include <iostream>
+        #include <typeinfo>
+
+        class Kilogram {
+        public:
+            class PreventUsage {};
+
+            explicit constexpr Kilogram(PreventUsage, double value) : m_val{ value } {}
+
+            double get() const {
+                return m_val;
+            }
+
+            friend constexpr Kilogram operator+(const Kilogram& lhs, const Kilogram& rhs) {
+                return Kilogram{ Kilogram::PreventUsage{}, lhs.m_val + rhs.m_val };
+            }
+
+            //...
+
+        private:
+            double m_val;
+        };
+
+        constexpr Kilogram operator""_kg(long double value) {
+            return Kilogram{ Kilogram::PreventUsage{}, static_cast<double>(value) };
+        }
+
+        constexpr Kilogram operator""_g(long double value) {
+            return Kilogram{ Kilogram::PreventUsage{}, static_cast<double>(value / 1000) };
+        }
+
+        constexpr Kilogram operator""_mg(long double value) {
+            return Kilogram{ Kilogram::PreventUsage{}, static_cast<double>(value / 1000000) };
+        }
+
+        int main() {
+            constexpr auto result = 2.9_kg + 734.7234_g + 123456.654321_mg; // 3.758180054321
+            std::cout << "Type: " << typeid(result).name() << '\n'; // Type: class Kilogram
+        }
+
+Şimdi de bizler daha "generic" bir versiyonunu yazalım. Bu versiyon sayesinde "Kilogram" için ayrı, "Meter" için ayrı bir 
+sınıf/sınıf şablonu yazmamıza gerek kalmasın, "birim" bilgisi için tek bir sınıf şablonu kullanalım;
+
+    -> İlk olarak sınıf şablonumuzu tanımlıyoruz:
+    -> Daha sonra bu sınıf şablon türümüz için tür eş isim(ler)i bildiriyoruz. 
+
+Aşağıda bu iki adıma ilişkin örnek verilmiştir;
+    * Örnek 1,
+        #include <type_traits>
+
+        template<typename T>
+        struct NamedType {
+            //...
+        };
+
+        using Kilogram = NamedType<double>;
+        using Meter = NamedType<double>;
+
+        int main() {
+            constexpr auto is_same = std::is_same_v<Kilogram, Meter>; // true
+        }
+
+Şimdi "Kilogram" ve "Meter" türleri derleyici açısından da birbirinin aynısı olarak ele alınmıştır. Fakat bizim istediğimiz
+bu gibi durumlarda türlerin aynı olmamasını sağlamaktır. Bunu gerçekleştirmek için;
+
+    -> Şablonumuza ikinci bir parametre daha ekliyoruz. Bu parametre etiketlem için kullanılacaktır. 
+
+Aşağıda bu adıma yönelik örnekler verilmiştir;
+    * Örnek 1.0, Aşağıdaki örnekte yukarıda bahsedilen amaca ulaşılmıştır. Fakat "KilogramTag", "MeterTag" türleri için pekala 
+    "incomplete type" da kullanabiliriz. 
+        #include <type_traits>
+
+        template<typename T, typename TypeTag>
+        struct NamedType {
+            //...
+        };
+
+        struct KilogramTag {};
+        struct MeterTag {};
+
+        using Kilogram = NamedType<double, KilogramTag>;
+        using Meter = NamedType<double, MeterTag>;
+
+        int main() {
+            constexpr auto is_same = std::is_same_v<Kilogram, Meter>; // false
+        }
+
+    * Örnek 1.1, Aşağıda "Tag" türlere ilişkin "incomplete type" kullanılmıştır. 
+        #include <type_traits>
+
+        template<typename T, typename TypeTag>
+        struct NamedType {
+            //...
+        };
+
+        using Kilogram = NamedType<double, struct KilogramTag>;
+        using Meter = NamedType<double, struct MeterTag>;
+
+        int main() {
+            constexpr auto is_same = std::is_same_v<Kilogram, Meter>; // false
+        }
+
+    * Örnek 1.2, Ancak tür eş isim bildirimlerinde "incomplete type" kullanmak yerine, şablon parametresini 
+    "non-type template parameter" yaparak da aynı sonuca ulaşabiliriz. Böylelikle her tür için, o türe ilişkin ayrı bir "Tag" 
+    türü yazmamıza gerek kalmayacaktır. Ancak bunun için C++20 gerekmektedir.
+        #include <type_traits>
+
+        template<typename T, auto = [] {}>
+        struct NamedType {
+            //...
+        };
+
+        using Kilogram = NamedType<double>;
+        using Meter = NamedType<double>;
+
+        int main() {
+            constexpr auto is_same = std::is_same_v<Kilogram, Meter>; // false
+        }
+
+    * Örnek 1.3, Eğer bir nedenden dolayı "non-type template parameter" kullanamıyorsak, pekala aynı sonuca "type tempalte parameter"
+    ile de ulaşabiliriz;
+        #include <type_traits>
+
+        template<typename T, typename = decltype([] {})>
+        struct NamedType {
+            //...
+        };
+
+        using Kilogram = NamedType<double>;
+        using Meter = NamedType<double>;
+
+        int main() {
+            constexpr auto is_same = std::is_same_v<Kilogram, Meter>; // false
+        }
+
+Şimdi de sınıfımız için fonksiyonlar belirleyelim; 
+
+    -> "Ctor." fonksiyonlarının "explicit" olması halinde "=" ile yapılan atamalar sentaks hatası oluşturacaktır. 
+    -> "getter" fonksiyonlarının referans döndürmesi tavsiye edilir, böylelikle veri elemanının kendisine ulaşmış olacağız.
+
+Aşağıda bu adımlara yönelik örnek verilmiştir;
+    * Örnek 1,
+        #include <type_traits>
+
+        template<typename T, typename = decltype([] {})>
+        class NamedType {
+        public:
+            // "Copy Ctor."
+            explicit constexpr NamedType(const T& value) : m_val{ value } {}
+
+            // "Move Ctor."
+            explicit constexpr NamedType(T&& value) : m_val{ std::move(value) } {}
+
+            T& get() { return m_val; }
+            const T& get() const { return m_val; }
+
+        private:
+            T m_val;
+        };
+
+        using Kilogram = NamedType<double>;
+        using Meter = NamedType<double>;
+
+        int main() {
+            constexpr auto is_same = std::is_same_v<Kilogram, Meter>; // false
+        }
+
+Şimdi de bu sınıfımız için "operator" fonksiyonları belirleyelim;
+    
+    -> Burada dikkat etmemiz gereken nokta bir tür için mantıklı olan "operator" fonksiyonu, başka tür için mantıksız gelebilir.
+    Pekiyi bunu nasıl belirleyeceğiz? Tabii ki "CRTP" örüntüsünü kullanarak. 
+
+Aşağıda bu adımlara yönelik örnek verilmiştir;
+    * Örnek 1,
+        #include <iostream>
+
+        // CRTP Base 
+        template<typename T, template<typename>typename>
+        struct crtp {
+            T& underlying() { return static_cast<T&>(*this); }
+            const T& underlying() const { return static_cast<const T&>(*this); }
+        };
+
+        // Gives our class Addable Skill. 
+        template<typename T>
+        struct Addable : crtp<T, Addable> {
+            T operator+(const T& other) const{
+                // Bu aşamada türemiş sınıflarda ".get()" fonksiyonunun bulunduğuna
+                // güveniyoruz. 
+                // return T(crtp<T,Addable>::underlying().get() + other.get());
+                return T(this->underlying().get() + other.get());
+            }
+        };
+
+        // Gives our class Multipliable Skill. 
+        template<typename T>
+        struct Multipliable : crtp<T, Multipliable> {
+            T operator*(const T& other) const{
+                // Bu aşamada türemiş sınıflarda ".get()" fonksiyonunun bulunduğuna
+                // güveniyoruz. 
+                return T(this->underlying().get() * other.get());
+            }
+        };
+
+        // Gives our class Incrementable Skill. 
+        template<typename T>
+        struct Incrementable : crtp<T, Incrementable> {
+            T& operator+=(const T& other) {
+                // Bu aşamada türemiş sınıflarda ".get()" fonksiyonunun bulunduğuna
+                // güveniyoruz. 
+                this->underlying().get() += other.get();
+                return this->underlying();
+            }
+        };
+
+        // Gives our class Printable Skill. 
+        template<typename T>
+        struct Printable : crtp<T, Printable> {
+            std::ostream& print(std::ostream& os) const {
+                return os << this->underlying().get();
+            }
+        };
+
+        //...
+        // Here, other skill-giver class templates, such as Dividable, are defined.  
+        //...
+
+        // This is our Base Class. 
+        template<typename T, typename Param, template<typename>typename... Skills>
+        class NamedType : public Skills<NamedType<T, Param, Skills...>>... {
+        /*
+        *	"NamedType<T, Param, Skills...>" is for class NamedType, aka CRTP.
+        *	"Skills<NamedType<T, Param, Skills...>>..." is for Multiple Inheritence.
+        */
+        public:
+            explicit NamedType(const T& value) : m_val{ value } {}
+            explicit NamedType(T&& value) : m_val{ std::move(value) } {}
+
+            T& get() { return m_val; }
+            const T& get() const { return m_val; }
+
+        private:
+            T m_val;
+        };
+
+        template<typename T, typename Param, template<typename>typename... Skills>
+        std::ostream& operator<<(std::ostream& os, const NamedType<T, Param, Skills...>& x) {
+            return x.print(os);
+        }
+
+        // These are our classes with desired skills. 
+        using Kilogram = NamedType<double, struct KiloParam, Addable, Multipliable, Incrementable, Printable>;
+        using Meter = NamedType<double, struct MeterParam, Addable, Multipliable, Incrementable, Printable>;
+
+        int main() {
+            Meter mtr_first{ 31.89 };
+            Meter mtr_second{ 98.13 };
+            std::cout << mtr_first << '\n'; // 31.89
+            std::cout << mtr_second << '\n'; // 98.13
+            std::cout << mtr_first + mtr_second << '\n'; // 130.02
+            std::cout << mtr_first * mtr_second << '\n'; // 3129.37
+
+            mtr_first += mtr_second;
+            mtr_second += mtr_first;
+            std::cout << mtr_first << '\n'; // 130.02
+            std::cout << mtr_second << '\n'; // 228.15
+        }

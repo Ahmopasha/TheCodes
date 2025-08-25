@@ -1,0 +1,724 @@
+> "std::optional" : C++17 ile dile eklenmiştir. Sınıf şablonudur. Ya "T" türünden bir değere sahip ya da bomboş. 
+Dolayısıyla herhangi bir değere sahip olabilir ama olmayadabilir. Örneğin, boş bir bardak ne kadar doğalsa bardağın 
+dolu olması da bir o kadar doğaldır. Ya da bir kişinin göbek adının olması veya bir "nick" kullanması durumlarında da 
+bu sınıf türü kullanılabilir. 
+    * Örnek 0,
+        #include <iostream>
+        #include <string>
+        #include <optional>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                false
+                31
+                -----
+                Ulya
+                -----
+                5
+                -----
+                -----
+                Exception Caught!: bad optional access
+            */
+                    
+            {
+                std::optional<int> ox{std::nullopt};
+                std::cout << std::boolalpha << ox.has_value() << "\n"; // false
+                
+                ox = 31;
+                if(ox){
+                    std::cout << *ox << "\n"; // 31
+                }    
+            }
+            
+            puts("-----");
+            
+            {
+                std::string name{ "Ulya" };
+                std::optional<std::string*> surname{ &name };
+                
+                std::cout << **surname << "\n";
+                // std::cout << *(surname.operator*()) << "\n";
+            }
+            
+            puts("-----");
+            
+            {
+                std::optional x = 5; // CTAT : 'x' is of type "std::optional<int>"  
+                std::cout << *x << "\n";
+            }
+            
+            puts("-----");
+            
+            {
+                std::optional<std::string> ox;
+                try{
+                    auto val = *ox; // Tanımsız Davranış
+                    auto len = ox->length(); // Tanımsız Davranış
+                }
+                catch(const std::exception& ex){
+                    std::cout << "Exception Caught!: " << ex.what() << "\n";    
+                }
+            }
+            
+            puts("-----");
+            
+            {
+                std::optional<std::string> ox;
+                try{
+                    auto val = ox.value(); // Throws An Exception
+                }
+                catch(const std::exception& ex){
+                    std::cout << "Exception Caught!: " << ex.what() << "\n"; // Exception Caught!: bad optional access 
+                }            
+            }
+        }
+
+    * Örnek 1,
+        #include <optional>
+        #include <iostream>
+        #include <string>
+        #include <functional>
+
+        class Myclass{
+            public:
+            Myclass() {
+                std::cout << "Default Ctor.\n";
+            }
+            ~Myclass() {
+                std::cout << "Dtor.\n";
+            }
+        };
+
+        int main(void)    
+        {
+            /* 
+                # OUTPUT #
+                ------------------
+                I am empty!..
+                *************
+                I am empty!..
+                *************
+                I am empty!..
+                *************
+                I am empty!..
+                ------------------
+                no_name
+                *************
+                Yuruk
+                *************
+                I have an value... : ulya
+                I have an value... : ulya yuruk
+                *************
+                ulya yuruk
+                *************
+                ulya yuruk
+                ------------------
+
+                *************
+                bad optional access                
+            */
+
+            puts("------------------");
+            {   // Default Ctor.: 
+                {
+                    std::optional<Myclass> op;
+                    std::cout << std::boolalpha << (op.has_value() ? "I have an value..." : "I am empty!..") << "\n";
+                }
+                puts("*************");
+                {
+                    std::optional<Myclass> op( std::nullopt );
+                    std::cout << std::boolalpha << (op.has_value() ? "I have an value..." : "I am empty!..") << "\n";
+                }
+                puts("*************");
+                {
+                    std::optional<Myclass> op{};
+                    std::cout << std::boolalpha << (op.has_value() ? "I have an value..." : "I am empty!..") << "\n";
+                }
+                puts("*************");
+                {
+                    std::optional<Myclass> op{ std::nullopt };
+                    std::cout << std::boolalpha << (op.has_value() ? "I have an value..." : "I am empty!..") << "\n";
+                }  
+            }
+            puts("------------------");
+            {   // Assiging / Getting Value: 
+                {   
+                    /*
+                    * ".value_or" fonksiyonu değer döndürmektedir. İlgili
+                    * nesnenin içi boş ise argüman olan ifade, aksi halde 
+                    * nesnenin tuttuğu değer "get" edilmektedir. 
+                    */
+                    std::optional<std::string> op;
+                    std::cout << op.value_or("no_name") << "\n";
+                } 
+                puts("*************");
+                {
+                    std::optional<std::string> op("Yuruk");
+                    std::cout << op.value_or("Mustafa") << "\n";
+                }
+                puts("*************");
+                {   // ".value" fonksiyonu ise referans döndürmektedir. 
+                    std::optional<std::string> op("ulya");
+                    std::cout << std::boolalpha
+                            << (op.has_value() ? "I have an value..." : "I am empty!..")
+                            << " : " << *op << "\n";
+                            
+                    *op += " yuruk";
+                    
+                    std::cout << std::boolalpha
+                            << (op.has_value() ? "I have an value..." : "I am empty!..")
+                            << " : " << op.value() << "\n";
+                }
+                puts("*************");
+                {   // Cannot hold referance itself, but can hold ReferenceWrapper: 
+                    std::string name{"ulya"};
+                    // std::optional<std::string&> op{ name };
+                    std::optional<std::reference_wrapper<std::string>> op( std::ref(name) );
+                    op->get() += " yuruk";
+                    std::cout << name << "\n";
+                }
+                puts("*************");
+                {   // CTAT
+                    std::string name{"ulya"};
+                    std::optional op = std::ref(name);
+                    op->get() += " yuruk";
+                    std::cout << name << "\n";            
+                }
+            }  
+            puts("------------------");
+            {   // Throwing an exception
+                {   
+                    std::optional<std::string> op;
+                    try{
+                        std::cout << *op << "\n";
+                    }
+                    catch(const std::exception& ex){
+                        std::cout << ex.what() << "\n";
+                    }
+                    catch(...){
+                        std::cout << "<<<NULL>>>\n";
+                    }
+                }  
+                puts("*************");
+                {
+                    std::optional<std::string> op;
+                    try{
+                        std::cout << op.value() << "\n";
+                    }
+                    catch(const std::exception& ex){
+                        std::cout << ex.what() << "\n";
+                    }
+                    catch(...){
+                        std::cout << "<<<NULL>>>\n";
+                    }            
+                }
+            }
+
+            return 0;
+        }
+
+    * Örnek 2,
+        #include <optional>
+        #include <iostream>
+        #include <string>
+        #include <vector>
+
+        class Myclass{
+            public:
+            Myclass() {
+                std::cout << "Default Ctor.\n";
+            }
+            Myclass(int a, int b){
+                std::cout << "Param Ctor.: "<< a << ", " << b << "\n";
+            }
+            Myclass(const Myclass&) {
+                std::cout << "Copy Ctor.\n";
+            }
+            Myclass(Myclass&&) {
+                std::cout << "Move Ctor.\n";
+            }
+            ~Myclass() {
+                std::cout << "Dtor.\n";
+            }
+        };
+
+        int main(void)    
+        {
+            /* 
+                # OUTPUT #
+                ------------------
+                *************
+                Default Ctor.
+                Move Ctor.
+                Dtor.
+                Dtor.
+                *************
+                Default Ctor.
+                Dtor.
+                *************
+                Param Ctor.: 13, 31
+                Dtor.
+                *************
+                Param Ctor.: 14, 41
+                Dtor.
+                *************
+                Param Ctor.: 15, 51
+                Dtor.
+                *************
+                AAAAA
+                AAAAA
+                *************
+                aaaaa
+                aaaaa        
+            */
+            
+            puts("------------------");
+            {   // "std::in_place" forwards perfectly.
+                {
+                    std::optional<Myclass> op;
+                }
+                puts("*************");
+                {
+                    std::optional<Myclass> op{ Myclass{} };
+                }
+                puts("*************");
+                {
+                    std::optional<Myclass> op{ std::in_place };
+                }
+                puts("*************");
+                {
+                    std::optional<Myclass> op{std::in_place, 13, 31};
+                }
+                puts("*************");
+                {
+                    auto op { std::make_optional<Myclass>(14, 41) };
+                }
+                puts("*************");
+                {
+                    auto op = std::optional<Myclass>(std::in_place, 15, 51);
+                }      
+                puts("*************");
+                {
+                    std::optional<std::string> op_i(std::in_place, 5, 'A');
+                    std::cout << *op_i << "\n";
+                    
+                    std::optional<std::vector<char>> op_ii(std::in_place, { 'A', 'A', 'A', 'A', 'A' });
+                    for(auto c : *op_ii)
+                        std::cout << c;
+                    std::cout << "\n";
+                }
+                puts("*************");
+                {
+                    auto op_i{ std::make_optional<std::string>(5, 'a') };
+                    std::cout << *op_i << "\n";
+                    
+                    auto op_ii{ std::make_optional<std::vector<char>>({ 'a', 'a', 'a', 'a', 'a' }) };
+                    for(auto c : *op_ii)
+                        std::cout << c;
+                    std::cout << "\n";
+                }
+            }
+            
+            return 0;
+        }
+
+    * Örnek 3,
+        #include <optional>
+        #include <iostream>
+        #include <string>
+        #include <vector>
+
+        class Myclass{
+            public:
+            Myclass() {
+                std::cout << "Default Ctor.\n";
+            }
+            Myclass(int a, int b){
+                std::cout << "Param Ctor.: "<< a << ", " << b << "\n";
+            }
+            Myclass(const Myclass&) {
+                std::cout << "Copy Ctor.\n";
+            }
+            Myclass(Myclass&&) {
+                std::cout << "Move Ctor.\n";
+            }
+            ~Myclass() {
+                std::cout << "Dtor.\n";
+            }
+        };
+
+        int main(void)    
+        {
+            /* 
+                # OUTPUT #
+                ------------------
+                *************
+                Default Ctor.
+                Move Ctor.
+                true
+                Dtor.
+                false
+                Dtor.
+                *************
+                ------------------
+                *************
+                Param Ctor.: 0, 1
+                Dtor.
+                Param Ctor.: 1, 2
+                Dtor.
+                Param Ctor.: 2, 3
+                Dtor.
+                *************
+                false
+                true
+                true
+                *************
+                false
+                false
+                false
+                *************
+                ------------------
+            */
+            
+            puts("------------------");
+            {   
+                puts("*************");
+                {   // "Dtor." called after ".reset()" call. 
+                    Myclass mx;
+                    std::optional<Myclass> op{ std::move(mx) };
+                    std::cout << std::boolalpha << op.has_value() << "\n";
+                    
+                    op.reset();
+                    // op = nullopt;
+                    // op = std::optional<Myclass>{};
+                    // op = {};
+                    
+                    std::cout << std::boolalpha << op.has_value() << "\n";
+                }
+                puts("*************");
+            }
+            puts("------------------");
+            {
+                puts("*************");
+                {   // ".emplace()" destroy the previously object and creates a new one. 
+                    std::optional<Myclass> op;
+                    for(int i = 0; i < 3; ++i)
+                        op.emplace(i, i + 1);
+                }
+                puts("*************");
+                {
+                    std::optional x = 45;
+                    std::optional y = 54;
+                    std::cout << std::boolalpha << (x == y) << "\n";
+                    std::cout << std::boolalpha << (x < y) << "\n";
+                    
+                    using namespace std::string_literals;
+                    std::optional z{ "UlyaYuruk"s };
+                    std::optional<std::string> q; // "nullopt" olan en küçük olacaktır.
+                    std::cout << std::boolalpha << (q < z) << "\n";
+                }
+                puts("*************");
+                {
+                    std::optional<bool> a;
+                    std::optional<bool> b{ true };
+                    std::optional<bool> c{ false };
+                    std::cout << std::boolalpha << (a == b) << "\n";
+                    std::cout << std::boolalpha << (b == c) << "\n";
+                    std::cout << std::boolalpha << (c == a) << "\n";
+                }
+                puts("*************");
+            }
+            puts("------------------");
+            
+            return 0;
+        }
+
+    * Örnek 4,
+        #include <optional>
+        #include <iostream>
+        #include <string>
+        #include <vector>
+
+        class Myclass{
+            public:
+            Myclass() {
+                std::cout << "Default Ctor.\n";
+            }
+            Myclass(int a, int b){
+                std::cout << "Param Ctor.: "<< a << ", " << b << "\n";
+            }
+            Myclass(const Myclass&) {
+                std::cout << "Copy Ctor.\n";
+            }
+            Myclass(Myclass&&) {
+                std::cout << "Move Ctor.\n";
+            }
+            ~Myclass() {
+                std::cout << "Dtor.\n";
+            }
+        };
+
+        int main(void)    
+        {
+            /* 
+                # OUTPUT #
+                ------------------
+                *************
+                x : 32
+                *************
+                ------------------
+                *************
+                x : 32
+                *************
+                ------------------
+            */
+            
+            puts("------------------");
+            {   
+                puts("*************");
+                {   
+                    int x = 31;
+                    std::optional<int*> op{&x};
+                    if(op && *op)
+                        ++**op; // ++x;
+                    std::cout << "x : " << x << "\n";
+                }
+                puts("*************");
+            }
+            puts("------------------");
+            {
+                puts("*************");
+                {
+                    int x = 31;
+                    auto op = std::make_optional<std::optional<int*>>(&x);
+                    if(op && *op && **op && ***op)
+                        ++***op;
+                    std::cout << "x : " << x << "\n";
+                }
+                puts("*************");
+            }
+            puts("------------------");
+            return 0;
+        }
+
+    * Örnek 5,
+        #include <iostream>
+        #include <string>
+        #include <vector>
+        #include <optional>
+
+        std::optional<std::string> get_person_nick(int id) {
+            if (id < 100)
+            {
+                return "Ulya Yuruk";
+            }
+            
+            return std::nullopt;
+            // return {};
+            // std::optional<std::string>{};
+        }
+
+        int main()
+        {
+            auto op{ get_person_nick(31) };
+            std::cout << *op << "\n";
+
+            if ((op = get_person_nick(101)) == std::nullopt){
+                std::cout << "No Nick Name\n";
+            }
+
+            if (auto op = get_person_nick(13); op) {
+                std::cout << *op << "\n";
+            }
+
+            if (auto op = get_person_nick(99); op->length() < 35){
+                std::cout << *op << "\n";
+            }
+        }
+
+    * Örnek 6,
+        #include <iostream>
+        #include <vector>
+        #include <optional>
+        #include <algorithm>
+
+        template<typename Con, typename Pred>
+        auto find_if(Con&& c, Pred&& pred) {
+            using std::begin, std::end;
+            auto beg_iter = begin(c), end_iter = end(c);
+            auto result = std::find_if(beg_iter, end_iter, pred);
+            using iterator = decltype(result);
+
+            if (result == end_iter)
+                return std::optional<iterator>(); /* Fonksiyonun geri dönüş değeri "auto" olduğu için "{}" kullanamayız. */
+
+            return std::optional<iterator>(result);
+        }
+
+        template<typename Con, typename T>
+        auto find(Con&& c, const T& t_val) {
+            return find_if(
+                std::forward<Con>(c),
+                [&t_val](auto&& x) { return x == t_val; }
+            );
+        }
+
+        int main()
+        {
+            auto my_vec = std::vector<size_t>(15);
+            for (size_t i = 0; i < my_vec.size(); i++)
+            {
+                my_vec.at(i) = i;
+            }
+
+            if (auto op = find(my_vec, 30); op)
+            {
+                std::cout << "Found: " << **op << "\n";
+            }
+        }
+
+    * Örnek 7,
+        #include <iostream>
+        #include <string>
+        #include <vector>
+        #include <optional>
+        #include <algorithm>
+
+        std::optional<int> to_int(const std::string& s) {
+            try {
+                return std::stoi(s);
+            }
+            catch (...) {
+                return std::nullopt;
+                // return {};
+            }
+        }
+
+        std::optional<int> to_int2(const std::string& s) {
+            std::optional<int> ret; 
+            try {
+                ret = std::stoi(s);
+            }
+            catch (...) {
+
+            }
+
+            return ret;
+        }
+
+        int main()
+        {
+            for (auto s : { "42", "077", "ulya", "0x33" }) {
+                std::optional<int> op = to_int(s);
+                if (op) {
+                    std::cout << s << " is turned into an int: " << *op << "\n";
+                }
+                else {
+                    std::cout << "(" << s << ") could not be turned into an int!..\n";
+                }
+            }
+        }
+
+    * Örnek 8,
+        #include <iostream>
+        #include <optional>
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                Size: 10
+                Size: 10
+                true
+                true
+                ************
+                Size: 10
+                Size: 0
+                true
+                true
+            */
+
+            {
+                std::optional<std::string> op{"Ulya Yuruk"};
+                std::cout << "Size: " << op->length() << "\n";
+                auto opp = op;
+                std::cout << "Size: " << op->length() << "\n";
+                std::cout << std::boolalpha << op.has_value() << "\n";
+                std::cout << std::boolalpha << opp.has_value() << "\n";
+            }
+            puts("************");
+            {	// "op1" içerisinde hala bir "std::string" var fakat o artık "Moved From State". 
+                std::optional<std::string> op{ "Ulya Yuruk" };
+                std::cout << "Size: " << op->length() << "\n";
+                auto opp = std::move(op);
+                std::cout << "Size: " << op->length() << "\n";
+                std::cout << std::boolalpha << op.has_value() << "\n";
+                std::cout << std::boolalpha << opp.has_value() << "\n";
+            }
+        }
+
+    * Örnek 9,
+        #include <iostream>
+        #include <string>
+        #include <optional>
+
+        struct Nec {
+            std::optional<double> mx;
+            std::optional<double> my;
+        };
+
+        struct Erg {
+            bool has_mx;
+            bool has_my;
+            double mx;
+            double my;
+        };
+
+        int main()
+        {
+            /*
+                # OUTPUT #
+                sizeof Nec: 32
+                sizeof Erg: 24
+            */
+
+            /* Burada "std::optional", "Alligned Storage" kullandığı içindir. */
+            std::cout << "sizeof Nec: " << sizeof(Nec) << "\n";
+            std::cout << "sizeof Erg: " << sizeof(Erg) << "\n";
+        }
+
+
+
+> Hatırlatıcı Notlar:
+    >> "Trailing Return Type" vs "Auto Return Type" :
+        * Örnek 1, Aşağıdaki örnekte "foo" ve "func" fonksiyonlarının geri dönüş değeri aynı 
+        tür olacaktır. 
+            // Auto Return Type : 
+                template<typename T>
+                auto foo(T x){
+                    return x+x;
+                }
+
+            // Trailing Return Type :
+                template<typename T>
+                auto func(T) -> decltype(x+x){
+                    //...
+                    return x+x;
+                }
+
+        * Örnek 2, Aşağıdaki örnekte ise "foo" nun geri dönüş değerinin türü "x+x" ifadesine, "func" ın ki ise
+        "x.foo()" çağrısına bağlıdır. Artık "func" ın "return" ifadesine göre çıkarım YAPILMAYACAKTIR. 
+            // Auto Return Type : 
+                template<typename T>
+                auto foo(T x){
+                    return x+x;
+                }
+
+            // Trailing Return Type :
+                template<typename T>
+                auto func(T) -> decltype(x.foo()){
+                    //...
+                    return x+x;
+                }
