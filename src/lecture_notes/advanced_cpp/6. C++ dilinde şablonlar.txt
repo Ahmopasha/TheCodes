@@ -6,8 +6,8 @@ Ve bunları açtığımız zaman, yani bunların "specialization" halleri ise s�
 
     "Function", "Class", "Variable", "Tür Eş İsmi" ve "Concept" 
 
-oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şablon açıldığında ortaya çıkan ürüne denmektedir. Diğer yandan
-şablonların parametreleri de şunlar olabilir;
+oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şablon açıldığında ortaya çıkan ürüne denmektedir.
+Diğer yandan şablonların parametreleri de şunlar olabilir;
 
     "Type Parameter", "Non-Type Parameter" ve "Template Parameter".
 
@@ -295,8 +295,10 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
             }
 
         * Örnek 7,
+            // Burada fonksiyon parametresi ile bir işimiz olmadığından, "T=0" şeklinde yazdık. Aksi halde "T x=0" biçiminde
+            // yazmalıyız. 
             template<typename T>
-            void func(T = 0); // Burada fonksiyon parametresi ile bir işimiz olmadığından, "T=0" şeklinde yazdık. Aksi halde "T x=0" biçiminde yazmalıyız. 
+            void func(T = 0);
 
             class Myclass {};
 
@@ -317,20 +319,21 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
     şekilleridir. Şimdi de bu şekilleri sırayla inceleyelim:
         >>> "Type Template Parameter" : 
 
-            template<typename T>            template<typename T>            template<typename T>            template<typename T>
-            void func(T x);                 void func(T& x);                void func(const T& x);          void func(T&& x);
+            template<typename T>  template<typename T>  template<typename T>      template<typename T>
+            void func(T x);       void func(T& x);      void func(const T& x);    void func(T&& x);
 
-            void foo(auto x);               void foo(auto& x);              void foo(const auto& x);        void foo(auto&& x); 
+            void foo(auto x);     void foo(auto& x);    void foo(const auto& x);  void foo(auto&& x); 
 
-            Eğer "concept" kullanmak istersek de;
+        Eğer "concept" kullanmak istersek de;
 
             template<std::integral T>
             void func(T x); 
 
             void func(std::integral auto x);
 
-        >>> "Non-Type Template Parameter" : "NTTP" diye de kısaltılır. Buradaki tür bilgisi tam sayı olabilir, gösterici ve referans türlerinden olabilir ki bunlara 
-        sınıfların üye fonksiyon ve global fonksiyon göstericileri ve referansları da dahildir, gerçek sayı türleri olabilir. 
+        >>> "Non-Type Template Parameter" : "NTTP" diye de kısaltılır. Buradaki tür bilgisi tam sayı olabilir, gösterici ve
+        referans türlerinden olabilir ki bunlara sınıfların üye fonksiyon ve global fonksiyon göstericileri ve referansları
+        da dahildir, gerçek sayı türleri olabilir. 
             * Örnek 1,
                 class Myclass {
                 public:
@@ -615,8 +618,9 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     StepThree<0.1f, 0.2, 0.3L, 'A', 10, 20LL> sth1;
                 }
 
-            * Örnek 12.0, C++20 ile birlikte sınıflar da belli şartları sağladıkları müddetçe "non-type" olabilirler. Bu şartlardan birisi de 
-            ilgili sınıfın kurucu işlevinin "constexpr" olmasıdır. Bu şartlardan bir diğeri de "private" elemana SAHİP OLMAMASIDIR. 
+            * Örnek 12.0, C++20 ile birlikte sınıflar da belli şartları sağladıkları müddetçe "non-type" olabilirler. Bu
+            şartlardan birisi de ilgili sınıfın kurucu işlevinin "constexpr" olmasıdır. Bu şartlardan bir diğeri de
+            "private" elemana SAHİP OLMAMASIDIR. 
                 #include <iostream>
                 #include <algorithm>
 
@@ -1158,8 +1162,9 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     std::cout << ilist << '\n'; // 1 2 3 4 5 6
                 }
    
-    >> Şimdi de "Variable Templates" konusunu ele alalım. Nasılki sınıf şablonlarının açılımları sonucunda sınıf, fonksiyon şablonlarının açılımında 
-    bir fonksiyon elde ediyoruz, değişken şablonlarının açılımından da bir değişken elde ederiz. C++14 ile dile eklenmiştir. 
+    >> Şimdi de "Variable Templates" konusunu ele alalım. Nasılki sınıf şablonlarının açılımları sonucunda sınıf, fonksiyon
+    şablonlarının açılımında bir fonksiyon elde ediyoruz, değişken şablonlarının açılımından da bir değişken elde ederiz.
+    C++14 ile dile eklenmiştir. 
         * Örnek 1,
             #include <iostream>
 
@@ -1349,12 +1354,13 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                 }
             }
 
-    >> Şimdi de şablon parametrelerinin varsayılan argüman almasına değinelim; Burada fonksiyonların parametre değişkenlerinin varsayılan argüman
-    almasıyla şablon parametrelerinin varsayılan argüman alması birbiriyle karıştırılabilmektedir. Diğer yandan sınıf şablonları ile fonksiyon 
-    şablonları arasında da varsayılan argüman alma konusunda bir kural farklılığı vardır. Şöyleki; sınıf şablonlarının sadece en sondaki şablon 
-    parametresi varsayılan argüman alabilirken, fonksiyon şablonlarında böyle bir şey kısıtlama yoktur. Fakat bunun da şöyle bir "work-around" 
-    yöntemi vardır; anımsanacağı üzere fonksiyon bildirimlerini derleyiciler kümülatif olarak ele alırlar. İşte bunu sınıf şablonlarında da 
-    kullanabiliriz. 
+    >> Şimdi de şablon parametrelerinin varsayılan argüman almasına değinelim; Burada fonksiyonların parametre
+    değişkenlerinin varsayılan argüman almasıyla şablon parametrelerinin varsayılan argüman alması birbiriyle
+    karıştırılabilmektedir. Diğer yandan sınıf şablonları ile fonksiyon şablonları arasında da varsayılan argüman alma
+    konusunda bir kural farklılığı vardır. Şöyleki; sınıf şablonlarının sadece en sondaki şablon parametresi varsayılan
+    argüman alabilirken, fonksiyon şablonlarında böyle bir şey kısıtlama yoktur. Fakat bunun da şöyle bir "work-around"
+    yöntemi vardır; anımsanacağı üzere fonksiyon bildirimlerini derleyiciler kümülatif olarak ele alırlar. İşte bunu sınıf
+    şablonlarında da kullanabiliriz. 
         * Örnek 1,
             // Fonksiyon Şablonları için OK
             template<typename T = int, typename U>
@@ -1560,18 +1566,22 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                 std::cout << "<" << my_pair.first << "," << my_pair.second << ">\n"; // <0,0>
             }
 
-    >> Şimdi de "Full(Explicit) Specialization" ve "Partial Specialization" konularını ele alalım. Her iki biçimde de bizim amacımız,
-    şablonun belli türleri için, bizim yazacağımız kodların kullanılmasını sağlatmaktır. Artık derleyici o türler için kod açılım yapmayacak ve 
-    bizim yazdığımız kodu kullanacaktır. "Partial Specialization" sadece sınıf şablonları içindir. Öte yandan sadece özelleştirilmiş versiyonları
-    kullanacaksak, "Base Template" sınıfı/fonksiyonu sadece bildirmek yeterli gelecektir. 
-        >>> "Full(Explicit) Specialization": Bu özelleştirme türüne aynı zamanda "Diamond Specialization" da denir. Orjinal şablona "Base Template"
-        denir. Bu tip "Specialization" yönteminde "Interface" ler aynı olmak zorunda DEĞİLDİR. Sınıf ve fonksiyon şablonları için kullanılabilir. 
-        Diğer yandan "non-type template parameter" için de özelleştirme yapabiliriz. Fakat bunun için "Base Template" in de yine "non-type template parameter"
-        olması gerekmektedir. Diğer yandan sınıfların üye fonksiyonları için de "Full(Explicit) Specialization" yapabiliriz. Hakeza sınıfların "static" veri 
-        elemanları için de özelleştirme yapabiliriz. Yine fonksiyon şablonlarında bu özelleştirmeyi kullanırken şu noktaya dikkat etmemiz gerekmektedir; 
-        "Function Overload Resolution" a "Base Template" in kendisi girmektedir, bizim yazdığımız DEĞİL. Eğer yapılan eleme sonucunda kazanan "Base Template"
-        ise ve çağrı sırasında da özelleştirilen tür kullanılmışsa, bizim yazdığımız kodlar çağrılacaktır. Yani ilk aşama "Base Template" in seçilmesi, 
-        devamında da uygun türün çağrı sırasında kullanılması gerekmektedir. Ek olarak, "Variable Template" lere de özelleştirme yapılabilmektedir. 
+    >> Şimdi de "Full(Explicit) Specialization" ve "Partial Specialization" konularını ele alalım. Her iki biçimde de bizim
+    amacımız, şablonun belli türleri için, bizim yazacağımız kodların kullanılmasını sağlatmaktır. Artık derleyici o türler
+    için kod açılım yapmayacak ve bizim yazdığımız kodu kullanacaktır. "Partial Specialization" sadece sınıf şablonları
+    içindir. Öte yandan sadece özelleştirilmiş versiyonları kullanacaksak, "Base Template" sınıfı/fonksiyonu sadece bildirmek
+    yeterli gelecektir. 
+        >>> "Full(Explicit) Specialization": Bu özelleştirme türüne aynı zamanda "Diamond Specialization" da denir. Orjinal
+        şablona "Base Template" denir. Bu tip "Specialization" yönteminde "Interface" ler aynı olmak zorunda DEĞİLDİR. Sınıf
+        ve fonksiyon şablonları için kullanılabilir. Diğer yandan "non-type template parameter" için de özelleştirme
+        yapabiliriz. Fakat bunun için "Base Template" in de yine "non-type template parameter" olması gerekmektedir. Diğer
+        yandan sınıfların üye fonksiyonları için de "Full(Explicit) Specialization" yapabiliriz. Hakeza sınıfların "static"
+        veri elemanları için de özelleştirme yapabiliriz. Yine fonksiyon şablonlarında bu özelleştirmeyi kullanırken şu
+        noktaya dikkat etmemiz gerekmektedir; "Function Overload Resolution" a "Base Template" in kendisi girmektedir, bizim
+        yazdığımız DEĞİL. Eğer yapılan eleme sonucunda kazanan "Base Template" ise ve çağrı sırasında da özelleştirilen tür
+        kullanılmışsa, bizim yazdığımız kodlar çağrılacaktır. Yani ilk aşama "Base Template" in seçilmesi, devamında da uygun
+        türün çağrı sırasında kullanılması gerekmektedir. Ek olarak, "Variable Template" lere de özelleştirme
+        yapılabilmektedir. 
             * Örnek 1.0,
                 #include<iostream>
 
@@ -1648,7 +1658,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                    
                     Myclass<int, char> m1; // Primary Template for Myclass<T,U>
                     
-                    Myclass<signed char, unsigned char> m2; // Explicit Specialization for Myclass<signed char, unsigned char>
+                    // Explicit Specialization for Myclass<signed char, unsigned char>
+                    Myclass<signed char, unsigned char> m2;
                     
                     Myclass<unsigned char, signed char> m3; // Primary Template for Myclass<T,U> 
                 }
@@ -1685,7 +1696,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     
                     Myclass<int, char> m1; // Primary Template for Myclass<T,U>
                     
-                    Myclass<signed char, unsigned char> m2; // Explicit Specialization for Myclass<signed char, unsigned char>
+                    // Explicit Specialization for Myclass<signed char, unsigned char>
+                    Myclass<signed char, unsigned char> m2;
                     
                     Myclass<unsigned char, signed char> m3; // Primary Template for Myclass<T,U>
                     
@@ -2040,8 +2052,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     std::cout << result << '\n'; // 3
                 }
 
-        >>> "Partial Specialization": "Full(Explicit) Specialization" a göre daha kapsayıcıdır. Yine "non-type template parameter"
-        için de kullanılabilir. Yine bu tip özelleştirme "constraint" edilebilir. 
+        >>> "Partial Specialization": "Full(Explicit) Specialization" a göre daha kapsayıcıdır. Yine
+        "non-type template parameter" için de kullanılabilir. Yine bu tip özelleştirme "constraint" edilebilir. 
             * Örnek 1,
                 #include <iostream>
 
@@ -2315,8 +2327,14 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     X<std::stack<int>> x8; // Primary
                 }
 
-    >> Şimdi de "Variadic Template" konusuna değinelim. Bu tip şablonlar, parametresi parametre paketi olan şablonlardır. "Template Type Parameter",
-    "Template Non-Type Parameter" ve "Template Template Parameter" türleri ile kendi içinde paketler oluşturabiliriz. 
+    >> Şimdi de "Variadic Template" konusuna değinelim. Bu tip şablonlar, parametresi parametre paketi olan şablonlardır.
+    Yani,
+
+        "Template Type Parameter",
+        "Template Non-Type Parameter",
+        "Template Template Parameter"
+
+    türleri ile kendi içinde paketler oluşturabiliriz. 
         * Örnek 1,
             // Burada "n" adet "type template parameter"
             // içeren bir paket oluşturduk.
@@ -2393,7 +2411,10 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                 print_elements('a', 2, 3.f, 4., 5LL, 6.L);
             }
 
-        * Örnek 3.0, Yine paket parametresi ile birlikte "Type Template Parameter", "Non-Type Template Parameter" ve "Template Template Parameter" de 
+        * Örnek 3.0, Yine paket parametresi ile birlikte,
+            "Type Template Parameter", 
+            "Non-Type Template Parameter",
+            "Template Template Parameter" 
         kullanılabilir.
             #include <iostream>
 
@@ -2436,16 +2457,19 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                 print_elements<5>('a', 3.f, 4., 5LL, 6.L);
             }
 
-    Şimdi "Variadic Template" söz konusu olduğunda, birden fazla parametre kullanılacağı için, bu konuda karşımıza bir takım yöntemler çıkmaktadır. Bunlar 
-    sırasıyla,
+    Şimdi "Variadic Template" söz konusu olduğunda, birden fazla parametre kullanılacağı için, bu konuda karşımıza bir takım
+    yöntemler çıkmaktadır. Bunlar sırasıyla,
+
         "Compile Time Recursivity",
         "Compile Time Recursivity with 'if constexpr'",
         "initializer list",
         "fold expression"
+
     isimli yöntemlerdir. Fakat bu teknikleri irdelemeden evvel bizlerin paketin nasıl açıldığına da değinmemiz gerekmektedir. 
-        >>> Paket Açılımı: Eğer elimizde bir liste varsa, ister sınıf şablonunda ister fonksiyon, ve uygun şartlar da sağlanmışsa, virgüller ile ayrılmış 
-        listeye bu paketi dönüştürebiliriz. İşte buna "Pack Expansion" denir ve dilin de saptadığı bir takım arayüzler, yani "pattern" ler mevcuttur. Bu 
-        arayüzlere ise "Pack Expansion Pattern" denir. 
+        >>> Paket Açılımı: Eğer elimizde bir liste varsa, ister sınıf şablonunda ister fonksiyon, ve uygun şartlar da
+        sağlanmışsa, virgüller ile ayrılmış 
+        listeye bu paketi dönüştürebiliriz. İşte buna "Pack Expansion" denir ve dilin de saptadığı bir takım arayüzler, yani
+        "pattern" ler mevcuttur. Bu arayüzlere ise "Pack Expansion Pattern" denir. 
             * Örnek 1.0,
                 template<typename ...Ts>
                 void func(Ts ... args) {
@@ -2655,7 +2679,11 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     int cnt{};
 
                     (
-                        (std::cout << ++cnt << ". argument is : " << (std::is_lvalue_reference_v<Ts> ? "L-Value" : "R-Value") << '\n')
+                        (
+                            std::cout << ++cnt 
+                                << ". argument is : " 
+                                << (std::is_lvalue_reference_v<Ts> ? "L-Value" : "R-Value") << '\n'
+                        )
                         ,
                         ...
                     );
@@ -3631,8 +3659,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                 }
    
     Şimdi yukarıda isimleri zikredilen yöntemleri açıklayabiliriz:
-        >>> "Compile Time Recursivity" : Derleme zamanında "recursive" biçimde derleyiciye kod yazdırtmaktır. Fakat burada bizim "base" bir durumu da 
-        belirtmemiz gerekiyor ki derleyici sonsuza kadar kod yazmaya devam etmesin. 
+        >>> "Compile Time Recursivity" : Derleme zamanında "recursive" biçimde derleyiciye kod yazdırtmaktır. Fakat burada
+        bizim "base" bir durumu da belirtmemiz gerekiyor ki derleyici sonsuza kadar kod yazmaya devam etmesin. 
             * Örnek 1, Bu yönteme ilişkin en tipik örnek, "n" tane argümanın yazdırılmasıdır.
                 #include <iostream>
 
@@ -3675,8 +3703,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     print(a, b, c, d, e, f, g, h, i, name);
                 }
 
-        >>> "initializer list": Burada ise "std::initializer_list" ve "," operatörünün yoğun kullanımı mevcuttur. Anımsanacağı üzere "," operatörünün ürettiği 
-        değer, sağındaki ifadedir. Fakat solundaki ifadeyi de öncesinde işletir.
+        >>> "initializer list": Burada ise "std::initializer_list" ve "," operatörünün yoğun kullanımı mevcuttur.
+        Anımsanacağı üzere "," operatörünün ürettiği değer, sağındaki ifadedir. Fakat solundaki ifadeyi de öncesinde işletir.
             * Örnek 1,
                 #include <iostream>
                 #include <initializer_list>
@@ -3723,18 +3751,19 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     print(a, b, c, d, e, f, g, h, i, name);
                 }
 
-        >>> "Fold Expression" : C++17 ile dile eklenmiştir. İfade parantez içerisinde olmak zorundadır. "Binary Operators" için kullanılan 
-        bir sentakstır. İki farklı kategoriye ayrılır; "Unary Fold" ve "Binary Fold". Her iki yöntemde de "Left" ve "Right" kavramı vardır. 
-        Dolayısıyla kullanılan operatörler sonucuna belirlenmesinde bir fark oluşturmazken, bazı operatörler oluşturabilir. Dolayısıyla
-        dikkatli olmalıyız. Öte yandan parametre paketinin boş olması "Unary Fold" için sentaks hatası oluşturur eğer kullanılan operatör 
-        "&&", "||" ve "," operatörlerinden BİRİ DEĞİLSE. Bu üç operatörünün kullanıldığı durumlarda, parametre paketinin boş olması, "Unary Fold"
-        için SENTAKS HATASI OLUŞTURMAZ. Yine paketin boş olması durumunda, bu operatörlerden "&&" ve "||" sırasıyla "true" ve "false" değer 
-        döndürürken, "," operatörü ise "void" türden bir ifade OLUŞTURUR. Hakeza buradaki "&&" ve "||" operatörleri yine kısa devreye sebep 
-        olacaktır. "Binary Fold" için operatör kullanımına ilişkin böyle bir kural yoktur, parametre paketinin boş olması bir sentaks hatasına yol
-        açmaz. 
-            >>>> "Unary Fold" : Herhangi bir "Binary Operator" ü ele alalım. Bu operatörün bir operandını "...", diğer operandını da 
-            parametre paketi yapıyoruz. Bu durumda "...", operatörün solunda ise, ilgili "Fold Expression" için "Unary Left Fold",
-            sağında ise "Unary Right Fold" denir. 
+        >>> "Fold Expression" : C++17 ile dile eklenmiştir. İfade parantez içerisinde olmak zorundadır. "Binary Operators"
+        için kullanılan bir sentakstır. İki farklı kategoriye ayrılır; "Unary Fold" ve "Binary Fold". Her iki yöntemde de
+        "Left" ve "Right" kavramı vardır. Dolayısıyla kullanılan operatörler sonucuna belirlenmesinde bir fark oluşturmazken,
+        bazı operatörler oluşturabilir. Dolayısıyla dikkatli olmalıyız. Öte yandan parametre paketinin boş olması
+        "Unary Fold" için sentaks hatası oluşturur eğer kullanılan operatör "&&", "||" ve "," operatörlerinden BİRİ DEĞİLSE.
+        Bu üç operatörünün kullanıldığı durumlarda, parametre paketinin boş olması, "Unary Fold" için SENTAKS HATASI
+        OLUŞTURMAZ. Yine paketin boş olması durumunda, bu operatörlerden "&&" ve "||" sırasıyla "true" ve "false" değer
+        döndürürken, "," operatörü ise "void" türden bir ifade OLUŞTURUR. Hakeza buradaki "&&" ve "||" operatörleri yine kısa
+        devreye sebep olacaktır. "Binary Fold" için operatör kullanımına ilişkin böyle bir kural yoktur, parametre paketinin
+        boş olması bir sentaks hatasına yol açmaz. 
+            >>>> "Unary Fold" : Herhangi bir "Binary Operator" ü ele alalım. Bu operatörün bir operandını "...", diğer
+            operandını da parametre paketi yapıyoruz. Bu durumda "...", operatörün solunda ise, ilgili "Fold Expression" için
+            "Unary Left Fold", sağında ise "Unary Right Fold" denir. 
                 >>>>> "Unary Left Fold": 
                     * Örnek 1, "+" operatörünü ele alalım. Parametre paketinde ise "p1", "p2", "p3" ve "p4" elemanları olsun.
 
@@ -3753,8 +3782,9 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
 
                         "(p1 + (p2 + (p3+p4)))"
 
-            >>>> "Binary Fold" : "Unary Fold" da olduğu gibi "Left" ve "Right" kavramı burada da vardır. Bu yöntemde ise ilgili 
-            operatör iki defa yazılır ve bu iki operatörün arasına "..." gelir. Operatörlerin ikisi de AYNI OLMAK ZORUNDADIR. 
+            >>>> "Binary Fold" : "Unary Fold" da olduğu gibi "Left" ve "Right" kavramı burada da vardır. Bu yöntemde ise
+            ilgili operatör iki defa yazılır ve bu iki operatörün arasına "..." gelir. Operatörlerin ikisi de AYNI OLMAK
+            ZORUNDADIR. 
                 >>>>> "Binary Left Fold": 
                     * Örnek 1, "+" operatörünü ele alalım. Parametre paketinde ise "p1", "p2", "p3" ve "p4" elemanları olsun.
 
@@ -3776,8 +3806,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
             Açılımlardan da görüleceği üzere "init" ifadesi, "initializer" olarak işlev görmekte. Yani bir nevi başlangıç
             noktası gibi. 
 
-        Özetle "..." atomunun "args" ifadesinin sağında yer alıyorsa "Right", solunda yer alıyorsa "Left" versiyonu işletilecektir. Şimdi 
-        de örneklere geçelim;
+        Özetle "..." atomunun "args" ifadesinin sağında yer alıyorsa "Right", solunda yer alıyorsa "Left" versiyonu
+        işletilecektir. Şimdi de örneklere geçelim;
             * Örnek 1.0, Summing variables:
                 #include <iostream>
 
@@ -4327,7 +4357,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     std::size_t operator()(const Myclass& other) {
                         // We defined this function according to our desire, or known algorithms.
 
-                        return std::hash<int>{}(other.mx) / std::hash<double>{}(other.my) + std::hash<std::string>{}(other.mz);
+                        return std::hash<int>{}(other.mx) / 
+                            std::hash<double>{}(other.my) + std::hash<std::string>{}(other.mz);
                     }
                 };
 
@@ -4336,7 +4367,8 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                 //	std::size_t operator()(const Myclass& other) {
                 //		// We defined this function according to our desire, or known algorithms.
                 //
-                //		return std::hash<int>{}(other.mx) / std::hash<double>{}(other.my) + std::hash<std::string>{}(other.mz);
+                //		return std::hash<int>{}(other.mx) / 
+                //          std::hash<double>{}(other.my) + std::hash<std::string>{}(other.mz);
                 //	}
                 //};
 
@@ -4814,7 +4846,10 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
 
                     template<typename T, T... vals>
                     void print_sequence(std::integer_sequence<T, vals...> seq) {
-                        std::cout << "Types in the sequence consist of <" << typeid(decltype(seq)::value_type).name() << ">\n";
+
+                        std::cout << "Types in the sequence consist of <" 
+                            << typeid(decltype(seq)::value_type).name() << ">\n";
+
                         std::cout << "[" << seq.size() << "]: ";
                         
                         ((std::cout << vals << ' '), ...);
@@ -4896,7 +4931,10 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     int main(){
                         
                         // Holds
-                        static_assert( std::is_same_v<std::make_integer_sequence<int, 3>, std::integer_sequence<int, 0, 1, 2>> );
+                        static_assert( 
+                            std::is_same_v<std::make_integer_sequence<int, 3>, 
+                            std::integer_sequence<int, 0, 1, 2>> 
+                        );
                         
                         // [7]: 0 1 2 3 4 5 6
                         print_sequence(std::make_integer_sequence<int, 7>{});
@@ -4917,7 +4955,10 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     int main(){
                         
                         // Holds
-                        static_assert( std::is_same_v<std::make_integer_sequence<int, 3>, std::integer_sequence<int, 0, 1, 2>> );
+                        static_assert( 
+                            std::is_same_v<std::make_integer_sequence<int, 3>, 
+                            std::integer_sequence<int, 0, 1, 2>> 
+                        );
                         
                         // [10]: 0 1 2 3 4 5 6 7 8 9
                         print_sequence(std::make_index_sequence<10>{});
@@ -5070,7 +5111,9 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                         template<class F, class Tuple, std::size_t... Is>
                         decltype(auto) Apply_impl(F&& f, Tuple&& tpl, std::index_sequence<Is...>) {
                             return std::forward<F>(f)(
-                                std::get<Is>(std::forward<Tuple>(tpl))... // This is the pattern. No Fold Expression, only Pack Expansion
+                                
+                                // This is the pattern. No Fold Expression, only Pack Expansion
+                                std::get<Is>(std::forward<Tuple>(tpl))...
                             );
                         }
                     }
@@ -5269,12 +5312,17 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                         */
                     }
 
-        Diğer yandan "Instantiation" iki farklı biçimde yapılabilmektedir; "Explicit Instantiation" ve "Implicit Instantiation". 
-            >>>> "Explicit Instantiation": Derleyiciye açıkça, "Bu şablonu, bu şablon argümanıyla, aç" demektir. Kendi bünyesinde 
-            ayrı sentaks kuralları barındırır. İlerleyen vakitlerde değinilecektir. Bu yaklaşımı "Explicit Specialization" / "Partial Specialization"
-            ile KARIŞTIRMAMALIYIZ. Bir tanesi şablonu açmak için kullanılan yöntemken, diğer bir şablonu özelleştirme yöntem(ler)idir. 
-            Sadece fonksiyon şablonlarına has değil; diğer şablon tipleri için de kullanılabilir. "Manuel Instantiate Talimatı" olarak 
-            da geçer. 
+        Diğer yandan "Instantiation" iki farklı biçimde yapılabilmektedir;
+            
+            "Explicit Instantiation",
+            "Implicit Instantiation".
+
+        Şimdi de bunları inceleyelim: 
+            >>>> "Explicit Instantiation": Derleyiciye açıkça, "Bu şablonu, bu şablon argümanıyla, aç" demektir. Kendi
+            bünyesinde ayrı sentaks kuralları barındırır. İlerleyen vakitlerde değinilecektir. Bu yaklaşımı
+            "Explicit Specialization" / "Partial Specialization" ile KARIŞTIRMAMALIYIZ. Bir tanesi şablonu açmak için
+            kullanılan yöntemken, diğer bir şablonu özelleştirme yöntem(ler)idir. Sadece fonksiyon şablonlarına has değil;
+            diğer şablon tipleri için de kullanılabilir. "Manuel Instantiate Talimatı" olarak da geçer. 
                 * Örnek 1.0, Yapılış biçimi aşağıdaki gibidir;
                     #include <iostream>
 
@@ -5333,10 +5381,12 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                         #include "file.tpp "
                         template void foo<int>(); // An Explicit Instantiation. "T" will be "int". 
             
-            Diğer yandan şunu da hatırlatmakta fayda vardır. Bir başlık dosyasının "#include" edildiği her bir "Translation Unit", 
-            derlemeye tabii tutulmaktadır. Örneğin "file.hpp" başlık dosyası 100 farklı dosyada "#include" edilmiş olsun. Derleme 
-            aşamasında her bir dosya derlemeye tabii tutulacağından, iş bu başlık dosyası da 100 defa derlenmiş olacaktır. 
-                * Örnek 1.0.0, Aşağıdaki örnekte de görüleceği üzere "tpl_func<int>()" iki farklı "object file" içerisinde de bulunmaktadır.
+            Diğer yandan şunu da hatırlatmakta fayda vardır. Bir başlık dosyasının "#include" edildiği her bir
+            "Translation Unit", derlemeye tabii tutulmaktadır. Örneğin "file.hpp" başlık dosyası 100 farklı dosyada
+            "#include" edilmiş olsun. Derleme aşamasında her bir dosya derlemeye tabii tutulacağından, iş bu başlık dosyası
+            da 100 defa derlenmiş olacaktır. 
+                * Örnek 1.0.0, Aşağıdaki örnekte de görüleceği üzere "tpl_func<int>()" iki farklı "object file" içerisinde
+                de bulunmaktadır.
                     // ----> (0), tpl_func.h: "tpl_func" fonksiyonunun tanımı yer almaktadır.
                         template<typename T>
                         void tpl_func() {
@@ -5437,13 +5487,14 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                 yani o baştan belliyse, kaynak dosyaların hepsine(bir tanesi hariç) "extern template void tpl_func<int>();"
                 bildirimini eklerim. O hariç olan kaynak dosyaya da "Manuel Instantiate" talimatını yerleştiririm. Bir diğer 
                 deyişle "extern template void tpl_func<int>();" bildirimini başlık dosyasına eklerim. Bu başlık dosyasını 
-                "#include" eden bütün ".cpp" dosyaları da haliyle bu bildirimi de eklemiş olacaklar. Sonra, harici bir tane ".cpp" 
-                dosyası alıp, içerisine "Manuel Instantiate" talimatı yerleştiririm. Günün sonunda toplamda "n" tane dosya "#include"
-                işlemi gerçekleştirmişse, "n" tanesinde "extern template void tpl_func<int>();" bildirimi, o harici olan bir tanesinde
-                de "Manuel Instantiate" bildirimi olmuş olur. Dolayısıyla sadece bir tane dosyada ilgili fonksiyonun kodu derlenmiş olacak,
-                diğer dosyalardaki çağrılar ise derlenmiş olanı referans alacaklar. Şimdi burada da şöyle bir dezavantaj açığa çıkmaktadır;
-                derleyici sadece bir defa derleme yapacağından, fonksiyonun kodu sadece bir defa açılacaktır. Dolayısıyla derleyici, diğer
-                dosyalar ile birleştirip de optimizasyon yapma olanağı ORTADAN KALKMIŞ OLDU. 
+                "#include" eden bütün ".cpp" dosyaları da haliyle bu bildirimi de eklemiş olacaklar. Sonra, harici bir tane
+                ".cpp" dosyası alıp, içerisine "Manuel Instantiate" talimatı yerleştiririm. Günün sonunda toplamda "n" tane
+                dosya "#include" işlemi gerçekleştirmişse, "n" tanesinde "extern template void tpl_func<int>();" bildirimi,
+                o harici olan bir tanesinde de "Manuel Instantiate" bildirimi olmuş olur. Dolayısıyla sadece bir tane dosyada
+                ilgili fonksiyonun kodu derlenmiş olacak, diğer dosyalardaki çağrılar ise derlenmiş olanı referans alacaklar.
+                Şimdi burada da şöyle bir dezavantaj açığa çıkmaktadır; derleyici sadece bir defa derleme yapacağından,
+                fonksiyonun kodu sadece bir defa açılacaktır. Dolayısıyla derleyici, diğer dosyalar ile birleştirip de
+                optimizasyon yapma olanağı ORTADAN KALKMIŞ OLDU. 
                     * Örnek 1, BURADAKİ KODU TEKRAR İNCELE; NECATİ ERGİN GITHUB.
                         ////////////////////////
                         // tpl_func.h 
@@ -5491,14 +5542,15 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                                 tpl_func<int>();
                             }
     
-                -> Pekiyi yukarıdaki gibi başlık dosyasına "extern template void tpl_func<int>();" yerleştirmek yerine, sadece belli
-                kaynak dosyalarına bu bildirimi yerleştirsek nasıl olur? Açıkçası böyle yapmak çok risklidir. Çünkü "Instantiate"
-                yapılacak kaynak dosyadaki fonksiyon çağrısı "inline" olarak ele alınırsa, derlenmiş dosyada "tpl_func" için 
-                bir kod YER ALMAYACAKTIR. Dolayısıyla "extern template void tpl_func<int>();" bildirimlerinin mevcut olduğu diğer 
-                bütün modüller, derleme sekansı bittikten sonra, tanımı olmayan bir fonksiyonu referans almış olacaklar. Yani 
-                "Dangling Reference" problemi. Yani link aşamasında patlayacağız. Dolayısıyla bizlerin ilgili fonksiyonu "inline"
-                OLARAK ELE ALINMAMASINI BİR ŞEKİLDE SAĞLAMALIYIZ. Maalesef "inline" olarak ele almayı engelleyecek bir bildirim şekli
-                standart DEĞİL. Tamamen derleyicilerin ayarlarıyla ilgili. Aşağıdaki örnekleri inceleyelim;
+                -> Pekiyi yukarıdaki gibi başlık dosyasına "extern template void tpl_func<int>();" yerleştirmek yerine,
+                sadece belli kaynak dosyalarına bu bildirimi yerleştirsek nasıl olur? Açıkçası böyle yapmak çok risklidir.
+                Çünkü "Instantiate" yapılacak kaynak dosyadaki fonksiyon çağrısı "inline" olarak ele alınırsa, derlenmiş
+                dosyada "tpl_func" için bir kod YER ALMAYACAKTIR. Dolayısıyla "extern template void tpl_func<int>();"
+                bildirimlerinin mevcut olduğu diğer bütün modüller, derleme sekansı bittikten sonra, tanımı olmayan bir
+                fonksiyonu referans almış olacaklar. Yani "Dangling Reference" problemi. Yani link aşamasında patlayacağız.
+                Dolayısıyla bizlerin ilgili fonksiyonu "inline" OLARAK ELE ALINMAMASINI BİR ŞEKİLDE SAĞLAMALIYIZ. Maalesef
+                "inline" olarak ele almayı engelleyecek bir bildirim şekli standart DEĞİL. Tamamen derleyicilerin ayarlarıyla
+                ilgili. Aşağıdaki örnekleri inceleyelim;
                     * Örnek 1.0, Aşağıdaki programda "linker" program hata verebilir. 
                         ////////////////////////
                         // tpl_func.h 
@@ -5682,7 +5734,11 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
             Hakeza standart kütüphanedeki öğeler ise benzer yöntemi kullanmaktadır. Şöyleki;
                 * Örnek 1,
                     namespace std{
-                        template<typename charT, typename traits = char_traits<charT>, typename Allocator = allocator<charT>>
+                        template<
+                            typename charT, 
+                            typename traits = char_traits<charT>, 
+                            typename Allocator = allocator<charT>
+                        >
                         class basic_string {
                             //...
                         };
@@ -5692,11 +5748,12 @@ oluşur. Hatırlarsanız "concept" kelimesi hem şablonun kendisi hem de o şabl
                     }
     
             >>>> "Implicit Instantiation": Fonksiyon çağrısı yapıldığı için, ya da belirli bir sınıf türü kullanıldığı için,
-            derleyicinin "Instantiation" yapmaya zorlanmasıdır. Aslında bu zamana kadar şablonları kullandığımız yerdeki kullanım 
-            biçimimiz, "Implicit Instantiation" yaklaşımıdır. 
+            derleyicinin "Instantiation" yapmaya zorlanmasıdır. Aslında bu zamana kadar şablonları kullandığımız yerdeki
+            kullanım biçimimiz, "Implicit Instantiation" yaklaşımıdır. 
 
-        Şimdi de şu soruya yanıt arayalım; hangi durumlarda "Instantiation" gerekiyor, hangi durumlarda gerekmiyor. Çünkü derleyici(ler) her durumda bir
-        "Instantiation" YAPMAMAKTADIR. Bazı koşulların da sağlanması gerekmektedir. Aşağıdaki örnekleri inceleyelim;
+        Şimdi de şu soruya yanıt arayalım; hangi durumlarda "Instantiation" gerekiyor, hangi durumlarda gerekmiyor. Çünkü
+        derleyici(ler) her durumda bir "Instantiation" YAPMAMAKTADIR. Bazı koşulların da sağlanması gerekmektedir. Aşağıdaki
+        örnekleri inceleyelim;
             * Örnek 1.0.0, Aşağıdaki örnekte "p" için bir "instantiation" oluşmayacak. 
                 #include <iostream>
 

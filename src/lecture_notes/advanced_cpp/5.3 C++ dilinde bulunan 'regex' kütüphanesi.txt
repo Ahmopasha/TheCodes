@@ -1,45 +1,46 @@
-> "std::regex" : "Regular Expression" ifadesinin kısaltması, Düzenli İfadelerin İngilizce'sidir. Tamamiyle yazılar ile ilgili bir 
-konudur. C++11 ile dile eklenmiştir. Bir "regex" metni, bir yazının uyması gereken kuralları betimleyen bir metindir. Özel bir notasyona 
-sahiptir. Bu notasyon ile bir yazıya ilişkin kural seti betimlenir. Tıpkı "st::format" veya "scanf" fonksiyonlarındaki notasyon gibi. 
-İşte bu notasyonlar üzerinden şöyle kazanımlar elde edebiliriz;
+> "std::regex" : "Regular Expression" ifadesinin kısaltması, Düzenli İfadelerin İngilizce'sidir. Tamamiyle yazılar ile
+ilgili bir konudur. C++11 ile dile eklenmiştir. Bir "regex" metni, bir yazının uyması gereken kuralları betimleyen bir
+metindir. Özel bir notasyona sahiptir. Bu notasyon ile bir yazıya ilişkin kural seti betimlenir. Tıpkı "st::format" veya
+"scanf" fonksiyonlarındaki notasyon gibi. İşte bu notasyonlar üzerinden şöyle kazanımlar elde edebiliriz;
     
     -> "validation", bir yazının kurallara uyup uymadığının sınanması. 
     -> "search", bir yazı içerisinde arama işlemleri için. 
     -> "replace", bir yazı üzerinde değişiklik yapmak için. 
 
-Tabii bu avantajların yanında en büyük dezavantaj, bu kütüphanenin MALİYETLİ olmasıdır. Yani "std::string" ve türevi sınıflardaki 
-fonksiyonlar ile yapabileceğimiz şeyleri "std::regex" sınıfındaki fonksiyonlar ile YAPTIRMAKTAN KAÇINMALIYIZ. Bu noktada önümüzde 
-iki yol çıkmaktadır;
+Tabii bu avantajların yanında en büyük dezavantaj, bu kütüphanenin MALİYETLİ olmasıdır. Yani "std::string" ve türevi
+sınıflardaki fonksiyonlar ile yapabileceğimiz şeyleri "std::regex" sınıfındaki fonksiyonlar ile YAPTIRMAKTAN KAÇINMALIYIZ.
+Bu noktada önümüzde iki yol çıkmaktadır;
 
     -> "Regex" notasyonunu öğrenmek ki bu notasyonu gerek diğer dillerde gerek metin editörlerinde kullanabiliriz. Örneğin,
     "regex101.com" isimli internet adresinden bu notasyonlar hakkında bilgi edinebiliriz. 
     -> C++ dilinin "Regex" notasyonlarını nasıl ele aldığı; hangi fonksiyonun ne tür işleve sahip olduğu vs. 
 
 Şimdi de bu yolları sırasıyla irdeleyelim;
-    >> "Regex" Notasyonu: Bir notasyon kendi içerisinde bazı özel anlama taşıyan karakterlere sahiptir. Bunlara "meta-character"
-    denir. Eğer özel anlamı haricinde, karakterin bizzat kendisini kullanmak istiyorsak, "\" karakteri ile birlikte kullanmalıyız. 
-    Bu "meta-character" haricindeki diğer karakterler, kendi anlamlarındadır. 
-        * Örnek 1.0, "." karakterinin özel anlamı "'\n' karakteri hariç bütün karakterler" anlamındadır. Bu durumda, ".abc" biçiminde
-        bir notasyon oluşturursak şu anlama gelecektir;
+    >> "Regex" Notasyonu: Bir notasyon kendi içerisinde bazı özel anlama taşıyan karakterlere sahiptir. Bunlara
+    "meta-character" denir. Eğer özel anlamı haricinde, karakterin bizzat kendisini kullanmak istiyorsak, "\" karakteri ile
+    birlikte kullanmalıyız. Bu "meta-character" haricindeki diğer karakterler, kendi anlamlarındadır. 
+        * Örnek 1.0, "." karakterinin özel anlamı "'\n' karakteri hariç bütün karakterler" anlamındadır. Bu durumda, ".abc"
+        biçiminde bir notasyon oluşturursak şu anlama gelecektir;
 
-            -> Öyle kelimeler ki bunlar bünyesinde dört harfli şöyle kelimeler barındırsın; ilki harfi "\n" hariç herhangi bir harf, 
-            ikincisi "a", üçüncüsü "b" ve dördüncüsü "c" harfi olacak. Bu durumda içerisinde "aabc" kelimesini içeren bir kelimeyi 
-            bulabiliriz. 
+            -> Öyle kelimeler ki bunlar bünyesinde dört harfli şöyle kelimeler barındırsın; ilki harfi "\n" hariç herhangi
+            bir harf, ikincisi "a", üçüncüsü "b" ve dördüncüsü "c" harfi olacak. Bu durumda içerisinde "aabc" kelimesini
+            içeren bir kelimeyi bulabiliriz. 
 
-        * Örnek 1.1, "." karakterinin bizzat kendisini kullanmak istiyorsak, onu "\" ile birleştirmeliyiz. Bu durumda "\.abc" biçiminde 
-        bir notasyon oluşturursak şu anlama gelecektir;
+        * Örnek 1.1, "." karakterinin bizzat kendisini kullanmak istiyorsak, onu "\" ile birleştirmeliyiz. Bu durumda "\.abc"
+        biçiminde bir notasyon oluşturursak şu anlama gelecektir;
 
             -> Öyle kelimeler ki bunlar bünyesinde dört harfli ".abc" kelimesini barındırsın. 
 
-        * Örnek 1.2, İş bu nedenden dolayı "\" karakterinin bizzat kendisini kullanmak istiyorsak, oluşturacağımız notasyonda "\\"
-        biçiminde yazmalıyız. Bu durumda şu noktaya da dikkat çekmek gerekmektedir; 
+        * Örnek 1.2, İş bu nedenden dolayı "\" karakterinin bizzat kendisini kullanmak istiyorsak, oluşturacağımız
+        notasyonda "\\" biçiminde yazmalıyız. Bu durumda şu noktaya da dikkat çekmek gerekmektedir; 
 
-            -> C++ dilinde "\" karakteri de bir "meta-character" olarak geçer. Dolayısıyla "string literal" içerisinde bizzat "\"
-            kullanmak için "\\" şeklinde yazıyoruz. Diğer yandan notasyon içerisinde "\" karakterini bizzat kullanmak için de "\\" 
-            yazıyoruz. İşte bu notasyonumuzu C++ diline aktarırken, "\" karakterini bizzat kullanmak için, "\\\\" biçiminde yazmalıyız. 
+            -> C++ dilinde "\" karakteri de bir "meta-character" olarak geçer. Dolayısıyla "string literal" içerisinde
+            bizzat "\" kullanmak için "\\" şeklinde yazıyoruz. Diğer yandan notasyon içerisinde "\" karakterini bizzat
+            kullanmak için de "\\" yazıyoruz. İşte bu notasyonumuzu C++ diline aktarırken, "\" karakterini bizzat kullanmak
+            için, "\\\\" biçiminde yazmalıyız. 
 
-    Bunun dışında "n-tane karakterden herhangi biri olabilir" manasına gelen bir notasyon oluşturmak için "[]" içerisinde iş bu "n" 
-    tane karakterin listesini yazıyoruz. 
+    Bunun dışında "n-tane karakterden herhangi biri olabilir" manasına gelen bir notasyon oluşturmak için "[]" içerisinde
+    iş bu "n" tane karakterin listesini yazıyoruz. 
         * Örnek 1, "[aei]" biçiminde bir notasyon şu anlama gelecektir;
 
             -> Öyle kelimeler ki bunlar bünyesinde "a", "e" veya "i" karakterlerinden herhangi birisini barındırabilir. 
@@ -48,38 +49,38 @@ iki yol çıkmaktadır;
 
         * Örnek 2, "[aei][ou]" biçimindeki bir notasyon şu anlama gelecektir;
 
-            -> Öyle kelimeler ki bunlar bünyesinde bir hece "aei" kümesinden, bir hece "ou" kümesinden olmak şartıyla, bu kümelerden 
-            oluşturulan iki harfli o kelimeyi barındırsın. Örneğin, bu notasyon ile bünyesinde "eo" kelimesini barındıranlar
-            bulunacaktır. 
+            -> Öyle kelimeler ki bunlar bünyesinde bir hece "aei" kümesinden, bir hece "ou" kümesinden olmak şartıyla, bu
+            kümelerden oluşturulan iki harfli o kelimeyi barındırsın. Örneğin, bu notasyon ile bünyesinde "eo" kelimesini
+            barındıranlar bulunacaktır. 
 
-    Diğer yandan "n-tane karakterden birisi olmayacak" manasına gelen bir notasyon oluşturmak için "[]" içerisinde il önce "^", daha 
-    sonra iş bu "n" tane karakterin listesini yazıyoruz. Böylelikle iş bu karakter listesindekileri BÜNYESİNDE BARINDIRMAYANLAR 
-    bulunacaktır. 
+    Diğer yandan "n-tane karakterden birisi olmayacak" manasına gelen bir notasyon oluşturmak için "[]" içerisinde il önce
+    "^", daha sonra iş bu "n" tane karakterin listesini yazıyoruz. Böylelikle iş bu karakter listesindekileri BÜNYESİNDE
+    BARINDIRMAYANLAR bulunacaktır. 
         * Örnek 1, "[^mhrt]" biçimindeki bir notasyon şu anlama gelecektir;
 
             -> Öyle kelimeler ki bünyesinde "m", "h", "r" veya "t" karakterleri OLMASIN. 
 
-    Buna ilaveten "bir aralık içerisindeki karakterlerden herhangi biri olabilir" manasına gelen bir notasyon oluşturmak için, "[]"
-    içerisine aralığın ilk ve son harflerini yazdıktan sonra bu iki harfin arasına "-" karakterini ekliyoruz. Böylelikle "ilk ve son 
-    harf dahil, aralıktaki karakterlerden herhangi birisi olabilir" manasını elde etmiş oluyoruz. 
+    Buna ilaveten "bir aralık içerisindeki karakterlerden herhangi biri olabilir" manasına gelen bir notasyon oluşturmak
+    için, "[]" içerisine aralığın ilk ve son harflerini yazdıktan sonra bu iki harfin arasına "-" karakterini ekliyoruz.
+    Böylelikle "ilk ve son harf dahil, aralıktaki karakterlerden herhangi birisi olabilir" manasını elde etmiş oluyoruz. 
         * Örnek 1, "[a-e]" biçimindeki bir notasyon şu anlama gelecektir;
 
             -> "a" ve "e" heceleri dahil, bu iki hece arasındaki hecelerin herhangi birisini barındırabilir. 
 
         * Örnek 2, "[a-e][e-k]" biçimindeki bir notasyon şu anlama gelecektir;
 
-            -> Öyle kelimeler ki bunlar bünyesinde bir hece "a" ve "e" arasındaki karakter kümesinden, bir hece de "e" ve "k" arasındaki 
-            karakter kümseinden olmak şartyıla, bu kümelerden oluşturulan iki harfli o kelimeyi barındırsın. Örneğin, bu notasyon ile
-            bünyesinde "cj" kelimesini barındıranlar bulunacaktır.  
+            -> Öyle kelimeler ki bunlar bünyesinde bir hece "a" ve "e" arasındaki karakter kümesinden, bir hece de
+            "e" ve "k" arasındaki karakter kümseinden olmak şartyıla, bu kümelerden oluşturulan iki harfli o kelimeyi
+            barındırsın. Örneğin, bu notasyon ile bünyesinde "cj" kelimesini barındıranlar bulunacaktır.  
 
         * Örnek 3, "[0-9]" biçimindeki bir notasyon şu anlama gelecektir;
 
-            -> Öyle kelimeler ki bünyesinde rakam karakterlerinden herhangi birisini barındırsın. Dolayısıyla yazımız içerisindeki 
-            sayıları da ayrı ayrı bulacaktır. 
+            -> Öyle kelimeler ki bünyesinde rakam karakterlerinden herhangi birisini barındırsın. Dolayısıyla yazımız
+            içerisindeki sayıları da ayrı ayrı bulacaktır. 
 
-    Öte yandan "bir aralık içerisindeki karakterlerden herhangi biri olmayacak" manasına gelen bir notasyon oluşturmak için, "[]"
-    içerisine ilk olarak "^" karakterini, devamında aralığın ilk ve son harflerini yazdıktan sonra bu iki harfin arasına "-"
-    karakterini ekliyoruz. Böylelikle "bu aralıktakileri içermeyen" manasını elde etmiş oluyoruz. 
+    Öte yandan "bir aralık içerisindeki karakterlerden herhangi biri olmayacak" manasına gelen bir notasyon oluşturmak
+    için, "[]" içerisine ilk olarak "^" karakterini, devamında aralığın ilk ve son harflerini yazdıktan sonra bu iki harfin
+    arasına "-" karakterini ekliyoruz. Böylelikle "bu aralıktakileri içermeyen" manasını elde etmiş oluyoruz. 
         * Örnek 1, "[^0-9]" biçimindeki bir notasyon şu anlama gelecektir;
 
             -> Öyle kelimeler ki bünyesinde rakam karakterleri BULUNMASIN. 
@@ -91,9 +92,9 @@ iki yol çıkmaktadır;
     Şimdi buraya kadarkileri bir örnekte toplayalım;
         * Örnek 1, "[mkr0-9A-F]" biçimindeki bir notasyon şu anlama gelecektir;
 
-            -> "m", "k" veya "r" karakterlerinden herhangi birisini, rakam karaktarlerini ve "A" ve "F" arasındaki büyük harfli 
-            karakterleri, ki "A" ve "F" dahildir, bünyesinde barındıran kelime(ler). Burada bir tane "[]" kullanıldığı için tek 
-            bir harf üzerinden gidilmektedir. 
+            -> "m", "k" veya "r" karakterlerinden herhangi birisini, rakam karaktarlerini ve "A" ve "F" arasındaki büyük
+            harfli karakterleri, ki "A" ve "F" dahildir, bünyesinde barındıran kelime(ler). Burada bir tane "[]"
+            kullanıldığı için tek bir harf üzerinden gidilmektedir. 
 
         * Örnek 2, "[^mkr0-9A-F]" biçimindeki bir notasyon şu anlama gelecektir;
 
@@ -101,14 +102,15 @@ iki yol çıkmaktadır;
 
     Bunların haricinde, bazı aralık değerleri için özel karakterler de vardır. 
         * Örnek 1, "[0-9]" demek yerine "\d" kullanmak aynı anlama gelecektir. Burada "d" harfinin küçük olması önemlidir. 
-        Burada "D" harfinin kullanılması "^" karakteri etkisi yapmaktadır. Dolayısıyla "[^0-9]" demek yerine "\D" kullanmak aynı
-        anlama gelecektir.
+        Burada "D" harfinin kullanılması "^" karakteri etkisi yapmaktadır. Dolayısıyla "[^0-9]" demek yerine "\D" kullanmak
+        aynı anlama gelecektir.
 
-        * Örnek 2, "\s" karakteri boşluk karakterleri anlamındadır. "tab" ile "space" tuşları ile oluşturulan boşluk karakterleri 
-        de buna dahildir. "new-line" da yine bu karakter kapsamındadır. "\S" ise boşluk karakteri olmayan anlamındadır. 
+        * Örnek 2, "\s" karakteri boşluk karakterleri anlamındadır. "tab" ile "space" tuşları ile oluşturulan boşluk
+        karakterleri de buna dahildir. "new-line" da yine bu karakter kapsamındadır. "\S" ise boşluk karakteri olmayan
+        anlamındadır. 
 
-        * Örnek 3, "\w" karakteri "Alphanumeric" karakter anlamındadır. "underscore" karakteri de buna dahildir, yani "_" karakteri.
-        "\W" karakteri ise "Alphanumeric" olmayan karakter anlamındadır. 
+        * Örnek 3, "\w" karakteri "Alphanumeric" karakter anlamındadır. "underscore" karakteri de buna dahildir, yani "_"
+        karakteri. "\W" karakteri ise "Alphanumeric" olmayan karakter anlamındadır. 
 
     Pekala bizler bir kelimeyi de notasyon içerisine koyabiliriz. Bunun için "()" kullanmalıyız. Pekala "()" ile öncelik de
     oluşturabiliriz.
@@ -120,10 +122,10 @@ iki yol çıkmaktadır;
 
             -> Bünyesinde "(kan)" kelimesini içerenleri tespit edecektir. 
 
-    "Regex" notasyonundaki bir diğer önemli kavram da "quantifiers" kavramıdır. Yani kendisinden evvelki "token" dan kaç tane olması 
-    gerektiğini belirtmektedir. 
-        * Örnek 1.0, "?": kendisinden evvelki "token" dan ya bir tane olacak ya hiç olmayacak. Dolayısıyla "ka?r" biçimindeki bir 
-        notasyon;
+    "Regex" notasyonundaki bir diğer önemli kavram da "quantifiers" kavramıdır. Yani kendisinden evvelki "token" dan kaç tane
+    olması gerektiğini belirtmektedir. 
+        * Örnek 1.0, "?": kendisinden evvelki "token" dan ya bir tane olacak ya hiç olmayacak. Dolayısıyla "ka?r" biçimindeki
+        bir notasyon;
             
             -> Bünyesinde "kar" veya "kr" içeren kelimeleri bulabiliriz. 
 
@@ -139,8 +141,8 @@ iki yol çıkmaktadır;
             -> "kan" kelimesi varsa devamında rakam karakteri, "kan" kelimesi yoksa da yalnız rakam
             karakterini içermelidir. 
 
-        * Örnek 2.0, "*": kendisinden evvelki "token" dan ya sıfır tane ya da daha fazla olacak. Dolayısıyla "ah*" biçimindeki bir 
-        notasyon;
+        * Örnek 2.0, "*": kendisinden evvelki "token" dan ya sıfır tane ya da daha fazla olacak. Dolayısıyla "ah*"
+        biçimindeki bir notasyon;
 
             -> "ah", "ahh", "ahhh" vb. kelimelerini tespit edecektir. 
 
@@ -148,7 +150,8 @@ iki yol çıkmaktadır;
 
             -> -> "k", "r" veya "m" harflerinden birisinden ya sıfır yane ya da daha fazlasını bünyesinde barındıracak.  
 
-        * Örnek 3.0, "+": kendisinden evvelki "token" dan ya bir tane ya da fazla olacak. Dolayısıyla "\d+" biçimindeki bir notasyon;
+        * Örnek 3.0, "+": kendisinden evvelki "token" dan ya bir tane ya da fazla olacak. Dolayısıyla "\d+" biçimindeki
+        bir notasyon;
 
             -> En az bir tane rakam karakteri olacak, ancak daha fazla da olabilir. 
 
@@ -161,8 +164,8 @@ iki yol çıkmaktadır;
 
             -> En az üç basamaklı rakamları tespit edecektir. 
 
-        * Örnek 4.2, "{n,m}": kendisinden öncekinden, en az "n" en fazla "m" adedince olmalı. Yine bu "n" ve "m" değerleri de dahildir.
-        Dolayısıyla "\d{3,5}" biçimindeki bir notasyon; 
+        * Örnek 4.2, "{n,m}": kendisinden öncekinden, en az "n" en fazla "m" adedince olmalı. Yine bu "n" ve "m" değerleri
+        de dahildir. Dolayısıyla "\d{3,5}" biçimindeki bir notasyon; 
 
             -> En az üç, en fazla beş basamaklı rakamları tespit edecektir.
     
@@ -177,17 +180,18 @@ iki yol çıkmaktadır;
 
     Diğer yandan "quantifiers" kavramı iki alt kavrama sahiptir. Bunlar "greedy" ve "lazy". 
         >> "greedy" : Varsayılan durumdur. "n" taneyi kapsayanlar için kapsayabildiği kadarını kapsar. 
-            * Örnek 1, Notasyonumuz "3\.\d+" biçiminde olsun. Böylelikle "\d+" ifadesiyle en az bir tane rakam karakteri olması gerekmekte.
-            Dolayısıyla bulunan kelime içerisinde "." karakterinden sonra 300 tane rakam varsa, bu 300 tanenin hepsi de dahil edilecek. 
+            * Örnek 1, Notasyonumuz "3\.\d+" biçiminde olsun. Böylelikle "\d+" ifadesiyle en az bir tane rakam karakteri
+            olması gerekmekte. Dolayısıyla bulunan kelime içerisinde "." karakterinden sonra 300 tane rakam varsa, bu 300
+            tanenin hepsi de dahil edilecek. 
 
-        >> "lazy" : İşte yukarıdaki gibi 300 karakterin hepsinin kapsanması yerine, sadece şartı sağlayan ilk karakterin dahil edilmesidir. 
-        Bunu gerçekleştirmek için de ilgili "quantifiers" "token" inin peşine "?" karakterini ekliyoruz. Yani minimal şart sağlandığı an
-        gerçekleştirim duracaktır. 
+        >> "lazy" : İşte yukarıdaki gibi 300 karakterin hepsinin kapsanması yerine, sadece şartı sağlayan ilk karakterin
+        dahil edilmesidir. Bunu gerçekleştirmek için de ilgili "quantifiers" "token" inin peşine "?" karakterini ekliyoruz.
+        Yani minimal şart sağlandığı an gerçekleştirim duracaktır. 
             * Örnek 1, Notasyonumuz "3\.\d+?" biçiminde olsun. Artık sadece "3.4" biçimindeki yazıları bulacaktır. 
             
-            * Örnek 2, Notasyonumuz "ahmet(can)??" biçiminde olsun. Eğer sadece "ahmet(can)?" olsaydı, "can" kelimesinin olduğu veya 
-            olmadığı bütün kelimeler kapsam dahilinde olacaktı. Ancan "ahmet(can)??" notasyonundaki minimal şart "can" kelimesinin 
-            olmaması olduğundan, sadece "ahmet" ismini bulacaktır. 
+            * Örnek 2, Notasyonumuz "ahmet(can)??" biçiminde olsun. Eğer sadece "ahmet(can)?" olsaydı, "can" kelimesinin
+            olduğu veya olmadığı bütün kelimeler kapsam dahilinde olacaktı. Ancan "ahmet(can)??" notasyonundaki minimal
+            şart "can" kelimesinin olmaması olduğundan, sadece "ahmet" ismini bulacaktır. 
 
     "Regex" notasyonundaki bir diğer önemli kavram da "anchor" kavramıdır. Bu kavram pozisyon, yer belirtmektedir. Şöyleki:
 
@@ -199,9 +203,9 @@ iki yol çıkmaktadır;
 
             -> Yazının sonundaki kelime "kar" kelimesini içermelidir.  
 
-        * Örnek 3.0, "\btor" ifadesi, kelimenin başında "tor" kelimesini; "tor\b" ifadesi, kelimenin sonunda "tor" kelimesini;
-        "\Btor" ifadesi kelimenin başında "tor" kelimesi olmayacak; "tor\B" ifadesi kelimenin sonunda "tor" kelimesi olmayacak.
-        Böylelikle "\Btor\B" ifadesi ise başında ve sonunda "tor" olmayanlar manasındadır. 
+        * Örnek 3.0, "\btor" ifadesi, kelimenin başında "tor" kelimesini; "tor\b" ifadesi, kelimenin sonunda "tor"
+        kelimesini; "\Btor" ifadesi kelimenin başında "tor" kelimesi olmayacak; "tor\B" ifadesi kelimenin sonunda "tor"
+        kelimesi olmayacak. Böylelikle "\Btor\B" ifadesi ise başında ve sonunda "tor" olmayanlar manasındadır. 
 
     Pekiyi bütün bu anlatılanlar sonucunda "if\s*\(.*\)\s*;" notasyonu şu manaya gelmektedir;
 
@@ -255,19 +259,22 @@ iki yol çıkmaktadır;
 
             -> "(\d{4})\.[A-F]{4}\.\d{4}" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})" ifadesini
             ayrıca tutmaktadır. Dolayısıyla bu ifadeye karşılık gelenleri ayrıca "get" edebileceğiz. 
-            -> "(\d{4})\.([A-F]{4})\.\d{4}" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})" ifadesini ve 
-            "([A-F]{4})" ifadesini ayrıca tutacaktır. Dolayısıyla bu ifadelere karşılık gelenleri ayrıca "get" edebileceğiz. 
-            -> "(\d{4})\.([A-F]{4})\.(\d{4})" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})" ifadesini, 
-            "([A-F]{4})" ifadesini ve "(\d{4})" ifadesini ayrıca tutacaktır. Dolayısıyla bu ifadelere karşılık gelenleri ayrıca
-            "get" edebileceğiz. 
+            
+            -> "(\d{4})\.([A-F]{4})\.\d{4}" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})" ifadesini
+            ve "([A-F]{4})" ifadesini ayrıca tutacaktır. Dolayısıyla bu ifadelere karşılık gelenleri ayrıca "get"
+            edebileceğiz. 
+            
+            -> "(\d{4})\.([A-F]{4})\.(\d{4})" ifadesi haline getirirsek artık arka plandaki "regex" motoru "(\d{4})"
+            ifadesini, "([A-F]{4})" ifadesini ve "(\d{4})" ifadesini ayrıca tutacaktır. Dolayısıyla bu ifadelere karşılık
+            gelenleri ayrıca "get" edebileceğiz. 
 
         Ancak yukarıdaki gibi bir kullanımda hem öncelik parantezi işlevi hem de "grouping" işlemi gerçekleştirilecek. Fakat
         "grouping" işlemi maliyetli bir iş olduğundan, yani sadece öncelik parantezi işlevini kullanacaksak, "(?:)" biçiminde 
         kullanmalıyız.
 
-        * Örnek 3, İlk "capture-group" da bulunan ifadenin aynısının başka yerde olmasını istiyorsak, bu yöntemi kullanmalıyız. 
-        Yukarıdaki "MY_NOTATION" isimli notasyondaki "\d{4}\.[A-F]{4}\.\d{4}" ifadesini "(\d{4})\.([A-F]{4})\1\2" ifadesine
-        çevirelim. Böylece;
+        * Örnek 3, İlk "capture-group" da bulunan ifadenin aynısının başka yerde olmasını istiyorsak, bu yöntemi
+        kullanmalıyız. Yukarıdaki "MY_NOTATION" isimli notasyondaki "\d{4}\.[A-F]{4}\.\d{4}" ifadesini
+        "(\d{4})\.([A-F]{4})\1\2" ifadesine çevirelim. Böylece;
 
             -> Birinci "capture-group" olan "(\d{4})" ifadesi için karşılık gelen ifadenin birebir aynısı "\1" ifadesinin 
             bulunduğu yerde de olacaktır. 
@@ -291,8 +298,9 @@ iki yol çıkmaktadır;
 
             "word-for-word", "wine-drinking", ...
 
-    "Regex" notasyonundaki bir diğer önemli kavram da "alternator" kavramıdır. Burada kullanılan karakter ise "|" karakteridir. 
-    Bu karakterden önce gelen veya sonra gelenden bir tanesi seçilebilir anlamındadır, yani "veya" bağlamı taşır. 
+    "Regex" notasyonundaki bir diğer önemli kavram da "alternator" kavramıdır. Burada kullanılan karakter ise "|"
+    karakteridir. Bu karakterden önce gelen veya sonra gelenden bir tanesi seçilebilir anlamındadır, yani "veya"
+    bağlamı taşır. 
         * Örnek 1, "kar|telsel" biçimindeki notasyon bize;
 
             -> Ya "kar" kelimesinin ilgili kelime içinde olmasını
@@ -317,37 +325,38 @@ iki yol çıkmaktadır;
             -> "[1-9]"   => Senenin ilk dokuz günü için.
             -> "1[012]"  => İlk basamak "1", ikinci basamak ise "0" veya "1" veya "2". 
 
-    "Regex" notasyonundaki iki diğer önemli kavram da "look-ahead" ve "look-back" kavramlarıdır. Ancak bu kavramlar bazı "regex" 
-    motorlarınca desteklenmiyor olabilir. 
+    "Regex" notasyonundaki iki diğer önemli kavram da "look-ahead" ve "look-back" kavramlarıdır. Ancak bu kavramlar bazı
+    "regex" motorlarınca desteklenmiyor olabilir. 
         >>> "look-ahead" : Bu kavram da "positive look-ahead" ve "negative look-ahead" olmak üzere ikiye ayrılır. 
-            >>>> "positive look-ahead" : Örneğin bizler "necati" ismini arıyor olalım. Bize öyle "necati" isimleri vermeli ki
-            "necati" isminden sonra "ergin" ismi gelmiş olsun. Bizler aramayı direkt olarak "necati ergin" biçiminde yaparsak,
-            sadece "necati ergin" olanları döndürecekti. Fakat aramayı "necati" biçiminde yapıyoruz, sonuç olarak öyle "necati" ler
-            almalıyız ki bunların devamında da "ergin" olsun. Bu biçimde arama yapmak için "(?=)" şablonunu kullanırız. 
-                * Örnek 1, Notasyonumuz "necati(?=ergin)" olsun. Bu notasyon ile bizler "ahmetnecatiergin" biçimindeki bir ismi 
-                bulabileceğiz. Buradaki kritik nokta "necati" isminin bulunması ve bu bulunanlardan "necati" isminden sonra "ergin"
-                isminin gelmesidir. 
+            >>>> "positive look-ahead" : Örneğin bizler "necati" ismini arıyor olalım. Bize öyle "necati" isimleri
+            vermeli ki "necati" isminden sonra "ergin" ismi gelmiş olsun. Bizler aramayı direkt olarak "necati ergin"
+            biçiminde yaparsak, sadece "necati ergin" olanları döndürecekti. Fakat aramayı "necati" biçiminde yapıyoruz,
+            sonuç olarak öyle "necati" ler almalıyız ki bunların devamında da "ergin" olsun. Bu biçimde arama yapmak için
+            "(?=)" şablonunu kullanırız. 
+                * Örnek 1, Notasyonumuz "necati(?=ergin)" olsun. Bu notasyon ile bizler "ahmetnecatiergin" biçimindeki
+                bir ismi bulabileceğiz. Buradaki kritik nokta "necati" isminin bulunması ve bu bulunanlardan "necati"
+                isminden sonra "ergin" isminin gelmesidir. 
 
-            >>>> "negative look-ahead" : "positive" olanından farklı olarak burada da devamında "ergin" gelmesi değil, gelmemesi 
-            gerekmektedir. Şablonumuz "(?!)" biçimindedir. 
+            >>>> "negative look-ahead" : "positive" olanından farklı olarak burada da devamında "ergin" gelmesi değil,
+            gelmemesi gerekmektedir. Şablonumuz "(?!)" biçimindedir. 
                 * Örnek 1, Notasyonumuz "necati(?!ergin)" olsun. Bu notasyon ile bizler "ahmetnecatisasmaz" biçimindeki bir 
-                ismi bulabiliriz. Buradaki kritik nokta "necati" isminin bulunması ve bu bulunanlardan "necati" isminden sonra
-                "ergin" isminin GELMEMESİDİR.
+                ismi bulabiliriz. Buradaki kritik nokta "necati" isminin bulunması ve bu bulunanlardan "necati" isminden
+                sonra "ergin" isminin GELMEMESİDİR.
 
         >>> "look-back" : Bu kavram da "positive look-back" ve "negative look-back" olmak üzere ikiye ayrılır.  
-            >>>> "positive look-back" : "positive look-ahead" in diğer yönlüsüdür. Yani devamındaki değil, evvelindekinin şartı 
-            sağlaması gerekmektedir. Şablon olarak "(?<=)" kullanırız. 
-                * Örnek 1, Notasyonumuz "(?<=ergin)necati" olsun. Bu notasyon ile bizler "erginnecatiİstanbul" biçimindeki bir 
-                ismi bulabiliriz. 
+            >>>> "positive look-back" : "positive look-ahead" in diğer yönlüsüdür. Yani devamındaki değil, evvelindekinin
+            şartı sağlaması gerekmektedir. Şablon olarak "(?<=)" kullanırız. 
+                * Örnek 1, Notasyonumuz "(?<=ergin)necati" olsun. Bu notasyon ile bizler "erginnecatiİstanbul" biçimindeki
+                bir ismi bulabiliriz. 
 
-            >>>> "negative look-back" : "positive" olanından farklı olarak burada da evvelindekinin "ergin" olması değil, OLMAMASI 
-            gerekmektedir. Şablonumuz "(?<!)" biçimindedir. 
-                * Örnek 1, Notasyonumuz "(?<!ergin)necati" olsun. Bu notasyon ile bizler "Kayserinecatiİstanbul" biçimindeki bir 
-                ismi bulabiliriz. 
+            >>>> "negative look-back" : "positive" olanından farklı olarak burada da evvelindekinin "ergin" olması değil,
+            OLMAMASI gerekmektedir. Şablonumuz "(?<!)" biçimindedir. 
+                * Örnek 1, Notasyonumuz "(?<!ergin)necati" olsun. Bu notasyon ile bizler "Kayserinecatiİstanbul" biçimindeki
+                bir ismi bulabiliriz. 
 
     Şimdi de genel örnekler ile pekiştirme yapalım;
-        * Örnek 1, "html" renk kodu olup olmadığınının sınanması: "#" ile başlayacak. Devamında altı ya da üç adet "hex-digit"
-        olacak. Notasyonumuz "#([A-Fa-f\d]{6}|[A-Fa-f\d]{3})" şeklinde olmalıdır. Böylelikle;
+        * Örnek 1, "html" renk kodu olup olmadığınının sınanması: "#" ile başlayacak. Devamında altı ya da üç adet
+        "hex-digit" olacak. Notasyonumuz "#([A-Fa-f\d]{6}|[A-Fa-f\d]{3})" şeklinde olmalıdır. Böylelikle;
 
             -> "#"             => İlk karakter "#" olmalı. 
             -> "[A-Fa-f\d]{6}" => 6 adet "A" ile "F" aralığındaki veya "a" ile "f" aralığındaki karakterlerden veya rakam
@@ -355,12 +364,13 @@ iki yol çıkmaktadır;
             -> "[A-Fa-f\d]{3}" => 3 adet "A" ile "F" aralığındaki veya "a" ile "f" aralığındaki karakterlerden veya rakam
             karakteri gelmeli. 
 
-    >> C++ dilinin "Regex" notasyonlarını nasıl ele alışı: "regex" kütüphanesi dile C++11 ile eklenmiştir. Yukarıda da değinildiği 
-    üzere C++ dilinde notasyon kullanırken notasyonlarımızı "regex101.com" sitesine yazdığımız gibi değil, C++ dilinin anlayabilmesi 
-    için dönüştürmemiz gerekmektedir. Örneğin, "\d" notasyon bazında rakamları temsil etmektedir. C++ dilinde bunu kullanırken "\\d"
-    biçiminde yazmalıyız ki dil bunu "\d" olarak işleme soksun. Çünkü C++ dilinde "\" karakterini bizzat kullanmak için "\\" 
-    yazmalıyız. Eğer notasyonda bizzat "\" karakterini kullanacaksam, "\\d" olarak notasyon oluşturmalıyım. Fakat bunu C++ diline 
-    aktarırken "\\\\d" olarak aktarmalıyız. İşte bu problemi gidermek için de "Raw String Literal" kullanabiliriz.  
+    >> C++ dilinin "Regex" notasyonlarını nasıl ele alışı: "regex" kütüphanesi dile C++11 ile eklenmiştir. Yukarıda da
+    değinildiği üzere C++ dilinde notasyon kullanırken notasyonlarımızı "regex101.com" sitesine yazdığımız gibi değil,
+    C++ dilinin anlayabilmesi için dönüştürmemiz gerekmektedir. Örneğin, "\d" notasyon bazında rakamları temsil etmektedir.
+    C++ dilinde bunu kullanırken "\\d" biçiminde yazmalıyız ki dil bunu "\d" olarak işleme soksun. Çünkü C++ dilinde "\"
+    karakterini bizzat kullanmak için "\\" yazmalıyız. Eğer notasyonda bizzat "\" karakterini kullanacaksam, "\\d" olarak
+    notasyon oluşturmalıyım. Fakat bunu C++ diline aktarırken "\\\\d" olarak aktarmalıyız. İşte bu problemi gidermek için
+    de "Raw String Literal" kullanabiliriz.  
         * Örnek 1, Benefits of Raw String Literals. 
             #include <regex>
 
@@ -384,9 +394,9 @@ iki yol çıkmaktadır;
             #include <iostream>
 
             int main() {
-                // Amaç     : Üç adet rakam karakteri, devamında dört adet alfabetik karakter, devamında üç adet rakam karakteri. 
+                // Amaç : Üç adet rakam karakteri, devamında dört adet alfabetik karakter, devamında üç adet rakam karakteri. 
                 // Notasyon : "\d{3}[a-z]{4}\d{3}".
-                // Cpp      : "\\d{3}[a-z]{4}\\d{3}".
+                // Cpp : "\\d{3}[a-z]{4}\\d{3}".
                 
                 std::regex rx{ "\\d{3}[a-z]{4}\\d{3}" };
                 
@@ -1058,4 +1068,5 @@ iki yol çıkmaktadır;
             }
 
 > Hatırlayıcı Notlar:
-    >> "regex101.com" da "multi-line" modunda olması, her bir kelimenin ayrı bir yazı olarak ele alınması anlamına gelmektedir.
+    >> "regex101.com" da "multi-line" modunda olması, her bir kelimenin ayrı bir yazı olarak ele alınması
+    anlamına gelmektedir.

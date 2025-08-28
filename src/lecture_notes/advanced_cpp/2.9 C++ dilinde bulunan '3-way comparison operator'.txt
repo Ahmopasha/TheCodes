@@ -3,9 +3,9 @@ operatörü mevcuttur. Bunlar ise iki gruba ayrılmıştır; "Equality Operators
     >> "Equality Operators" : "==" ve "!=" operatörleridir. 
     >> "Relational Operators" : "<", "<=", ">" ve ">=" operatörleridir.
 
-Bu operatörlerin hepsi de aynı statüdedir ve hepsinin ürettiği değer "bool" türündendir. "custom" türler için yine bu operatörleri 
-kullanmak istediğimiz zamanda genel olarak "<" ve "==" operatörleri "overload" edilir, diğer dört operatör ise bu "overload" edilmiş 
-fonksiyonları çağırması sağlanır. Örneğin,
+Bu operatörlerin hepsi de aynı statüdedir ve hepsinin ürettiği değer "bool" türündendir. "custom" türler için yine bu
+operatörleri kullanmak istediğimiz zamanda genel olarak "<" ve "==" operatörleri "overload" edilir, diğer dört operatör ise
+bu "overload" edilmiş fonksiyonları çağırması sağlanır. Örneğin,
 
     a != b        !(a == b)
     a > b         b < a 
@@ -40,15 +40,17 @@ fonksiyonları çağırması sağlanır. Örneğin,
             std::cout << "d1 != d2 = " << (d1 != d2) << '\n';
         }
 
-Pekiyi nedir bu "3-Way Comparison Operator"? Bu operatör "<=>" atomu ile temsil edilmektedir. Önceliği diğer karşılaştırma operatörlerinden 
-daha yüksektir. Bu operatörün dile eklenmesi ile operatörler iki gruba ayrılmıştır: "Primary", "Secondary". 
-    >> "Primary" : Argümanları "reverse" edilebilen operatörlerdir. Bunlar "==" ve "<=>" operatörleridir. Yani "a==b" demek ile "b==a" demek 
-    aynıdır. Anımsanacağı üzere sınıfın üye fonksiyonu olarak "overload" edilen ".operator==()" fonksiyonu söz konusu olduğunda, bu fonksiyonun 
-    çağrılabilmesi için "==" operatörünün sol operandının ilgili sınıf türünden OLMASI GEREKİYOR İDİ. 
+Pekiyi nedir bu "3-Way Comparison Operator"? Bu operatör "<=>" atomu ile temsil edilmektedir. Önceliği diğer karşılaştırma
+operatörlerinden daha yüksektir. Bu operatörün dile eklenmesi ile operatörler iki gruba ayrılmıştır: "Primary", "Secondary". 
+    >> "Primary" : Argümanları "reverse" edilebilen operatörlerdir. Bunlar "==" ve "<=>" operatörleridir. Yani "a==b" demek
+    ile "b==a" demek aynıdır. Anımsanacağı üzere sınıfın üye fonksiyonu olarak "overload" edilen ".operator==()" fonksiyonu
+    söz konusu olduğunda, bu fonksiyonun çağrılabilmesi için "==" operatörünün sol operandının ilgili sınıf türünden OLMASI
+    GEREKİYOR İDİ. 
 
-    >> "Secondary" : Geri kalan dört operatör bu gruptandır. Bu gruptakiler ise "rewritable" operatörlerdir. Yani derleyici bu operatörleri,
-    yukarıdaki "Primary" gruptaki operatörlere çevirebilmektedir. Örneğin, "!=" operatörü bu gruptandır. Derleyici bu operatörü gördüğü yerde 
-    "!(==)" ifadesini yazabilmektedir, tabii bu süreç ise isim arama sırasında gerçekleşmektedir.
+    >> "Secondary" : Geri kalan dört operatör bu gruptandır. Bu gruptakiler ise "rewritable" operatörlerdir. Yani derleyici
+    bu operatörleri, yukarıdaki "Primary" gruptaki operatörlere çevirebilmektedir. Örneğin, "!=" operatörü bu gruptandır.
+    Derleyici bu operatörü gördüğü yerde "!(==)" ifadesini yazabilmektedir, tabii bu süreç ise isim arama sırasında
+    gerçekleşmektedir.
         * Örnek 1,
             #include <iostream>
             #include <cmath>
@@ -91,9 +93,10 @@ daha yüksektir. Bu operatörün dile eklenmesi ile operatörler iki gruba ayrı
                 */
             }
    
-Diğer yandan bu operatörün dile eklenmesiyle hem "==" hem de "<=>" operatörleri "default" edilebiliyor. Pekala sadece "<=>" operatörünü "default"
-edersek, derleyici bizim için "==" operatörünü de "default" etmektedir. Fakat sadece "==" operatörünü "default" etmemiz durumunda, "<=>" operatörü
-"default" EDİLMEYECEKTİR. Pek tabii "<=>" operatör fonksiyonunu da hem "global" hem de "member" fonksiyon olarak "overload" edebilmekteyiz. 
+Diğer yandan bu operatörün dile eklenmesiyle hem "==" hem de "<=>" operatörleri "default" edilebiliyor. Pekala sadece "<=>"
+operatörünü "default" edersek, derleyici bizim için "==" operatörünü de "default" etmektedir. Fakat sadece "==" operatörünü
+"default" etmemiz durumunda, "<=>" operatörü "default" EDİLMEYECEKTİR. Pek tabii "<=>" operatör fonksiyonunu da hem "global"
+hem de "member" fonksiyon olarak "overload" edebilmekteyiz. 
     * Örnek 1,
         #include <iostream>
 
@@ -126,37 +129,48 @@ edersek, derleyici bizim için "==" operatörünü de "default" etmektedir. Faka
             std::cout << "m1 != m2 : " << (m1!=m2) << '\n';
         }
 
-Tabii gerek "==" gerek "<=>" fonksiyonlarının parametrelerinin "const" olması ve sınıf içerisinde tanımlandığında da yine "const" bir "member function"
-olması gerekmektedir. Eğer bu iki fonksiyonu "default" etmemiz durumunda ise derleyici fonksiyonların kodlarını şu şekilde yazacaktır:  
+Tabii gerek "==" gerek "<=>" fonksiyonlarının parametrelerinin "const" olması ve sınıf içerisinde tanımlandığında da yine
+"const" bir "member function" olması gerekmektedir. Eğer bu iki fonksiyonu "default" etmemiz durumunda ise derleyici
+fonksiyonların kodlarını şu şekilde yazacaktır:  
 
-    -> "==" operatör fonksiyonunu "default" ettiğmiz zaman derleyici, veri elemanlarının bildirim sırasına göre, bütün veri elemanları için "==" 
-    operatör fonksiyonunu çağıracak. Çünkü bu operatör dilin temel sentaks kuralına eklendiği için, temel türler ve standart kütüphanedeki diğer 
-    sınıflar için bu operatör fonksiyonu belirtilmiştir. Bütün fonksiyon çağrılarının sonuçları "true" olduğunda, "default" edilen fonksiyon da "true" 
-    değer döndürecektir. 
-    -> "<=>" operatör fonksiyonunu "default" ettiğmiz zaman derleyici, veri elemanlarının bildirim sırasına göre, bütün veri elemanları için "<=>"
-    operatör fonksiyonunu çağıracak. Çünkü bu operatör dilin temel sentaks kuralına eklendiği için, temel türler ve standart kütüphanedeki diğer 
-    sınıflar için bu operatör fonksiyonu belirtilmiştir. Burada temel türler söz konusu olduğunda karşılaştırma sonucu "strong_ordering", gerçek sayı 
-    türleri için "partial_ordering", standart kütüphanedeki diğer sınıflar için ise ilgili türler olacaktır. Örneğin, "std::string" sınıfı için 
-    "strong_ordering". 
+    -> "==" operatör fonksiyonunu "default" ettiğmiz zaman derleyici, veri elemanlarının bildirim sırasına göre, bütün veri
+    elemanları için "==" operatör fonksiyonunu çağıracak. Çünkü bu operatör dilin temel sentaks kuralına eklendiği için,
+    temel türler ve standart kütüphanedeki diğer sınıflar için bu operatör fonksiyonu belirtilmiştir. Bütün fonksiyon
+    çağrılarının sonuçları "true" olduğunda, "default" edilen fonksiyon da "true" değer döndürecektir. 
+    -> "<=>" operatör fonksiyonunu "default" ettiğmiz zaman derleyici, veri elemanlarının bildirim sırasına göre, bütün veri
+    elemanları için "<=>" operatör fonksiyonunu çağıracak. Çünkü bu operatör dilin temel sentaks kuralına eklendiği için,
+    temel türler ve standart kütüphanedeki diğer sınıflar için bu operatör fonksiyonu belirtilmiştir. Burada temel türler
+    söz konusu olduğunda karşılaştırma sonucu "strong_ordering", gerçek sayı türleri için "partial_ordering", standart
+    kütüphanedeki diğer sınıflar için ise ilgili türler olacaktır. Örneğin, "std::string" sınıfı için "strong_ordering". 
 
-Öte yandan bu operatörün geri dönüş değerinin türü neden "auto" olarak belirlendi? Aslında bakarsanız "<=>" operatörü üç farklı sınıf türünden değer
-döndürmektedir. Bunlar "strong_ordering", "weak_ordering" ve "partial_ordering". 
-    >> "strong_ordering" : Bu sınıf türü ise şu değerlere sahiptir: "std::strong_ordering::equal", "std::strong_ordering::equivalent",
-    "std::strong_ordering::less" ve "std::strong_ordering::greater". Bu sınıf türü şunu temsil etmektedir: "a" ve "b" iki operand olmak şartıyla;
-    ya "a > b" ya "a < b" ya da "a == b". 
+Öte yandan bu operatörün geri dönüş değerinin türü neden "auto" olarak belirlendi? Aslında bakarsanız "<=>" operatörü üç
+farklı sınıf türünden değer döndürmektedir. Bunlar "strong_ordering", "weak_ordering" ve "partial_ordering". 
+    >> "strong_ordering" : Bu sınıf türü ise şu değerlere sahiptir:
+        "std::strong_ordering::equal",
+        "std::strong_ordering::equivalent", 
+        "std::strong_ordering::less",
+        "std::strong_ordering::greater".
+    Bu sınıf türü şunu temsil etmektedir: "a" ve "b" iki operand olmak şartıyla; ya "a > b" ya "a < b" ya da "a == b". 
 
-    >> "weak_ordering" : Bu sınıf türü ise şu değerlere sahiptir: "std::weak_ordering::equivalent", "std::weak_ordering::less" ve
-    "std::weak_ordering::greater". Bu sınıf türü şunu temsil etmektedir: "a" ve "b" iki operand olmak şartıyla; ya "a > b" ya "a < b" ya da "a" ve "b" 
-    eş değer olabilir ki eş değer olmaları eşit olmaları zorunluluğunu da beraberinde getirmemektedir. Örneğin, "ahmet" ile "AHMET" yazılarının 
-    karşılaştırılması buna bir örnektir. Özünde birbirine eşit değillerdir fakat "incase-sensitive" karşılaştırma yaptığımız zaman bunları eşit kabul 
-    etmekteyiz.  
+    >> "weak_ordering" : Bu sınıf türü ise şu değerlere sahiptir: 
+        "std::weak_ordering::equivalent", 
+        "std::weak_ordering::less",
+        "std::weak_ordering::greater".
+    Bu sınıf türü şunu temsil etmektedir: "a" ve "b" iki operand olmak şartıyla; ya "a > b" ya "a < b" ya da "a" ve "b" eş
+    değer olabilir ki eş değer olmaları eşit olmaları zorunluluğunu da beraberinde getirmemektedir. Örneğin, "ahmet" ile
+    "AHMET" yazılarının karşılaştırılması buna bir örnektir. Özünde birbirine eşit değillerdir fakat "incase-sensitive"
+    karşılaştırma yaptığımız zaman bunları eşit kabul etmekteyiz.  
 
-    >> "partial_ordering" : Bu sınıf türü ise şu değerlere sahiptir: "std::partial_ordering::equivalent", "std::partial_ordering::less",
-    "std::partial_ordering::greater" ve "std::partial_ordering::unordered". Büyük ölçüde gerçek sayı türlerinin karşılaştırılmasına yöneliktir.
-    "weak_ordering" e ilaveten karşılaştırılmasında herhangi bir sıralama olmayan özel değerler de olabilir. Örneğin, "NAN" değerinin karşılaştırılması 
-    gibi. 
+    >> "partial_ordering" : Bu sınıf türü ise şu değerlere sahiptir: 
+        "std::partial_ordering::equivalent", 
+        "std::partial_ordering::less",
+        "std::partial_ordering::greater",
+        "std::partial_ordering::unordered".
+    Büyük ölçüde gerçek sayı türlerinin karşılaştırılmasına yöneliktir. "weak_ordering" e ilaveten karşılaştırılmasında
+    herhangi bir sıralama olmayan özel değerler de olabilir. Örneğin, "NAN" değerinin karşılaştırılması gibi. 
 
-Pekala bu operatörün geri döndürdüğü iş bu sınıfları "0" değeri ile de karşılaştırabiliyoruz ki bu işlem de bizlere "bool" türünü geri döndürmektedir. 
+Pekala bu operatörün geri döndürdüğü iş bu sınıfları "0" değeri ile de karşılaştırabiliyoruz ki bu işlem de bizlere "bool"
+türünü geri döndürmektedir. 
     * Örnek 1,
         #include <iostream>
         #include <cmath>
@@ -219,9 +233,9 @@ Tabii "<=>" operatörünün geri döndürdüğü yukarıdaki sınıf türleri de
     -> "strong_ordering" türünü, "weak_ordering" ve "partial_ordering" türlerine örtülü olarak dönüştürebiliriz. 
     -> "weak_ordering" türünü ise "partial_ordering" türlerine örtülü olarak dönüştürebiliriz. 
 
-Diğer yandan kendi sınıflarımız için bu operatör fonksiyonunu nasıl yazardık? Anımsanacağı üzere bu operatör dilin temel sentaks 
-kuralına eklendi. Yani temel türler ve standart kütüphanedeki çoğu fonksiyon bu operatöre ilişkin bir fonksiyonu barındırmaktadır. Dolayısıyla
-kendi sınıflarımız için olan versiyonunu da yine bu operatörü kullanarak yazacağız:
+Diğer yandan kendi sınıflarımız için bu operatör fonksiyonunu nasıl yazardık? Anımsanacağı üzere bu operatör dilin temel
+sentaks kuralına eklendi. Yani temel türler ve standart kütüphanedeki çoğu fonksiyon bu operatöre ilişkin bir fonksiyonu
+barındırmaktadır. Dolayısıyla kendi sınıflarımız için olan versiyonunu da yine bu operatörü kullanarak yazacağız:
     * Örnek 1,
         #include <string>
         #include <iostream>
@@ -287,8 +301,8 @@ kendi sınıflarımız için olan versiyonunu da yine bu operatörü kullanarak 
             }
         }
 
-    * Örnek 2.0, Fakat aşağıdaki kodda sentaks hatası bulunmaktadır. Çünkü ilgili operatör fonksiyonunun geri dönüş değer tür çıkarımı için 
-    farklı çıkarımlarda bulunulmuştur.
+    * Örnek 2.0, Fakat aşağıdaki kodda sentaks hatası bulunmaktadır. Çünkü ilgili operatör fonksiyonunun geri dönüş değer
+    tür çıkarımı için farklı çıkarımlarda bulunulmuştur.
         #include <string>
         #include <iostream>
 
@@ -303,7 +317,8 @@ kendi sınıflarımız için olan versiyonunu da yine bu operatörü kullanarak 
                     if(auto cmp = age <=> other.age; cmp != 0)
                         return cmp;
                         
-                    return salary <=> other.salary; // inconsistent deduction for auto return type: ‘std::strong_ordering’ and then ‘std::partial_ordering’
+                    return salary <=> other.salary;
+                    // inconsistent deduction for auto return type: ‘std::strong_ordering’ and then ‘std::partial_ordering’
                 }
                 
             private:
@@ -551,13 +566,13 @@ kendi sınıflarımız için olan versiyonunu da yine bu operatörü kullanarak 
             }
         }
 
-Bu operatör fonksiyonunu tanımladığımız zaman, sınıfımızı kullanacak "client" kodlar yine
-diğer karşılaştırma operatörlerini kullanmaya devam edecekler. Fakat o operatörler bizim "<=>" operatör fonksiyonumuzu çağıracaklar.
-Örneğin, "Date" sınıfını ele alalım. C++20 öncesinde bu sınıf türü karşılaştırma yapabilmek için yukarıdaki zikredilen altı operatör 
-için de fonksiyon tanımlamamız gerekiyordu. Daha sonra "Date" sınıfını kullanacak kişiler yine karşılaştırma yapmak için istediği 
-operatörü kullanabilirmektedir. Fakat C++20 ile birlikte bizler ilgili altı operatör için de ayrı ayrı operatör fonksiyonu 
-yazmamıza gerek kalmadı. Sadece "<=>" operatör fonksiyonunu yazarak bu yazma yükünden kurtulabiliriz. Yine bizim sınıfımızı 
-kullanacak kişiler yine istedikleri karşılaştırma operatörü ile işlerini halledebilirler.  
+Bu operatör fonksiyonunu tanımladığımız zaman, sınıfımızı kullanacak "client" kodlar yine diğer karşılaştırma operatörlerini
+kullanmaya devam edecekler. Fakat o operatörler bizim "<=>" operatör fonksiyonumuzu çağıracaklar. Örneğin, "Date" sınıfını
+ele alalım. C++20 öncesinde bu sınıf türü karşılaştırma yapabilmek için yukarıdaki zikredilen altı operatör için de fonksiyon
+tanımlamamız gerekiyordu. Daha sonra "Date" sınıfını kullanacak kişiler yine karşılaştırma yapmak için istediği operatörü
+kullanabilirmektedir. Fakat C++20 ile birlikte bizler ilgili altı operatör için de ayrı ayrı operatör fonksiyonu yazmamıza
+gerek kalmadı. Sadece "<=>" operatör fonksiyonunu yazarak bu yazma yükünden kurtulabiliriz. Yine bizim sınıfımızı kullanacak
+kişiler yine istedikleri karşılaştırma operatörü ile işlerini halledebilirler.  
     * Örnek 1,
         // Until C++20:
             namespace Date
@@ -632,11 +647,11 @@ kullanacak kişiler yine istedikleri karşılaştırma operatörü ile işlerini
 
         //... 
 
-Diğer yandan bu "==" ve "<=>" fonksiyonlarını "default" ederken dikkat etmemiz gereken bir diğer nokta ise bu fonksiyonlar derleyici 
-tarafından yazıldığında "constexpr" ve "noexcept" olacak şekilde yazılırlar. Her ne kadar bu fonksiyonların bildirimlerinde bizler bu 
-kelimeleri yazmasak da. Tabii burada öğelerin karşılaştırılmasının da "noexcept" garantisinin VERMESİ ve fonksiyonun "constexpr" OLMA
-KOŞULLARININ SAĞLAMIŞ OLMASI GEREKMEKTEDİR. Öte yandan sadece "<=>" operatörünü "default" ederken kullandığımız belirteçler de "==" 
-operatörüne aktarılmaktadır. 
+Diğer yandan bu "==" ve "<=>" fonksiyonlarını "default" ederken dikkat etmemiz gereken bir diğer nokta ise bu fonksiyonlar
+derleyici tarafından yazıldığında "constexpr" ve "noexcept" olacak şekilde yazılırlar. Her ne kadar bu fonksiyonların
+bildirimlerinde bizler bu kelimeleri yazmasak da. Tabii burada öğelerin karşılaştırılmasının da "noexcept" garantisinin
+VERMESİ ve fonksiyonun "constexpr" OLMA KOŞULLARININ SAĞLAMIŞ OLMASI GEREKMEKTEDİR. Öte yandan sadece "<=>" operatörünü
+"default" ederken kullandığımız belirteçler de "==" operatörüne aktarılmaktadır. 
     * Örnek 1.0,
         #include <iostream>
 
@@ -652,7 +667,10 @@ operatörüne aktarılmaktadır.
         {   
             constexpr Nec n1{ 345 };
             constexpr Nec n2{ 456 };
-            constexpr auto b = n1 == n2; // ERROR: error: call to non-‘constexpr’ function ‘bool Nec::operator==(const Nec&) const’
+
+            // ERROR: error: call to non-‘constexpr’ function ‘bool Nec::operator==(const Nec&) const’
+            constexpr auto b = n1 == n2;
+            
             constexpr auto c = noexcept(n1 == b2); // "b" is not "noexcept". 
         }
 
@@ -692,7 +710,10 @@ operatörüne aktarılmaktadır.
             constexpr Nec n2{ 456 };
             constexpr auto b = n1 == n2;
             constexpr auto c = noexcept(n1 == n2);
-            n1 == n2; // warning: ignoring return value of ‘constexpr bool Nec::operator==(const Nec&) const’, declared with attribute ‘nodiscard’ [-Wunused-result]
+
+            n1 == n2;
+            // warning: ignoring return value of ‘constexpr bool Nec::operator==(const Nec&) const’,
+            // declared with attribute ‘nodiscard’ [-Wunused-result]
         }
 
     * Örnek 3,
@@ -731,10 +752,10 @@ operatörüne aktarılmaktadır.
             */
         }
 
-Öte yandan "<=>" operatörünü "container" sınıfların karşılaştırılmasında da kullanabiliriz. Anımsayacağınız üzere bu tip sınıfları 
-karşılaştırmanın bir yolu da "std::lexicographical_compare" fonksiyonuna çağrıda bulunmaktır ki bu fonksiyon da "<" operatörüne göre 
-karşılaştırma yapmaktadır. Eğer "<=>" operatörünü kullanmak istersek, "lexicographical_compare_three_way" fonksiyonuna çağrı yapmamız 
-gerekmektedir. 
+Öte yandan "<=>" operatörünü "container" sınıfların karşılaştırılmasında da kullanabiliriz. Anımsayacağınız üzere bu tip
+sınıfları karşılaştırmanın bir yolu da "std::lexicographical_compare" fonksiyonuna çağrıda bulunmaktır ki bu fonksiyon da
+"<" operatörüne göre karşılaştırma yapmaktadır. Eğer "<=>" operatörünü kullanmak istersek,
+"lexicographical_compare_three_way" fonksiyonuna çağrı yapmamız gerekmektedir. 
     * Örnek 1,
         #include <algorithm>
         #include <list>
@@ -751,7 +772,9 @@ gerekmektedir.
             
             std::list my_list{ 3, 6, 9, 12, 9, 6, 3 };
             std::vector my_vec{ 3, 6, 9, 12 };
-            std::cout << std::boolalpha << std::lexicographical_compare(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()) << '\n';
+            std::cout << std::boolalpha 
+                << std::lexicographical_compare(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end())
+                << '\n';
             /*
             *   Burada karşılaştırma kriteri olarak "std::less" kullanılmıştır.
             *   Pekala bunun yerine "<=>" operatörünü de karşılaştırma için
@@ -759,7 +782,9 @@ gerekmektedir.
             *   fonksiyonunu çağırmamız gerekmektedir. Bu fonksiyonun geri dönüş 
             *   değerinin türü "<=>" operatörünün geri döndürdüğü sınıf türleridir. 
             */
-            std::cout << std::boolalpha << (std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()) < 0) << '\n';
+            std::cout << std::boolalpha 
+                << (std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()) < 0) 
+                << '\n';
         }
 
     * Örnek 2,
@@ -792,7 +817,11 @@ gerekmektedir.
             {
                 std::list my_list{ 3, 6, 9, 12, 9, 6, 3 };
                 std::vector my_vec{ 3, 6, 9, 12 };
-                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+
+                auto result = std::lexicographical_compare_three_way(
+                    my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()
+                );
+                
                 std::cout << result; 
             }
             
@@ -801,7 +830,11 @@ gerekmektedir.
             {
                 std::list my_list{ 3, 6, 9, 12 };
                 std::vector my_vec{ 3, 6, 9, 12 };
-                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+
+                auto result = std::lexicographical_compare_three_way(
+                    my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()
+                );
+                
                 std::cout << result; 
             }
             
@@ -810,7 +843,11 @@ gerekmektedir.
             {
                 std::list my_list{ 3, 6, 9 };
                 std::vector my_vec{ 3, 6, 9, 12 };
-                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+
+                auto result = std::lexicographical_compare_three_way(
+                    my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()
+                );
+                
                 std::cout << result; 
             }
             
@@ -819,7 +856,11 @@ gerekmektedir.
             {
                 std::list my_list{ 3, 6, 9 };
                 std::vector my_vec{ 3, 3, 9 };
-                auto result = std::lexicographical_compare_three_way(my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end());
+
+                auto result = std::lexicographical_compare_three_way(
+                    my_list.begin(), my_list.end(), my_vec.begin(), my_vec.end()
+                );
+                
                 std::cout << result; 
             }
         }
@@ -863,11 +904,12 @@ gerekmektedir.
                 auto ar_size{ std::tuple_size_v<ar_type> }; // "ar_size" is of type "size_t" with value of "20U"
                 std::tuple_element_t<0, ar_type> var000; // "var000" is of type "double".
                 ar_type my_array{ 1., 2., 3., };
-                std::cout << std::get<0>(my_array) << std::get<1>(my_array) << "..." << std::get<18>(my_array) << std::get<19>(my_array) << '\n';
+                std::cout << std::get<0>(my_array) 
+                    << std::get<1>(my_array) << "..." << std::get<18>(my_array) << std::get<19>(my_array) << '\n';
             }
 
-    >> "Lambda Expression" ile "Structural Binding" kullanabilmek için "Lambda Init. Capture" yöntemini kullanmamız gerekiyordu,
-    C++20'ye kadar. C++20 ile direkt olarak "capture" edebiliyoruz. 
+    >> "Lambda Expression" ile "Structural Binding" kullanabilmek için "Lambda Init. Capture" yöntemini kullanmamız
+    gerekiyordu, C++20'ye kadar. C++20 ile direkt olarak "capture" edebiliyoruz. 
         * Örnek 1,
             #include <iostream>
             #include <tuple>

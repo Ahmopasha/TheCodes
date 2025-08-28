@@ -1,7 +1,8 @@
-> "Advanced Lambda Expression" : Anımsanacağı üzere "lambda expression" karşısında derleyici bir sınıf türü oluşturmakta ve ilgili 
-ifadeyi de bu sınıf türünden "PR-Value" olarak ele almaktadır. Yani bir deyişle derleyicinin oluşturduğu sınıf türünden geçici bir 
-nesne olarak ele alınıyor, iş bu "lambda expressions". Burada derleyicinin oluşturduğu bu sınıfa "closure type", bu sınıf türünden 
-oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" ise aşağıdaki bileşenlerden meydana gelmektedir:
+> "Advanced Lambda Expression" : Anımsanacağı üzere "lambda expression" karşısında derleyici bir sınıf türü oluşturmakta
+ve ilgili ifadeyi de bu sınıf türünden "PR-Value" olarak ele almaktadır. Yani bir deyişle derleyicinin oluşturduğu sınıf
+türünden geçici bir nesne olarak ele alınıyor, iş bu "lambda expressions". Burada derleyicinin oluşturduğu bu sınıfa
+"closure type", bu sınıf türünden oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" ise aşağıdaki
+bileşenlerden meydana gelmektedir:
 
     [ ] <tparams> ( ) specifiers exception attr ->ret { /* code; */ } 
      ^      ^      ^                ^             ^          ^
@@ -184,14 +185,16 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
             puts("\n---");
             
             {
-                /* const */ auto f = [](int x){ std::cout << x*x << '\n'; }; // Tavsiye edilen, "f" değişkeninin "const" olarak nitelenmesidir. 
+                // Tavsiye edilen, "f" değişkeninin "const" olarak nitelenmesidir. 
+                /* const */ auto f = [](int x){ std::cout << x*x << '\n'; };
                 f(31);
             }
             
             puts("\n---");
             
             {
-                auto f = [](int x){ std::cout << x*x << '\n'; }; // Tavsiye edilen, "f" değişkeninin "const" olarak nitelenmesidir. 
+                // Tavsiye edilen, "f" değişkeninin "const" olarak nitelenmesidir. 
+                auto f = [](int x){ std::cout << x*x << '\n'; };
                 my_lambda_handler<decltype(f), 13>(f);
             }
             
@@ -1057,12 +1060,12 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
     operandı bir gösterici olabilmektedir. Bu da şöyle bir deyimin kapısını aralamaktadır: 
 
         -> "Stateless Lambda" ifadeler, "function pointer" türüne dönüşmektedir. Eğer bizler "stateless lambda" ifadelerini 
-        işaret operatörü "+" nın operandı yaparsak, derleyici bu durumda "explicit" olmayan tür dönüştürme operatör fonksiyonunu
-        çağırması gerekmektedir.
+        işaret operatörü "+" nın operandı yaparsak, derleyici bu durumda "explicit" olmayan tür dönüştürme operatör
+        fonksiyonunu çağırması gerekmektedir.
         
-    Bu durumda da "stateless lambda" ifadesi karşılığı yazılan sınıfın fonksiyon göstericisine dönüştüren tür dönüştürme operatör
-    fonksiyonu çağrılacaktır. Dolayısıyla işaret operatörünün operandı bir "stateless lambda" olduğunda, arka planda fonksiyon
-    göstericisine dönüştüren tür dönüştürme operatör fonksiyonu çağrılacaktır. 
+    Bu durumda da "stateless lambda" ifadesi karşılığı yazılan sınıfın fonksiyon göstericisine dönüştüren tür dönüştürme
+    operatör fonksiyonu çağrılacaktır. Dolayısıyla işaret operatörünün operandı bir "stateless lambda" olduğunda, arka
+    planda fonksiyon göstericisine dönüştüren tür dönüştürme operatör fonksiyonu çağrılacaktır. 
 
         int main()
         {   
@@ -1077,8 +1080,8 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
             puts("\n-----");
         }
 
-    Böylelikle bir ifadeyi ister "closure type" ister "function pointer" olarak kullanma hakkı elde etmiş oluyoruz. Benzer mekanizma 
-    "template" ler söz konusu olduğunda da işletilmektedir. Şöyleki:
+    Böylelikle bir ifadeyi ister "closure type" ister "function pointer" olarak kullanma hakkı elde etmiş oluyoruz.
+    Benzer mekanizma "template" ler söz konusu olduğunda da işletilmektedir. Şöyleki:
 
         #include <iostream>
         template<typename T>
@@ -1465,9 +1468,9 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
             
             {
                 auto f = [](int x){ return x*5; }; // A "Stateless Lambda"
-                auto g = f;                        // Legal
-                decltype(f) x;                     // ERROR until C++20: "Default Ctor." is "deleted". Since C++20, it is legal. 
-                f = g;                             // ERROR until C++20: "Copy Assignment Opt." is "deleted". Since C++20, it is legal.
+                auto g = f; // Legal
+                decltype(f) x; // ERROR until C++20: "Default Ctor." is "deleted". Since C++20, it is legal. 
+                f = g; // ERROR until C++20: "Copy Assignment Opt." is "deleted". Since C++20, it is legal.
             }
             
             puts("\n-----");
@@ -1577,7 +1580,10 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
             
             {
                 // Since C++20
-                std::unique_ptr<int, decltype([](int* ptr){ std::cout << ptr << " adresindeki nesne siliniyor...\n"; delete ptr; })> u_ptr{ new int{123} };
+                std::unique_ptr<
+                    int, 
+                    decltype([](int* ptr){ std::cout << ptr << " adresindeki nesne siliniyor...\n"; delete ptr; })
+                > u_ptr{ new int{123} };
             }
             
             puts("\n-----");
@@ -1621,14 +1627,20 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
                 gset gnames = { "ayse", "zehra", "murat", "bilal", "sumeyye", "nur", "cemil" };
                 print(gnames);
                 
-                using lenset = std::set<std::string, decltype([](const auto& l, const auto& r){ return l.size() < r.size(); })>;
+                using lenset = std::set<
+                    std::string, 
+                    decltype([](const auto& l, const auto& r){ return l.size() < r.size(); })
+                >;
                 lenset namelens = { "ayse", "zehra", "murat", "bilal", "sumeyye", "nur", "cemil" };
                 print(namelens);
                 
                 std::set<int> iset = { 9, -3, 12, -5, 40, -8, 77, -75 };
                 print(iset);
                 
-                using abs_set = std::set<int, decltype([](const auto& l, const auto& r){ return std::abs(l) < std::abs(r); })>;
+                using abs_set = std::set<
+                    int, 
+                    decltype([](const auto& l, const auto& r){ return std::abs(l) < std::abs(r); })
+                >;
                 abs_set abs_values = { 9, -3, 12, -5, 40, -8, 77, -75 };
                 print(abs_values);
                 
@@ -1647,7 +1659,8 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
             puts("\n-----");
             
             {
-                auto f = [](int a) [[nodiscard]] { return a*a; }; // "attribute" nesnesini bu şekilde kullanmak hala sentaks hatasıdır. 
+                // "attribute" nesnesini bu şekilde kullanmak hala sentaks hatasıdır. 
+                auto f = [](int a) [[nodiscard]] { return a*a; };
             }
             
             puts("\n-----");
@@ -1664,13 +1677,14 @@ oluşturulan nesneye de "closure object" denmektedir. Bir "lambda expression" is
             
             {
                 int x{ 31 };
-                auto f = [x]mutable{ return ++x; }; // Since C++23
-                                                    // "mutable", "trailing return type", "noexcept" vb. şeyler kullandığımız zaman
-                                                    // "()" çiftini yazmak zorundayız. Fakat böyle şeyler kullanmıyorsak
-                                                    // ve fonksiyon da argüman almayacaksa, "()" çiftini yazmamıza lüzum
-                                                    // yoktur. C++23 ile aslında "mutable", "trailing return type" gibi 
-                                                    // şeyler kullanıyorsak fakat fonksiyon argüman almıyorsa, "()" yazmaya 
-                                                    // gerek kalmamıştır. 
+                auto f = [x]mutable{ return ++x; };
+                // Since C++23
+                // "mutable", "trailing return type", "noexcept" vb. şeyler kullandığımız zaman
+                // "()" çiftini yazmak zorundayız. Fakat böyle şeyler kullanmıyorsak
+                // ve fonksiyon da argüman almayacaksa, "()" çiftini yazmamıza lüzum
+                // yoktur. C++23 ile aslında "mutable", "trailing return type" gibi 
+                // şeyler kullanıyorsak fakat fonksiyon argüman almıyorsa, "()" yazmaya 
+                // gerek kalmamıştır. 
                                                     
                 auto g = [x]()mutable{ return ++x; };
             }

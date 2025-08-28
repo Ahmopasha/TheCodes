@@ -1,11 +1,16 @@
-    >> "Expression" : Sabitlerin, değişkenlerin, operatörlerle bir araya gelen birimlere ifade denir. Dilin bir çok kuralı ifadeler 
-    ile ilgilidir. C++ standartları ise bu konuda kısaca şöyle söylemektedir: "Each C++ expression, (an operator with its operands, a literal,
-    a variable name etc.) is characterized by two independent properties: a type and a value category. Each expression has some 
-    non-reference type, and each expression belongs to exactly one of the three primary value categories: prvalue, xvalue and lvalue." 
-        >>> İfadenin Türü("Value of Expression") : "Function Overloading" sırasında, şablonların derleme sırasında açılmasında vb. 
-        bir çok yerde etkili olan bir kavramdır. Örneğin, "int", "int*" gibi şeyler bir ifadenin türü olabilir. Fakat burada ifadenin 
-        türü referans OLAMAZ. Fakat bu durum göstericiler için geçerli değildir. Özetle dilin bir çok aracı için ifadelerin türü
-        belirleyici bir faktördür. 
+> C++ dilinde temel kavramlar : 
+    >> "Expression" : Sabitlerin ve değişkenlerin, operatörlerle bir araya gelen birimlere ifade denir. Dilin bir çok kuralı
+    ifadeler ile ilgilidir. C++ standartları ise bu konuda kısaca şöyle söylemektedir:
+        
+        "Each C++ expression, (an operator with its operands, a literal, a variable name etc.) is characterized by two
+        independent properties: a type and a value category. Each expression has some non-reference type, and each expression
+        belongs to exactly one of the three primary value categories: prvalue, xvalue and lvalue." 
+        
+    Şimdi de detaylarını incelemeye başlayalım:
+        >>> İfadenin Türü("Value of Expression") : "Function Overloading" sırasında, şablonların derleme sırasında
+        açılmasında vb. bir çok yerde etkili olan bir kavramdır. Örneğin, "int", "int*" gibi şeyler bir ifadenin türü
+        olabilir. Fakat burada ifadenin türü referans OLAMAZ. Fakat bu durum göstericiler için geçerli değildir. Özetle dilin
+        bir çok aracı için ifadelerin türü belirleyici bir faktördür. 
             * Örnek 1,
                 #include <iostream>
                 int main()
@@ -13,31 +18,34 @@
                     int x = 6;
                     int& rx = x;
 
-                    rx = 66;  // Burada 'rx' ifadesinin türü "int&" DEĞİLDİR. Burada ifadenin türü "int" biçimindedir. 
+                    // Burada 'rx' ifadesinin türü "int&" DEĞİLDİR. Burada ifadenin türü "int" biçimindedir. 
+                    rx = 66; 
 
                     int* px = &x;
-                    *px = 99; // Fakat bu durum göstericiler için geçerli değildir. Buradaki "px" in türü "int*" biçimindedir.  
+                    // Fakat bu durum göstericiler için geçerli değildir. Buradaki "px" in türü "int*" biçimindedir.  
+                    *px = 99;
                 }
         
-        >>> İfadenin Değer Kategorisi("Value Category of Expression") : İfadelerin türü kadar bu kavram da çok önemlidir. Değişkenlerin 
-        DEĞER KATEGORİSİ YOKTUR. İFADENİN DEĞER KATEGORİSİ VARDIR. Değişkenlerin türü olur. İfadelerin değer kategorileri ayrıca iki temel
-        özelliği de beraberinde getirmektedir: Bir ifadenin kimliğinin olması ve o ifadenin kaynaklarının başkaları tarafından devir alınıp
-        alınamaması. 
-            >>>> Bir ifadenin kimliğinin olması: Bellekte bir yere karşılık gelmesi anlamındadır. Bir diğer deyişle "address of" operatörünün 
-            operandı olabilmesidir. Burada ifadenin bir isimle temsil edilmesi zorunluluk değildir. 
-            >>>> Bir ifadenin kaynaklarının çalınabilir olması: Bir ifadenin kaynaklarının başka şahsa devir edilmesi durumudur. 
+        >>> İfadenin Değer Kategorisi("Value Category of Expression") : İfadelerin türü kadar bu kavram da çok önemlidir.
+        Değişkenlerin DEĞER KATEGORİSİ YOKTUR. İFADENİN DEĞER KATEGORİSİ VARDIR. Değişkenlerin türü olur. İfadelerin değer
+        kategorileri ayrıca iki temel özelliği de beraberinde getirmektedir: Bir ifadenin kimliğinin olması ve o ifadenin
+        kaynaklarının başkaları tarafından devir alınıp alınamaması. 
+            >>>> Bir ifadenin kimliğinin olması: Bellekte bir yere karşılık gelmesi anlamındadır. Bir diğer deyişle
+            "address of" operatörünün operandı olabilmesidir. Burada ifadenin bir isimle temsil edilmesi zorunluluk değildir. 
+            >>>> Bir ifadenin kaynaklarının çalınabilir olması: Bir ifadenin kaynaklarının başka şahsa devir edilmesi
+            durumudur. 
         
-        Öte yandan ifadelerin değer kategorisi toplamda beş adettir. Bunlardan üç tanesi "Primary Value Category", diğer iki tanesi ise
-        "Combined Value Category". 
-            >>>> "Primary Value Category" : "PR-Value", "L-Value" ve "X-Value" değer kategorilerinden oluşmaktadır. Bir ifade bir 
-            "t" anında bu üç kategoriden birisine ilişkin olmak zorundadır. 
+        Öte yandan ifadelerin değer kategorisi toplamda beş adettir. Bunlardan üç tanesi "Primary Value Category", diğer iki
+        tanesi ise "Combined Value Category". 
+            >>>> "Primary Value Category" : "PR-Value", "L-Value" ve "X-Value" değer kategorilerinden oluşmaktadır. Bir ifade
+            bir "t" anında bu üç kategoriden birisine ilişkin olmak zorundadır. 
                 >>>>> "PR-Value" : Kimliği olmayan fakat kaynakları çalınabilen ifadelerdir. 
                 >>>>> "L-Value"  : Kimliği olan fakat kaynakları çalınamayan ifadelerdir. 
                 >>>>> "X-Value"  : Kimliği olan ve aynı zamanda kaynakları çalınabilen ifadelerdir.
 
             >>>> "Combined Value Category" : "GL-Value" ve "R-Value" değer kategorilerinden oluşmaktadır. 
-                >>>>> "GL-Value" : Bir ifadenin kategorisinin o anda "L-Value" ya da "X-Value" olması durumudur. Yani bir kimliğe sahip 
-                olan ifadelerin değer kategorisi budur. 
+                >>>>> "GL-Value" : Bir ifadenin kategorisinin o anda "L-Value" ya da "X-Value" olması durumudur. Yani bir
+                kimliğe sahip olan ifadelerin değer kategorisi budur. 
                 >>>>> "R-Value"  : Bir ifadenin kategorisinin o anda "PR-Value" ya da "X-Value" olması durumudur.
 
         Burada yazılanları da şu şekilde gösterebiliriz:
@@ -51,9 +59,11 @@
                                                     
                                                 GL-Value  
 
-        Şimdi bizler bir ifadenin değer kategorisini nasıl tespit edebiliriz? Fakat öncesinde "decltype" anahtar sözcüğünü hatırlamamız 
-        gerekmektedir. Şöyleki; bu operatörün operandının bir isim olması veya bir ifade olması durumunda elde edilecek sonuç değişecektir. 
-            >>>> Operandın bir isim olması durumu: Bu isim ne şekilde deklare edilmişse, operatörün sonucu da o türe karşılık gelecektir. 
+        Şimdi bizler bir ifadenin değer kategorisini nasıl tespit edebiliriz? Fakat öncesinde "decltype" anahtar sözcüğünü
+        hatırlamamız gerekmektedir. Şöyleki; bu operatörün operandının bir isim olması veya bir ifade olması durumunda elde
+        edilecek sonuç değişecektir. 
+            >>>> Operandın bir isim olması durumu: Bu isim ne şekilde deklare edilmişse, operatörün sonucu da o türe karşılık
+            gelecektir. 
                 * Örnek 1,
                     struct Myclass {
                         int a; 
@@ -66,26 +76,33 @@
                         const int& cr = x;
                         int* ptr = &x;
 
-                        decltype(x) a;      // Burada "decltype(x)" ifadesinin karşılığı "int" türüdür. "int" yazabileceğimiz çoğu yere 
-                                            // "decltype(x)" yazabiliriz. 
+                        decltype(x) a;
+                        // Burada "decltype(x)" ifadesinin karşılığı "int" türüdür. "int" yazabileceğimiz çoğu yere 
+                        // "decltype(x)" yazabiliriz. 
 
-                        decltype(r) aa;     // Burada "decltype(r)" ifadesinin karşılığı "int&" türüdür. Referanslara ilk değer vermek
-                                            // zorunlu olduğu için, böylesi bir kullanım sentaks hatası oluşturmaktadır. 
+                        decltype(r) aa;
+                        // Burada "decltype(r)" ifadesinin karşılığı "int&" türüdür. Referanslara ilk değer vermek
+                        // zorunlu olduğu için, böylesi bir kullanım sentaks hatası oluşturmaktadır. 
 
-                        decltype(cr) aaa;   // Burada "decltype(cr)" ifadesinin karşılığı "const int&" türüdür. "const reference" lara
-                                            // ilk değer vermek zorunlu olduğu için, böylesi bir kullanım sentaks hatası oluşturmaktadır.
+                        decltype(cr) aaa;   
+                        // Burada "decltype(cr)" ifadesinin karşılığı "const int&" türüdür. "const reference" lara
+                        // ilk değer vermek zorunlu olduğu için, böylesi bir kullanım sentaks hatası oluşturmaktadır.
 
                         Myclass m{};
-                        decltype(m.a) q;    // Burada "decltype(m.a)" ifadesinin karşılığı "int" türüdür. 
+                        decltype(m.a) q;    
+                        // Burada "decltype(m.a)" ifadesinin karşılığı "int" türüdür. 
 
                         Myclass* pm = &m;
-                        decltype(pm->a) qq; // Burada "decltype(pm->a)" ifadesinin karşılığı "int" türüdür. 
+                        decltype(pm->a) qq; 
+                        // Burada "decltype(pm->a)" ifadesinin karşılığı "int" türüdür. 
 
                         int&& b = 5;
-                        decltype(b) bb;     // Burada "decltype(b)" ifadesinin türü "int&&" türüdür. 
+                        decltype(b) bb;     
+                        // Burada "decltype(b)" ifadesinin türü "int&&" türüdür. 
                     }
 
-            >>>> Operandın bir ifade olması durumu: Burada ifadenin türü rol oynamaktadır. Bunu da aşağıdaki tablo ile özetleyebiliriz:
+            >>>> Operandın bir ifade olması durumu: Burada ifadenin türü rol oynamaktadır. Bunu da aşağıdaki tablo ile
+            özetleyebiliriz:
 
                 Expression              Type
                 PR-Value                T
@@ -101,19 +118,27 @@
 
                     int main()
                     {
-                        decltype(10) a; // Operant olan ifade "PR-Value" olmasından dolayı "decltype(10)" ifadesinin türü "int" türüdür. 
+                        decltype(10) a; 
+                        // Operant olan ifade "PR-Value" olmasından dolayı "decltype(10)" ifadesinin türü "int" türüdür. 
 
                         int x = 3;
-                        decltype(x + 5) aa; // Operant olan ifade "PR-Value" olmasından dolayı "decltype(x + 5)" ifadesinin türü "int" türüdür. 
+                        decltype(x + 5) aa; 
+                        // Operant olan ifade "PR-Value" olmasından dolayı "decltype(x + 5)" ifadesinin türü "int" türüdür. 
 
                         int* px = &x;
-                        decltype(*px) aaa; // Operant olan ifade "L-Value" olmasından dolayı "decltype(*px)" ifadesinin türü "int&" türüdür.
+                        decltype(*px) aaa; 
+                        // Operant olan ifade "L-Value" olmasından dolayı "decltype(*px)" ifadesinin türü "int&" türüdür.
 
-                        decltype((x)) b; // Operant olan ifade "L-Value" olmasından dolayı "decltype((x))" ifadesinin türü "int&" türüdür. 
+                        decltype((x)) b; 
+                        // Operant olan ifade "L-Value" olmasından dolayı "decltype((x))" ifadesinin türü "int&" türüdür. 
 
-                        decltype(foo()) c; // Operant olan ifade "X-Value" olmasından dolayı "decltype(foo())" ifadesinin türü "int&&" türüdür. 
+                        decltype(foo()) c; 
+                        // Operant olan ifade "X-Value" olmasından dolayı "decltype(foo())" ifadesinin türü "int&&" türüdür. 
 
-                        decltype(Neco{}.x) d; // Dilin kuralları gereği "R-Value" olan sınıf nesnelerinin elemanlarına erişme ifadelerinin değer kategorilari "X-Value" şeklindedir. Operant olan ifadenin "X-Value" olmasından dolayı "decltype(Neco{}.x)" ifadesinin türü "int&&" türüdür. 
+                        decltype(Neco{}.x) d; 
+                        // Dilin kuralları gereği "R-Value" olan sınıf nesnelerinin elemanlarına erişme ifadelerinin değer
+                        // kategorilari "X-Value" şeklindedir. Operant olan ifadenin "X-Value" olmasından dolayı
+                        // "decltype(Neco{}.x)" ifadesinin türü "int&&" türüdür. 
                     }
 
         İşte aşağıdaki kod parçası, ifadenin değer kategorisini söylemektedir:
@@ -132,7 +157,7 @@
                 template<typename T>
                 constexpr const char* p<T&&> = "X_Value";
 
-                #define print_val_category(e)	std::cout << "Value category of '" << #e << "' is " << p<decltype((e))> << '\n'
+                #define print_val_category(e) std::cout << "Value category of '" << #e << "' is " << p<decltype((e))> << '\n'
 
                 /* Function Prototypes */
                 void moo();
@@ -249,7 +274,10 @@
 
                     print_val_category(std::move(neco).sx);		// Value category of 'std::move(neco).sx' is L_Value
 
-                    /* Yine "R-Value" değer kategorisindeki bir ifadenin "non-static" veri elemanı bir referans olsa bile, bu veri elemanına erişim ifadesi de bir "L-Value". */
+                    /* 
+                    * Yine "R-Value" değer kategorisindeki bir ifadenin "non-static" veri elemanı bir referans olsa bile,
+                    * bu veri elemanına erişim ifadesi de bir "L-Value".
+                    */
 
                     std::cout << "\n----------------------------------------------------\n";
 
@@ -290,21 +318,28 @@
                     func<exp(x)>();		// L-Value
                 }
 
-        Pekiyi bu değer kategorilerine biz nerelerde ihtiyaç duyacağız? Referansların kullanımı sırasında, "Type Deduction" ve
-        "Function Overload Resolution" sırasında. 
+        Pekiyi bu değer kategorilerine biz nerelerde ihtiyaç duyacağız? El-cevap; 
+            Referansların kullanımı sırasında,
+            "Type Deduction",
+            "Function Overload Resolution"
+        sırasında. 
             >>>> Referansların Kullanımı Sırasında: Anımsayacağınız üzere C++ dilinde üç farkı referans vardır. Bunlar
-            "L-Value Reference", "R-Value Reference" ve "Forwarding Reference / Universal Reference". 
-                >>>>> "L-Value Reference" : Tek "&" deklaratörünün kullanıldığı referanslardır. "const" olmayan bir "L-Value" 
-                referanslara sadece ve sadece "const" olmayan "L_Value" ifadeler bağlanabilir. Eğer referansımız "const" olursa;
+                "L-Value Reference", 
+                "R-Value Reference",
+                "Forwarding Reference / Universal Reference"
+            referanslarıdır. 
+                >>>>> "L-Value Reference" : Tek "&" deklaratörünün kullanıldığı referanslardır. "const" olmayan bir
+                "L-Value" referanslara sadece ve sadece "const" olmayan "L_Value" ifadeler bağlanabilir. Eğer referansımız
+                "const" olursa;
 
                     -> "const" olmayan "L-Value" bir ifade bağlanabilir. 
                     -> "const" bir "L-Value" ifade bağlanabilir. 
                     ->  "R-Value" bir ifade bağlanabilir. 
                     -> "const" bir "R-Value" ifade bağlanabilir.   
 
-                >>>>> "R-Value Reference" : Çift "&" deklaratörünün kullanıldığı referanslardır. "L-Value" bir ifade kesinlikle 
-                bağlayamıyoruz. Eğer referansımız "const" değilse, "const" olmayan bir "R-Value" ifade bağlanabilir. Eğer "const"
-                ise "const" ve "const" olmayan bir "R-Value Reference" bağlanabilir. 
+                >>>>> "R-Value Reference" : Çift "&" deklaratörünün kullanıldığı referanslardır. "L-Value" bir ifade
+                kesinlikle bağlayamıyoruz. Eğer referansımız "const" değilse, "const" olmayan bir "R-Value" ifade
+                bağlanabilir. Eğer "const" ise "const" ve "const" olmayan bir "R-Value Reference" bağlanabilir. 
 
             >>>> "Function Overload Resolution" sırasında: Aşağıdaki örneği inceleyelim:
                 * Örnek 1,
@@ -312,11 +347,11 @@
                     #include <type_traits>
 
                     /*
-                                                    T&                      const T&                      T&&                      const T&&            
-                        L-Value                     1                           2                          X                           X
-                        const L-Value               X                           1                          X                           X
-                        R-Value                     X                           3                          1                           2
-                        const R-Value               X                           2                          X                           1
+                                        T&  const T&    T&&    const T&&            
+                        L-Value         1   2           X      X
+                        const L-Value   X   1           X      X
+                        R-Value         X   3           1      2
+                        const R-Value   X   2           X      1
                     */
 
                     struct S {};
@@ -337,11 +372,11 @@
                         foo(std::move(cx));     // const R-Value
                     }
 
-            İşte bu örnekten de görüleceği üzere "const T&" olanlar, "const" olsun veya olmasın, hem "L-Value" hem "R-Value" değer 
-            kategorisindeki ifadelere bağlanırken, "T&&" olanlar sadece "const" olmayan "R-Value" değer kategorisindeki ifadelere 
-            bağlanır. Buradan hareketle kaynağını üzerimize alacağımız, bir diğer deyişle çalacağımız, ifadeler için "T&&", 
-            diğer ifadeler için ise "const T&" kullanılır. Yani "L-Value" ifadeleri "const T&" parametreli, "R-Value" ifadeleri ise 
-            "T&&" parametreli fonksiyonlar alacaktır. 
+            İşte bu örnekten de görüleceği üzere "const T&" olanlar, "const" olsun veya olmasın, hem "L-Value" hem
+            "R-Value" değer kategorisindeki ifadelere bağlanırken, "T&&" olanlar sadece "const" olmayan "R-Value" değer
+            kategorisindeki ifadelere bağlanır. Buradan hareketle kaynağını üzerimize alacağımız, bir diğer deyişle
+            çalacağımız, ifadeler için "T&&", diğer ifadeler için ise "const T&" kullanılır. Yani "L-Value" ifadeleri
+            "const T&" parametreli, "R-Value" ifadeleri ise "T&&" parametreli fonksiyonlar alacaktır. 
                 * Örnek 1,
                     class Myclass {};
 
@@ -386,9 +421,10 @@
                         //...
                     }
 
-            >>>> "Type Deduction" sırasında: Şimdi burada "std::move" fonksiyonu devreye girmektedir. Anımsayacağınız üzere "Move, does not move". Yani "L-Value" olarak
-            gelen "R-Value" olarak çıkar. "R-Value" gelen yine "R-Value" olarak çıkar. Bu fonksiyonun yaptığını da "static_cast" ile de yapabilirdik. Yani "static_cast<T&&>(exp)"
-            ifadesi ile "std::move(exp)" ifadesi arasında bir fark YOKTUR. Dolayısıyla aşağıdaki örneği inceleyelim:
+            >>>> "Type Deduction" sırasında: Şimdi burada "std::move" fonksiyonu devreye girmektedir. Anımsayacağınız üzere
+            "Move, does not move". Yani "L-Value" olarak gelen "R-Value" olarak çıkar. "R-Value" gelen yine "R-Value" olarak
+            çıkar. Bu fonksiyonun yaptığını da "static_cast" ile de yapabilirdik. Yani "static_cast<T&&>(exp)" ifadesi
+            ile "std::move(exp)" ifadesi arasında bir fark YOKTUR. Dolayısıyla aşağıdaki örneği inceleyelim:
                 * Örnek 1,
                     #include <iostream>
                     #include <type_traits>
@@ -403,11 +439,14 @@
                     void func(T&& r)
                     {
                         /*
-                        * Buradaki "T&&" ifadesi "Universal Referance" demektir. Böylesi bir referansta ise kurallar şu şekildedir:
-                        * Bu fonksiyona "L-Value" ifade geçilirse, fonksiyonun parametresi "L-Value Reference" biçiminde olacaktır. Çünkü "T" türüne karşılık "L-Value Reference" gelmiştir.
-                        * "Reference Collapsing" kuralı gereği fonksiyonun parametresi "L-Value Reference" olmuştur.
-                        * Bu fonksiyona "R-Value" ifade geçilirse, fonksiyonun parametresi "R-Value Reference" biçiminde olacaktır. Çünkü "T" türüne karşılık referans olmayan bir tür gelmiştir.
-                        * "Reference Collapsing" kuralı gereği fonksiyonun parametresi "R-Value Reference" olmuştur.
+                        * Buradaki "T&&" ifadesi "Universal Referance" demektir. Böylesi bir referansta ise kurallar şu
+                        * şekildedir:
+                        * Bu fonksiyona "L-Value" ifade geçilirse, fonksiyonun parametresi "L-Value Reference" biçiminde
+                        * olacaktır. Çünkü "T" türüne karşılık "L-Value Reference" gelmiştir. "Reference Collapsing" kuralı
+                        * gereği fonksiyonun parametresi "L-Value Reference" olmuştur. Bu fonksiyona "R-Value" ifade
+                        * geçilirse, fonksiyonun parametresi "R-Value Reference" biçiminde olacaktır. Çünkü "T" türüne
+                        * karşılık referans olmayan bir tür gelmiştir. "Reference Collapsing" kuralı gereği fonksiyonun
+                        * parametresi "R-Value Reference" olmuştur.
                         */
                     }
 
@@ -461,11 +500,12 @@
                     //...
 
             Normal şartlarda C++ dilinde "Reference to Reference" mevcut değildir. Fakat bazı durumlarda böylesi bir durum
-            gerçekleşmektedir. İşte bu durum gerçekleştiğinde de "Reference Collapsing" mekanizması devreye girmektedir. Pekiyi
-            "Reference Collapsing" mekanizması nasıl işler? Sağ taraf referansı ile sağ taraf referansı karşılaşırsa, sonuçta
-            sağ taraf referansı; sol taraf referansı ile herhangi bir referans karşılaşırsa sonuçta sol taraf referansı ortaya
-            çıkar. 
-                * Örnek 1.0, Aşağıdaki gibi parametresinin "Universal Reference" olması durumunda "Referance Collapsing" devreye girmektedir. 
+            gerçekleşmektedir. İşte bu durum gerçekleştiğinde de "Reference Collapsing" mekanizması devreye girmektedir.
+            Pekiyi "Reference Collapsing" mekanizması nasıl işler? Sağ taraf referansı ile sağ taraf referansı karşılaşırsa,
+            sonuçta sağ taraf referansı; sol taraf referansı ile herhangi bir referans karşılaşırsa sonuçta sol taraf
+            referansı ortaya çıkar. 
+                * Örnek 1.0, Aşağıdaki gibi parametresinin "Universal Reference" olması durumunda "Referance Collapsing"
+                devreye girmektedir. 
                     //...
                     
                     template<typename T>
@@ -480,7 +520,8 @@
                     void func(T& t) {
                         
                         /*
-                        * "T" yerine "int&&" gelecektir. "T&& &" sonucu "T&" olacağı için, "a" değişkeni bir "L-Value Referance" olacaktır. 
+                        * "T" yerine "int&&" gelecektir. "T&& &" sonucu "T&" olacağı için, 
+                        * "a" değişkeni bir "L-Value Referance" olacaktır. 
                         */
 
                         /*
@@ -489,7 +530,8 @@
                         T a = 100; // int&& a = 100;
 
                         /*
-                        * "T" yerine "int&&" gelecektir. "T&& &&" sonucu "T&&" olacağı için, "b" değişkeni bir "R-Value Referance" olacaktır.
+                        * "T" yerine "int&&" gelecektir. "T&& &&" sonucu "T&&" olacağı için,
+                        * "b" değişkeni bir "R-Value Referance" olacaktır.
                         */
                         T&& b = 45; // int&& b = 45;
                     }
@@ -500,7 +542,8 @@
                         func<int&&>(x);  
                     }
 
-                * Örnek 2, Aşağıdaki gibi "using" bildirimlerinin kullanıldığı yerlerde de "Reference Collapsing" devreye girer. 
+                * Örnek 2, Aşağıdaki gibi "using" bildirimlerinin kullanıldığı yerlerde de "Reference Collapsing"
+                devreye girer. 
                     //...
 
                     class Myclass {};
@@ -511,32 +554,40 @@
                     int main()
                     {
                         {
-                            LREF& r = Myclass{};	/* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            LREF& r = Myclass{};
                             // T& & => T&
 
                             Myclass m;
-                            LREF& rr = m;			/* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            LREF& rr = m;
                             // T& & => T&
 
-                            LREF&& rrr = Myclass{}; /* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            LREF&& rrr = Myclass{}; 
                             // T& && => T&
 
-                            LREF&& rrrr = m;		/* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            LREF&& rrrr = m;		
                             // T& && => T&
                         }
 
                         {
-                            RREF& r = Myclass{};	/* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            RREF& r = Myclass{};	
                             // T&& & => T&
 
                             Myclass m;
-                            RREF& rr = m;			/* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "L-Value Reference" biçimindedir. */
+                            RREF& rr = m;			
                             // T&& & => T&
 
-                            RREF&& rrr = Myclass{};	/* "Reference Collapsing" gereği "r" değişkeni bir "R-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "R-Value Reference" biçimindedir. */
+                            RREF&& rrr = Myclass{};	
                             // T&& && => T&&
 
-                            RREF&& rrrr = m;		/* "Reference Collapsing" gereği "r" değişkeni bir "R-Value Reference" biçimindedir. */
+                            /* "Reference Collapsing" gereği "r" değişkeni bir "R-Value Reference" biçimindedir. */
+                            RREF&& rrrr = m;		
                             // T&& && => T&
                         }	
                     }
@@ -565,13 +616,14 @@
                                                     /* int&& i = 100; */
                     }   
 
-            Pekiyi bu "std::move" fonksiyonu tam olarak ne işe yaramaktadır? İşin özünde bu fonksiyon bir nesnenin taşınabilir 
-            olmasını, bir diğer deyişle kaynaklarının çalınabilir olmasını sağlamaktadır. Böylelikle ilgili nesnenin kaynaklarını 
-            başka bir nesneye kopyalamak yerine direkt olarak taşıyoruz. Artık bizim nesnemizin kaynakları taşındığı için kendisi 
-            "Moved From State" halindedir. C++ standartları ise bu haldeki nesneler için şu garantiyi vermektedir; Değeri bilinmeyen
-            fakat geçerli nesneler. Bu durumu fonksiyonların parametre değişkenlerine benzetebiliriz. O parametreye hangi değerin 
-            geçileceğini önceden bilmek mümkün değildir fakat o parametre geçerlidir. Burada dikkat etmemiz gereken, "Moved From State"
-            halindeki bir nesneyi kullanmamız gerekiyor ise kullanmalıyız fakat kendi değeri ile kullanmamalıyız.
+            Pekiyi bu "std::move" fonksiyonu tam olarak ne işe yaramaktadır? İşin özünde bu fonksiyon bir nesnenin
+            taşınabilir olmasını, bir diğer deyişle kaynaklarının çalınabilir olmasını sağlamaktadır. Böylelikle ilgili
+            nesnenin kaynaklarını başka bir nesneye kopyalamak yerine direkt olarak taşıyoruz. Artık bizim nesnemizin
+            kaynakları taşındığı için kendisi "Moved From State" halindedir. C++ standartları ise bu haldeki nesneler için
+            şu garantiyi vermektedir; Değeri bilinmeyen fakat geçerli nesneler. Bu durumu fonksiyonların parametre
+            değişkenlerine benzetebiliriz. O parametreye hangi değerin geçileceğini önceden bilmek mümkün değildir fakat
+            o parametre geçerlidir. Burada dikkat etmemiz gereken, "Moved From State" halindeki bir nesneyi kullanmamız
+            gerekiyor ise kullanmalıyız fakat kendi değeri ile kullanmamalıyız.
                 * Örnek 1,
                     #include <iostream>
                     #include <string>
@@ -589,9 +641,9 @@
                         std::cout << "size of 's': " << s.size() << "\n";		// OUTPUT : size of 's': 10000
                     }
 
-            Öte yandan "Moved From State" halindeki bir nesne ile "Default Init." kullanılarak hayata getirilen nesnenin aynı olması
-            C++ ile garanti altına alınmamıştır. Benzer şekilde üçüncü parti kütüphaneleri kullanırken de ilgili kütüphanenin bu konuyla
-            ilgili dökümanlarına bakılması gerekmektedir. Şimdi de bu fonksiyonu bizler yazalım:
+            Öte yandan "Moved From State" halindeki bir nesne ile "Default Init." kullanılarak hayata getirilen nesnenin
+            aynı olması C++ ile garanti altına alınmamıştır. Benzer şekilde üçüncü parti kütüphaneleri kullanırken de ilgili
+            kütüphanenin bu konuyla ilgili dökümanlarına bakılması gerekmektedir. Şimdi de bu fonksiyonu bizler yazalım:
                 * Örnek 1,
                     #include <iostream>
                     #include <type_traits>
@@ -645,8 +697,9 @@
                         //... 
                     }
 
-        Şimdi de C++17 ile birlikte gelen bir özelliği inceleyelim: "PR-Value Expression" ın tanımı. C++17 öncesinde "PR-Value" ifadeler bir nesne
-        belirtmekteydi. Fakat artık bir nesne belirtmekten ziyade artık bir yol gösterici konumundalar. Aşağıdaki örneği inceleyelim: 
+        Şimdi de C++17 ile birlikte gelen bir özelliği inceleyelim: "PR-Value Expression" ın tanımı. C++17 öncesinde
+        "PR-Value" ifadeler bir nesne belirtmekteydi. Fakat artık bir nesne belirtmekten ziyade artık bir yol gösterici
+        konumundalar. Aşağıdaki örneği inceleyelim: 
             * Örnek 1,
                 #include <iostream>
                 #include <string>
@@ -661,13 +714,14 @@
                 {
                     /*
                     * "=" operatörünün sağ tarafındaki ifade C++17 öncesinde bir nesneyi temsil etmekteydi. Sentaks
-                    * hatasının olmaması için ilgili sınıfın "Copy Ctor." / "Move Ctor." fonksiyonlarının olması gerekebilmektedir.
-                    * Bir takım "compiler" optimizasyonları ile bu gerekliliğin önüne geçilmektedir. Fakat standart değildir. Artık 
-                    * C++17 ile birlikte "PR-Value" ifadeler artık bir nesneyi temsil ETMEMEKTEDİR. Artık belirli koşullar sağlandığı 
-                    * taktirde "result object" oluşturan ifadelerdir. Bu şartlar ise ya "initializer" olarak bir nesneyi "init." etmesi,
-                    * fonksiyonun parametre değişkeni, fonksiyonun geri dönüş değerini tutması, ifadenin "discard" edilmesi veya ilgili 
-                    * ifadenin "const L-Value Reference" veya "R-Value Reference" a bağlanması sonucunda "result object" oluşur. Bu durum 
-                    * kopyalama veya taşıma ile ilgili değildir. 
+                    * hatasının olmaması için ilgili sınıfın "Copy Ctor." / "Move Ctor." fonksiyonlarının olması
+                    * gerekebilmektedir. Bir takım "compiler" optimizasyonları ile bu gerekliliğin önüne geçilmektedir.
+                    * Fakat standart değildir. Artık C++17 ile birlikte "PR-Value" ifadeler artık bir nesneyi temsil
+                    * ETMEMEKTEDİR. Artık belirli koşullar sağlandığı taktirde "result object" oluşturan ifadelerdir. Bu
+                    * şartlar ise ya "initializer" olarak bir nesneyi "init." etmesi, fonksiyonun parametre değişkeni,
+                    * fonksiyonun geri dönüş değerini tutması, ifadenin "discard" edilmesi veya ilgili ifadenin
+                    * "const L-Value Reference" veya "R-Value Reference" a bağlanması sonucunda "result object" oluşur. Bu
+                    * durum kopyalama veya taşıma ile ilgili değildir. 
                     */
                     Myclass m = Myclass{}; 
 
@@ -724,38 +778,46 @@
                 }
 
         İşte burada yapılanları anlatan şu akronimlerde mevcuttur; "RVO".  
-            >>>> "RVO" : İki farklı tipte bulunur. Bunlar "Unnamed Return Value Optimization" ve "Named Return Value Optimization" ismindedirler. 
-                >>>>> "Unnamed Return Value Optimization" : Artık C++ dilinde optimizasyon olarak görülmemektedir. Burada "Mandotary Copy Ellision"
-                devreye girmektedir. 
+            >>>> "RVO" : İki farklı tipte bulunur. Bunlar,
+                "Unnamed Return Value Optimization" ve "Named Return Value Optimization"
+            ismindedirler. 
+                >>>>> "Unnamed Return Value Optimization" : Artık C++ dilinde optimizasyon olarak görülmemektedir. Burada
+                "Mandotary Copy Ellision" devreye girmektedir. 
                 >>>>> "Named Return Value Optimization" : Halen C++ dilinde optimizasyon olarak görülmektedir. 
 
-> "Copy Ellision" : Bu terim hayata gelmiş olan iki nesneyi birbirine atarkenki durum için kullanılmaz. Her ne kadar bu atama işlemi 
-için sınıfın "Move" fonksiyonlarını kullanmak maliyeti düşürsede, ortada hayata gelmiş nesne olduğu için burada "Copy Ellision" 
-söz konusu değildir. Pekiyi nerelerde görülür? Şu noktalarda "Copy Ellision" dan söz edebiliriz: Bir objeyi hayata getirirken, 
-"return" deyimlerinde, "throw" ifadelerinde ve hatanın "catch" edildip işlendiği "catch" blok içerisinde. "Copy Ellision" ise kendi 
-içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision" ve "Non-Mandotary Copy Ellision". 
-    >> "Mandotary Copy Ellision" : Anımsayacağınız üzere C++17 ile birlikte "PR_Value" değer kategorisi bir nesneye karşılık değil,
-    bir nesne oluştururken kullanılacak reçete konumundadır. Ne zamanki bir "Matererialization" gerçekleşir, işte o zaman
-    "PR_Value to X_Value" dönüşümü meydana gelir ve bir "Result Object" oluşur, işte o zaman bir nesneye karşılık gelir. Eğer iş bu
-    "Matererialization" gerçekleşmezse, doğrudan bir nesneden bahsetmemiz mümkün değildir. İşte bu duruma da "Mandotary Copy Ellision"
-    denmektedir. Bu durumda ilgili sınıfın "Move Ctor.", "Copy Ctor." veya her ikisinin de çağrılabilir olması önemli değildir. C++17
-    öncesinde bu fonksiyonların çağrılması sentaks hatası oluştururken, artık SENTAKS HATASI OLUŞTURMAYACAKTIR. Çünkü artık bu bir 
-    optimizasyon DEĞİLDİR. "Mandotary Copy Ellision" da bir kaç yerde görülmektedir. Bunlar "Return Value Optimization" ve 
-    "Unmaterialized Object Passing". 
-        >>> "Return Value Optimization" : Bu ise kendi içerisinde ikiye ayrılır. Bunlar "Unnamed Return Value Optimization" ve 
-        "Named Return Value Optimization". 
+> "Copy Ellision" : Bu terim hayata gelmiş olan iki nesneyi birbirine atarkenki durum için kullanılmaz. Her ne kadar bu
+atama işlemi için sınıfın "Move" fonksiyonlarını kullanmak maliyeti düşürsede, ortada hayata gelmiş nesne olduğu için burada
+"Copy Ellision" söz konusu değildir. Pekiyi nerelerde görülür? Şu noktalarda "Copy Ellision" dan söz edebiliriz: Bir objeyi
+hayata getirirken, "return" deyimlerinde, "throw" ifadelerinde ve hatanın "catch" edildip işlendiği "catch" blok içerisinde.
+"Copy Ellision" ise kendi içerisinde birkaç farklı ifade barındırır. Bunlar,
+    "Mandotary Copy Ellision" ve "Non-Mandotary Copy Ellision".
+şeklindedir. Şimdi de bunları irdeleyelim: 
+    >> "Mandotary Copy Ellision" : Anımsayacağınız üzere C++17 ile birlikte "PR_Value" değer kategorisi bir nesneye karşılık
+    değil, bir nesne oluştururken kullanılacak reçete konumundadır. Ne zamanki bir "Matererialization" gerçekleşir, işte o
+    zaman "PR_Value to X_Value" dönüşümü meydana gelir ve bir "Result Object" oluşur, işte o zaman bir nesneye karşılık
+    gelir. Eğer iş bu "Matererialization" gerçekleşmezse, doğrudan bir nesneden bahsetmemiz mümkün değildir. İşte bu duruma
+    da "Mandotary Copy Ellision" denmektedir. Bu durumda ilgili sınıfın "Move Ctor.", "Copy Ctor." veya her ikisinin de
+    çağrılabilir olması önemli değildir. C++17 öncesinde bu fonksiyonların çağrılması sentaks hatası oluştururken, artık
+    SENTAKS HATASI OLUŞTURMAYACAKTIR. Çünkü artık bu bir optimizasyon DEĞİLDİR. "Mandotary Copy Ellision" da bir kaç yerde
+    görülmektedir. Bunlar,
+        "Return Value Optimization" ve "Unmaterialized Object Passing"
+    yerleridir. Şimdi de bunları irdeleyelim: 
+        >>> "Return Value Optimization" : Bu ise kendi içerisinde ikiye ayrılır. Bunlar,
+            "Unnamed Return Value Optimization" ve "Named Return Value Optimization".
+        biçimindedir. Bunlardan, 
             >>>> "Unnamed Return Value Optimization" : Böylesi yerler artık bir "Mandotary Copy Ellision" olarak geçmektedir. 
-            >>>> "Named Return Value Optimization"   : Böylesi yerler hala derleyiciler açısından optimizasyon olarak kabul edilmektedir.
-            Dolayısıyla bu tip yerlerde ilgili sınıfın "Move Ctor.", "Copy Ctor." veya her ikisinin de çağrılabilir OLMAMASI sentaks 
-            hatasına yol açacaktır. Bir diğer deyişle derleyici böylesi bir optimizasyonu yapmak gibi bir zorunluluğu yoktur. Hatta 
-            yapabilmek gibi bir zorunluluğu da yoktur. Dolayısıyla bu durum derleyiciye bağlıdır. Ek olarak bizim "Copy Ctor." ve 
-            "Move Ctor." fonksiyonlarımız yan etkiye sahipse, örneğin "global" isim alanındaki bir nesnenin değerini değiştiriyorsa,
-            bu yan etkinin gerçekleşeceğin veya gerçekleşmeyeceğini varsayarak kod YAZMAMALIYIZ. Burada derleyici bu yan etkiyi 
-            önemsemeyecektir. Yani derleyicinin böylesi bir optimizasyonu yapacağını varsayarak yukarıdaki gibi bir yan etki 
-            oluşturmamalıyız veya tam tersi.   
+            >>>> "Named Return Value Optimization" : Böylesi yerler hala derleyiciler açısından optimizasyon olarak kabul
+            edilmektedir. Dolayısıyla bu tip yerlerde ilgili sınıfın "Move Ctor.", "Copy Ctor." veya her ikisinin de
+            çağrılabilir OLMAMASI sentaks hatasına yol açacaktır. Bir diğer deyişle derleyici böylesi bir optimizasyonu
+            yapmak gibi bir zorunluluğu yoktur. Hatta yapabilmek gibi bir zorunluluğu da yoktur. Dolayısıyla bu durum
+            derleyiciye bağlıdır. Ek olarak bizim "Copy Ctor." ve "Move Ctor." fonksiyonlarımız yan etkiye sahipse, örneğin
+            "global" isim alanındaki bir nesnenin değerini değiştiriyorsa, bu yan etkinin gerçekleşeceğin veya
+            gerçekleşmeyeceğini varsayarak kod YAZMAMALIYIZ. Burada derleyici bu yan etkiyi önemsemeyecektir. Yani
+            derleyicinin böylesi bir optimizasyonu yapacağını varsayarak yukarıdaki gibi bir yan etki oluşturmamalıyız veya
+            tam tersi.   
 
-        >>> "Unmaterialized Object Passing" : Kabaca isimsiz nesne kullanımıdır. Zaman zaman isimsiz nesne kullanmak bizim faydamıza 
-        olabilir. 
+        >>> "Unmaterialized Object Passing" : Kabaca isimsiz nesne kullanımıdır. Zaman zaman isimsiz nesne kullanmak bizim
+        faydamıza olabilir. 
 
 Şimdi de aşağıdaki pekiştirici örnekleri inceleyelim:
     * Örnek 1, C++17 ile birlikte artık sadece bir defa "Default Ctor." çağrılacaktır. 
@@ -763,13 +825,13 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
 
         };
 
@@ -798,13 +860,13 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
 
         };
 
@@ -833,13 +895,13 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
 
         };
 
@@ -865,19 +927,19 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
             std::cout << "<Main sonlanacak>\n";
         }
 
-    * Örnek 4, Aşağıdaki örnekte artık bir kopyalama söz konusu değildir. Referans, geçici bir nesneye bağlanmaktadır. Yani "Matererialization"
-    gerçekleşmiştir. 
+    * Örnek 4, Aşağıdaki örnekte artık bir kopyalama söz konusu değildir. Referans, geçici bir nesneye bağlanmaktadır. Yani
+    "Matererialization" gerçekleşmiştir. 
         #include <iostream>
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
 
         };
 
@@ -903,21 +965,21 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
             std::cout << "<Main sonlanacak>\n";
         }
 
-    * Örnek 5, Artık aşağıdaki örneklerde "Mandotary Copy Ellision" dan söz edemeyiz çünkü isimlendirilmiş nesne kullanıyoruz. Artık 
-    sınıfın "Copy Ctor." ve "Move Ctor." fonksiyonlarının çağrılabilir olması gerekmektedir. 
+    * Örnek 5, Artık aşağıdaki örneklerde "Mandotary Copy Ellision" dan söz edemeyiz çünkü isimlendirilmiş nesne
+    kullanıyoruz. Artık sınıfın "Copy Ctor." ve "Move Ctor." fonksiyonlarının çağrılabilir olması gerekmektedir. 
         #include <iostream>
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
-            Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
+                Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
 
         };
 
@@ -966,15 +1028,15 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-            int foo() { std::cout << "Myclass::foo()\n"; return 31; }
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+                int foo() { std::cout << "Myclass::foo()\n"; return 31; }
 
-        private:
+            private:
 
         };
 
@@ -1052,15 +1114,15 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
-            Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
+                Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&){ std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
         };
 
         Myclass foo() {
@@ -1091,15 +1153,15 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
-            Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
+                Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
         };
 
         /*
@@ -1149,14 +1211,14 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
         };
 
         Myclass foo(int value) {
@@ -1225,15 +1287,15 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
-            Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
+                Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
         };
 
         /*
@@ -1268,24 +1330,23 @@ içerisinde birkaç farklı ifade barındırır. Bunlar "Mandotary Copy Ellision
             std::cout << "<Main sonlanacak>\n";
         }
 
-    * Örnek 9.4, Aşağıdaki kodların bazılarında "NRVO" yapılamamıştır. Çünkü farklı durumlarda farklı nesneler
-    "return" edilmek istenmiştir. Fakat bu durumu bazı derleyiciler gidermiştir. Özellikle "f4" ve "f5" fonksiyonlarına 
-    bakabiliriz. 
+    * Örnek 9.4, Aşağıdaki kodların bazılarında "NRVO" yapılamamıştır. Çünkü farklı durumlarda farklı nesneler "return"
+    edilmek istenmiştir. Fakat bu durumu bazı derleyiciler gidermiştir. Özellikle "f4" ve "f5" fonksiyonlarına bakabiliriz. 
         #include <iostream>
         #include <memory>
         #include <string>
 
         class Myclass
         {
-        public:
-            Myclass() { std::cout << "Default Ctor.\n"; }
-            Myclass(int) { std::cout << "Myclass(int)\n"; }
-            Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
-            Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
-            Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
-            Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
-            ~Myclass() { std::cout << "Destructor\n"; }
-        private:
+            public:
+                Myclass() { std::cout << "Default Ctor.\n"; }
+                Myclass(int) { std::cout << "Myclass(int)\n"; }
+                Myclass(const Myclass&) { std::cout << "Copy Ctor.\n"; }
+                Myclass(Myclass&&) { std::cout << "Move Ctor.\n"; }
+                Myclass& operator=(const Myclass&) { std::cout << "Copy Assignment\n"; return *this; }
+                Myclass& operator=(Myclass&&) { std::cout << "Move Assignment\n"; return *this; }
+                ~Myclass() { std::cout << "Destructor\n"; }
+            private:
         };
 
         void foo() {}
@@ -1684,8 +1745,9 @@ o nesnenin kaynağını çalmaktır. Taşıma Semantiği şu senaryolarda devre 
             }
 
 Öte yandan bazı senaryolarda bu mekanizmadan faydalanmamız bizim karımızadır. 
-    * Örnek 1, Aşağıdaki örnekte "Move" işleminin "Copy" işleminden daha karlı olacağı varsayılarak "Nec" sınıfına "T" parametreli
-    bir "Copy Ctor." yazılmıştır. Normal şartlarda "Copy Ctor." fonksiyonu için "const T&" parametrik yapısı seçilir. 
+    * Örnek 1, Aşağıdaki örnekte "Move" işleminin "Copy" işleminden daha karlı olacağı varsayılarak "Nec" sınıfına "T"
+    parametreli bir "Copy Ctor." yazılmıştır. Normal şartlarda "Copy Ctor." fonksiyonu için "const T&" parametrik yapısı
+    seçilir. 
         #include <iostream>
         #include <memory>
         #include <string>
@@ -1709,7 +1771,8 @@ o nesnenin kaynağını çalmaktır. Taşıma Semantiği şu senaryolarda devre 
 
         class Nec {
         public:
-            Nec(Myclass m) : mx{std::move(m)} {} /* Eski C++ da böyle bir kod asla yazılmazdı. C++17 itibariyle bize kazanç sağlayabilir. */
+            /* Eski C++ da böyle bir kod asla yazılmazdı. C++17 itibariyle bize kazanç sağlayabilir. */
+            Nec(Myclass m) : mx{std::move(m)} {}
         private:
             Myclass mx;
         };
@@ -1758,7 +1821,8 @@ o nesnenin kaynağını çalmaktır. Taşıma Semantiği şu senaryolarda devre 
 
         class Nec {
         public:
-            Nec(Myclass m) : mx{std::move(m)} {} /* Eski C++ da böyle bir kod asla yazılmazdı. C++17 itibariyle bize kazanç sağlayabilir. */
+            /* Eski C++ da böyle bir kod asla yazılmazdı. C++17 itibariyle bize kazanç sağlayabilir. */
+            Nec(Myclass m) : mx{std::move(m)} {}
         private:
             Myclass mx;
         };
@@ -1939,7 +2003,7 @@ planda taşıma işlemi gerçekleştirmektedir. Şöyleki;
                 
                 auto iter = remove_if(s_vec.begin(), s_vec.end(), 
                     [](const auto& s){ return s.find('i') != std::string::npos; }
-                    );
+                );
                     
                 int cnt{};
                 while(iter != s_vec.end())
@@ -2040,7 +2104,8 @@ vermesidir. Şöyleki;
         };
 
         class Nec {
-            static_assert(std::is_nothrow_copy_constructible_v<Myclass>); // Static assert is failed. "Copy Ctor." should be an "noexcept". 
+            // Static assert is failed. "Copy Ctor." should be an "noexcept". 
+            static_assert(std::is_nothrow_copy_constructible_v<Myclass>);
             Myclass m_x;
         };
 
@@ -2073,9 +2138,9 @@ vermesidir. Şöyleki;
 
 Bütün bunlara ek olarak sınıfların sunacağı bir takım "exception" garanti etme seviyeleri vardır. Bunlar "basic guarantee",
 "strong guarantee" ve "noexcept". 
-    >> "Basic Guarantee" : Bir kaynak sızıntısı mevcut değil ve programın "state" i halen geçerli durumdadır. Bütün fonksiyonların 
-    bunu garanti etmesi gerekmektedir. Yani "exception" ile fonksiyonun akışından çıkıldığında, yukarıdaki şartların sağlanmış olması 
-    gerekmektedir. 
+    >> "Basic Guarantee" : Bir kaynak sızıntısı mevcut değil ve programın "state" i halen geçerli durumdadır. Bütün
+    fonksiyonların bunu garanti etmesi gerekmektedir. Yani "exception" ile fonksiyonun akışından çıkıldığında, yukarıdaki
+    şartların sağlanmış olması gerekmektedir. 
         * Örnek 1,
             void foo()
             {
@@ -2184,7 +2249,8 @@ Anımsayacağınız üzere "Dtor." fonksiyonları "noexcept" garantisi vermekted
 "noexcept" garantisi verecekmiş gibi yazmalıyız. "Dtor." fonksiyonlarının akışı sırasında bir "exception" fırlatılması hiç
 istenmeyecek bir şeydir çünkü. Şimdi de "Move Ctor." fonksiyonlarında "noexcept" anahtar sözcüğünün kullanılmasının önemine
 ilişkin şu örneği inceleyelim: 
-    * Örnek 1, Aşağıdaki örnekteki süreyi de incelersek, "noexcept" anahtar kelimesinin ne kadar önemli olduğunu da göreceğiz:
+    * Örnek 1, Aşağıdaki örnekteki süreyi de incelersek, "noexcept" anahtar kelimesinin ne kadar önemli olduğunu da
+    göreceğiz:
         #include <iostream>
         #include <string>
         #include <vector>
@@ -2269,9 +2335,13 @@ ilişkin şu örneği inceleyelim:
 
         class Mystr {
         public:
-            Mystr() : m_str(500, 'A') {} // 1000 adet "a" karakteri. 
+            // 1000 adet "a" karakteri. 
+            Mystr() : m_str(500, 'A') {}
+            
             Mystr(const Mystr& other) = default;
-            Mystr(Mystr&& other) = default; // "Move Ctor." eğer "std::string" sınıfının "Move Ctor." u "noexcept" ise "noexcept". 
+            
+            // "Move Ctor." eğer "std::string" sınıfının "Move Ctor." u "noexcept" ise "noexcept". 
+            Mystr(Mystr&& other) = default;
         private:
             std::string m_str;
         };
@@ -2340,20 +2410,20 @@ ilişkin şu örneği inceleyelim:
         }
 
 Buraya kadarkileri özetlersek; Eğer "Move Ctor." fonksiyonu "Implicitly Declared" durumda ise "noexcept" olup olmayacağına 
-derleyicinin kendisi karar vermektedir. Burada bizler "static_assert" kullanarak bir takım önlemler alabiliriz. Eğer "Move Ctor."
-fonksiyonunu bizler yazacaksak, "noexcept" olup olmamasını bir koşula bağlamalıyız.
-Şimdi de taşıma semantiğindeki bir diğer kavram olan "Moved From State" durumunu, yani taşıma işlemi sonrasında geride kalan
-nesnenin durumunu inceleyelim. Anımsayacağınız üzere taşıma semantiği ömrü bitmek üzere olan nesnelerin kaynağını çalmak için
-geliştirilen bir semantiktir. Fakat öyle durumlar vardır ki kaynağı çalınmış olsa bile ömrü henüz bitmediği için başka kodlar 
-tarafından tekrardan kullanılacaktır. Fakat tekrardan kullanılmadan evvel bir takım garantileri de veriyor olması gerekmektedir.
-Bu garantiler "Dtor." fonksiyonunun çağrılabilir olması ve çağrıldığı zaman da başka komplikasyonlara yol açmaması gerekmektedir
-ki bu duruma İngilizce "destructable" da denir, "unspecified, but valid state" durumda olmasıdır. Pekiyi buradaki
-"unspecified, but valid state" ile kastedilen şey nedir? Burada kastedilen şey şudur: nesnenin kendisi "valid" durumda fakat tuttuğu 
-değer bilinmiyor. Bu da demektir ki bu nesneye yeni bir değer atayarak onu tekrardan kullanıma sokabiliriz. Standart kütüphanedekiler 
-bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinlik yoktur.
+derleyicinin kendisi karar vermektedir. Burada bizler "static_assert" kullanarak bir takım önlemler alabiliriz. Eğer
+"Move Ctor." fonksiyonunu bizler yazacaksak, "noexcept" olup olmamasını bir koşula bağlamalıyız. Şimdi de taşıma
+semantiğindeki bir diğer kavram olan "Moved From State" durumunu, yani taşıma işlemi sonrasında geride kalan nesnenin
+durumunu inceleyelim. Anımsayacağınız üzere taşıma semantiği ömrü bitmek üzere olan nesnelerin kaynağını çalmak için
+geliştirilen bir semantiktir. Fakat öyle durumlar vardır ki kaynağı çalınmış olsa bile ömrü henüz bitmediği için başka
+kodlar tarafından tekrardan kullanılacaktır. Fakat tekrardan kullanılmadan evvel bir takım garantileri de veriyor olması
+gerekmektedir. Bu garantiler "Dtor." fonksiyonunun çağrılabilir olması ve çağrıldığı zaman da başka komplikasyonlara yol
+açmaması gerekmektedir ki bu duruma İngilizce "destructable" da denir, "unspecified, but valid state" durumda olmasıdır.
+Pekiyi buradaki "unspecified, but valid state" ile kastedilen şey nedir? Burada kastedilen şey şudur: nesnenin kendisi
+"valid" durumda fakat tuttuğu değer bilinmiyor. Bu da demektir ki bu nesneye yeni bir değer atayarak onu tekrardan kullanıma
+sokabiliriz. Standart kütüphanedekiler bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinlik yoktur.
 Şimdi de aşağıdaki örnekleri inceleyelim:
-    * Örnek 1, Aşağıdaki örnekte "Card" sınıfının "Move Ctor." fonksiyonu derleyici tarafından yazıldığı için sınıfın veri elemanı 
-    "m_val", "Moved from State" durumu söz konusu olduğunda boş bir "string" tutacaktır.  
+    * Örnek 1, Aşağıdaki örnekte "Card" sınıfının "Move Ctor." fonksiyonu derleyici tarafından yazıldığı için sınıfın veri
+    elemanı "m_val", "Moved from State" durumu söz konusu olduğunda boş bir "string" tutacaktır.  
         #include <iostream>
         #include <string>
 
@@ -2473,12 +2543,14 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
             SharedInt a{ 42 };
             SharedInt b{ std::move(a) };
-            std::cout << a.as_string() << '\n'; // "a" değişkeni "Moved from State" durumunda. Dolayısıyla değeri boş bir göstericidir. 
+            
+            // "a" değişkeni "Moved from State" durumunda. Dolayısıyla değeri boş bir göstericidir. 
+            std::cout << a.as_string() << '\n';
         }
 
 > Hatırlatıcı Notlar:
-    >> C++ dilinde "R-Value Reference" olanlar "const" olabilirler. Fakat bu tip referanslar %98 ihtimalle "non-const" olarak 
-    kullanılırlar. 
+    >> C++ dilinde "R-Value Reference" olanlar "const" olabilirler. Fakat bu tip referanslar %98 ihtimalle "non-const"
+    olarak kullanılırlar. 
 
     >> "std::move" ve "std::copy":
         * Örnek 1,
@@ -2531,11 +2603,12 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
             } 
 
         * Örnek 2, Benzer bir örnek "std::string" sınıfı için de verilebilir. Her ne kadar C++ dili bunu zorunlu kılmasa da,
-        ilgili sınıfın içerisinde belli bir büyüklüğe sahip "buffer" alan tutuyorlar. Eğer yazının büyüklüğü bu "buffer" alandan
-        küçükse dinamik bellek yönetimine BAŞVURULMAMAKTADIR. Aksi halde başvurulmaktadır. Buna da "Small String Optimization" 
-        denmektedir. 
+        ilgili sınıfın içerisinde belli bir büyüklüğe sahip "buffer" alan tutuyorlar. Eğer yazının büyüklüğü bu "buffer"
+        alandan küçükse dinamik bellek yönetimine BAŞVURULMAMAKTADIR. Aksi halde başvurulmaktadır. Buna da
+        "Small String Optimization" denmektedir. 
 
-        * Örnek 3, Fakat en güzeli "Copy Ellision". Yani kopyalamanın elimine edilmesi, bir diğer deyişle kopyalamanın hiç olmaması.
+        * Örnek 3, Fakat en güzeli "Copy Ellision". Yani kopyalamanın elimine edilmesi, bir diğer deyişle kopyalamanın hiç
+        olmaması.
 
     >> "typename" anahtar sözcüğünün iki anlamı vardır. 
         >>> Şablon tür parametrelerinde "class" anahtar sözcüğünün yerine kullanılabilir olmasıdır. 
@@ -2546,39 +2619,50 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 template<typename T>
                 void foo(T&& r);   
 
-        >>> Bir şablon kod içerisinde nitelenmiş isim olarak kullanılan bir "identifier" lar iki anlama gelmektedir. Bunlardan 
-        ilki sınıfın "static" veri elemanı, bir diğer deyişle "nested type", biçimindeyken diğeri ise bir tür belirtmek amacı ile.
-        C++20'ye kadar varsayılan durumlarda ilk anlam kullanılırken, ikinci anlamı kastetmek için "typename" anahtar sözcüğünü 
-        kullanmak gerekiyordu. Fakat artık bazı yerlerde bu anahtar sözcüğü kullanmaya gerek kalmadı. Örneğin, "T::x" ifadesinde
-        kastedilen şey nedir? Burada dilin kuralları gereği çıkartılacak ilk anlam, "x" in bir "nested type" veya "static" veri 
-        elemanı olmasıdır. Eğer "x" in bir tür bilgisi olduğunu kastediyorsak, C++20 öncesinde, "typename T::x" biçiminde 
-        kullanmalıyız. 
+        >>> Bir şablon kod içerisinde nitelenmiş isim olarak kullanılan bir "identifier" lar iki anlama gelmektedir.
+        Bunlardan ilki sınıfın "static" veri elemanı, bir diğer deyişle "nested type", biçimindeyken diğeri ise bir tür
+        belirtmek amacı ile. C++20'ye kadar varsayılan durumlarda ilk anlam kullanılırken, ikinci anlamı kastetmek için
+        "typename" anahtar sözcüğünü kullanmak gerekiyordu. Fakat artık bazı yerlerde bu anahtar sözcüğü kullanmaya gerek
+        kalmadı. Örneğin, "T::x" ifadesinde kastedilen şey nedir? Burada dilin kuralları gereği çıkartılacak ilk anlam,
+        "x" in bir "nested type" veya "static" veri elemanı olmasıdır. Eğer "x" in bir tür bilgisi olduğunu kastediyorsak,
+        C++20 öncesinde, "typename T::x" biçiminde kullanmalıyız. 
 
-    >> Sınıfın "Special Member Functions" : "non-static" üye fonksiyonlardır. Özel olmalarının sebebi kodlarının derleyi tarafından
-    yazılabiliyor olmasıdır. Toplamda 6 adettir. "Default Ctor.", "Dtor.", "Copy Ctor.", "Move Ctor.", "Copy Assignment" ve
-    "Move Assignment" fonksiyonlarıdır. Eğer derleyicinin yazmış olduğu versiyon bizim isteklerimizi karşılıyorsa, bu fonksiyonların 
-    yazımını derleyiciye bırakmalıyız. Buna da "Rule of Zero" denmektedir. İşte derleyicinin bir şekilde bu fonksiyonları yazmasına 
-    ise ilgili fonksiyonun "default" edilmesi denir. Örneğin, "Defaulting the Default Ctor.". Öte yandan bu altı fonksiyon şu üç 
-    halden birisindedir; "Not Declared", "User Declared" ve "Implicitly Declared". 
+    >> Sınıfın "Special Member Functions" : "non-static" üye fonksiyonlardır. Özel olmalarının sebebi kodlarının derleyi
+    tarafından yazılabiliyor olmasıdır. Toplamda 6 adettir. Bunlar,
+        "Default Ctor.", 
+        "Dtor.", 
+        "Copy Ctor.", 
+        "Move Ctor.", 
+        "Copy Assignment",
+        "Move Assignment"
+    fonksiyonlarıdır. Eğer derleyicinin yazmış olduğu versiyon bizim isteklerimizi karşılıyorsa, bu fonksiyonların yazımını
+    derleyiciye bırakmalıyız. Buna da "Rule of Zero" denmektedir. İşte derleyicinin bir şekilde bu fonksiyonları yazmasına
+    ise ilgili fonksiyonun "default" edilmesi denir. Örneğin, "Defaulting the Default Ctor.". Öte yandan bu altı fonksiyon
+    şu üç halden birisindedir; 
+        "Not Declared", 
+        "User Declared",
+        "Implicitly Declared".
+    Şimdi de bunları inceleyelim;  
         >>> "Not Declared" : İlgili FONKSİYONUN OLMADIĞI ANLAMINA GELMEKTEDİR. Bildirilen fakat "delete" edilen fonksiyonlar, 
         bu KATEGORİDE DEĞİLDİR. 
-            * Örnek 1, Aşağıdaki sınıfın "Default Ctor." fonksiyonu "Not Declared" hükmündedir çünkü bizler parametreli bir "Ctor."
-            fonksiyonu bildirdiğimiz için. Eğer bir sınıfın "Default Ctor." fonksiyonunun OLMAYIŞI, o sınıfın kullanım olanaklarını 
-            büyük ölçüde kısıtlayacaktır. Artık "Default Init." gerçekleşen yerlerde sentaks hatası oluşacaktır. 
+            * Örnek 1, Aşağıdaki sınıfın "Default Ctor." fonksiyonu "Not Declared" hükmündedir çünkü bizler parametreli bir
+            "Ctor." fonksiyonu bildirdiğimiz için. Eğer bir sınıfın "Default Ctor." fonksiyonunun OLMAYIŞI, o sınıfın
+            kullanım olanaklarını büyük ölçüde kısıtlayacaktır. Artık "Default Init." gerçekleşen yerlerde sentaks hatası
+            oluşacaktır. 
                 struct Myclass{
                     Myclass(int);
                 };  
 
-            * Örnek 2, Aşağıdaki sınıfın "Move" fonksiyonları "Not Declared" hükmündedir. Çünkü "Dtor." veya "Copy" fonksiyonlarından 
-            birinin bildirilmesi durumunda "Move" fonksiyonları "Not Declared" olacaktır. 
+            * Örnek 2, Aşağıdaki sınıfın "Move" fonksiyonları "Not Declared" hükmündedir. Çünkü "Dtor." veya "Copy"
+            fonksiyonlarından birinin bildirilmesi durumunda "Move" fonksiyonları "Not Declared" olacaktır. 
                 struct Myclass{
                     Myclass();
                     Myclass(const Myclass&);
                 };             
 
-        >>> "User Declared" : Bildirimin programcı tarafından yapılmasıdır. Üç farklı biçimde bir programcı bildirebilir ki bunlar 
-        şu şekildedir: Fonksiyonun bildirir ve kendisi tanımlar, fonksiyonu bildirir fakat derleyicinin tanımlamasını ister, 
-        fonksiyonu bildirir fakat "delete" eder. 
+        >>> "User Declared" : Bildirimin programcı tarafından yapılmasıdır. Üç farklı biçimde bir programcı bildirebilir ki
+        bunlar şu şekildedir: Fonksiyonun bildirir ve kendisi tanımlar, fonksiyonu bildirir fakat derleyicinin tanımlamasını
+        ister, fonksiyonu bildirir fakat "delete" eder. 
             * Örnek 1,
                 struct Myclass{
                     Myclass()
@@ -2597,27 +2681,27 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                     Myclass() = delete; /* Bu fonksiyon da "Function Overload Resolution" a dahil edilmektedir. */
                 };  
 
-            * Örnek 4, Aşağıdaki örnekte sınıfın "Copy" fonksiyonları "delete" edildiği için "Move" fonksiyonları da "Not Declared"
-            hükmündedir. "Copy" fonksiyonlarına çağrı da sentaks hatası olacaktır. Dolayısıyla bu sınıfımız artık "Non-Copyable"
-            ve "Non-Moveable" durumdadır. 
+            * Örnek 4, Aşağıdaki örnekte sınıfın "Copy" fonksiyonları "delete" edildiği için "Move" fonksiyonları da
+            "Not Declared" hükmündedir. "Copy" fonksiyonlarına çağrı da sentaks hatası olacaktır. Dolayısıyla bu sınıfımız
+            artık "Non-Copyable" ve "Non-Moveable" durumdadır. 
                 struct Myclass{
                     Myclass(const Myclass&) = delete;
                     Myclass& operator=(const Myclass&) = delete;
                 };
             
-            * Örnek 5, Aşağıdaki örnekte sınıfın "Move" fonksiyonları bildirildiği için "Copy" fonksiyonları "delete" EDİLMİŞTİR.
-            Artık sınıfımız "Moveable, but Non-Copyable" durumdadır. BURADA UNUTMAMAMIZ GEREKEN ŞEY "Move" FONKSİYONLARINI HİÇ BİR
-            ZAMAN "delete" ETMEMELİYİZ. 
+            * Örnek 5, Aşağıdaki örnekte sınıfın "Move" fonksiyonları bildirildiği için "Copy" fonksiyonları "delete"
+            EDİLMİŞTİR. Artık sınıfımız "Moveable, but Non-Copyable" durumdadır. BURADA UNUTMAMAMIZ GEREKEN ŞEY "Move"
+            FONKSİYONLARINI HİÇ BİR ZAMAN "delete" ETMEMELİYİZ. 
                 struct Myclass{
                     Myclass(Myclass&&);
                     Myclass& operator=(Myclass&&);
                 };
 
-        >>> "Implicitly Declared" : Derleyicinin durumdan vazife çıkartarak bu altı fonksiyonu kendisinin bildirmesi ve tanımlamasıdır. 
-        Burada da iki alt kategori vardır; "defaulted" ve "deleted" olması. 
+        >>> "Implicitly Declared" : Derleyicinin durumdan vazife çıkartarak bu altı fonksiyonu kendisinin bildirmesi ve
+        tanımlamasıdır. Burada da iki alt kategori vardır; "defaulted" ve "deleted" olması. 
             >>>> "defaulted" : Derleyicinin, fonksiyonu olması gerektiği gibi bildirmesi ve tanımlamasıdır. 
-            >>>> "deleted" : Derleyicinin, fonksiyonu olması gerektiği gibi bildirmesi ve tanımlaması sırasında bir sentaks hatası 
-            getirecekse, ilgili fonksiyonu "delete" etmesidir. 
+            >>>> "deleted" : Derleyicinin, fonksiyonu olması gerektiği gibi bildirmesi ve tanımlaması sırasında bir sentaks
+            hatası getirecekse, ilgili fonksiyonu "delete" etmesidir. 
                 * Örnek 1,
                     class Myclass{
                         public:
@@ -2650,28 +2734,30 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
     Şimdi de bunları bir çatı altında özetleyelim;
 
         -> Eğer sınıfa bu altı fonksiyondan hiç birisini bildirmezsek, derleyici tarafından "default" edilecektir. 
-        -> "Default Ctor." haricinde herhangi bir "Ctor." bildirirsek, "Default Ctor." artık "Not Declared" durumdadır. Fakat 
-        geri kalan beş tanesi yine derleyici tarafından "default" edilecektir. 
+        -> "Default Ctor." haricinde herhangi bir "Ctor." bildirirsek, "Default Ctor." artık "Not Declared" durumdadır.
+        Fakat geri kalan beş tanesi yine derleyici tarafından "default" edilecektir. 
         -> Eğer sınıfa "Default Ctor." bildirirsek, geri kalan beş fonksiyon da derleyici tarafından "default" edilecektir. 
         -> Eğer sınıfa "Dtor." bildirirsek, "Rule of Three" kapsamında olan "Default Ctor.", "Copy Ctor." ve "Copy Assignment"
         fonksiyonları derleyici tarafından "default" edilecektir. "Move" fonksiyonları ise "Not Declared" olacaktır. 
-        -> Eğer sınıfa "Copy Ctor." bildirirsek, "Dtor." ve "Copy Assignment" fonksiyonları derleyici tarafından "default" edilecektir.
-        Bir "Ctor." bildirdiğimiz için "Default Ctor." artık "Not Declared" olacaktır. "Move" fonksiyonları ise "Not Declared" olacaktır. 
-        -> Eğer sınıfa "Copy Assignment" bildirirsek, "Default Ctor.", "Dtor." ve "Copy Ctor." fonksiyonları derleyici tarafından "default"
-        edilecektir. "Move" fonksiyonları ise "Not Declared" olacaktır. 
-        -> "Move" fonksiyonlarından herhangi birini bile bildirsek, "Copy" fonksiyonlarının ikisi de derleyici tarafından "delete" edilmektedir. 
+        -> Eğer sınıfa "Copy Ctor." bildirirsek, "Dtor." ve "Copy Assignment" fonksiyonları derleyici tarafından "default"
+        edilecektir. Bir "Ctor." bildirdiğimiz için "Default Ctor." artık "Not Declared" olacaktır. "Move" fonksiyonları ise
+        "Not Declared" olacaktır. 
+        -> Eğer sınıfa "Copy Assignment" bildirirsek, "Default Ctor.", "Dtor." ve "Copy Ctor." fonksiyonları derleyici
+        tarafından "default" edilecektir. "Move" fonksiyonları ise "Not Declared" olacaktır. 
+        -> "Move" fonksiyonlarından herhangi birini bile bildirsek, "Copy" fonksiyonlarının ikisi de derleyici tarafından
+        "delete" edilmektedir. 
 
     Buradan da görüleceği üzere;
 
         -> "Default Ctor." haricinde herhangi bir "Ctor." bildirilmesi durumunda, "Default Ctor." artık "Not Declared" olur. 
         -> Bir sınıfın "Dtor." fonksiyonu her zaman için mevcuttur. Ama derleyici yazar ama biz yazarız. 
-        -> "Rule of Three" kapsamında olan "Dtor.", "Copy Ctor." ve "Copy Assignment" fonksiyonlarından herhangi birisini bildirirsek, "Move" 
-        fonksiyonlar "Not Declared" olurlar. 
+        -> "Rule of Three" kapsamında olan "Dtor.", "Copy Ctor." ve "Copy Assignment" fonksiyonlarından herhangi birisini
+        bildirirsek, "Move" fonksiyonlar "Not Declared" olurlar. 
         -> "Move" fonksiyonlardan birisini bildirirsek, "Copy" fonksiyonların ikisi de "delete" edilirler. 
 
     Şimdi de aşağıdaki örnekleri inceleyelim: 
-        * Örnek 1, Aşağıdaki örnekte sınıfın "Default Ctor." fonksiyonu derleyici tarafından "default" edildiği için veri elemanları da aynı işleme 
-        maruz kaldı.  
+        * Örnek 1, Aşağıdaki örnekte sınıfın "Default Ctor." fonksiyonu derleyici tarafından "default" edildiği için veri
+        elemanları da aynı işleme maruz kaldı.  
             #include <iostream>
             #include <string>
 
@@ -2936,7 +3022,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
     bizim işimizi görecektir. Unutmayınız ki "Rule of Zero". Buradaki "handle" ile kastedilen bir gösterici, referans vs. 
     olması. Yani derleyicinin yazdığı şey işimizi bozmuyor ise ellemeyelim. 
 
-    >> "noexcept" : Modern C++ ile dile eklendi. Aşağıdaki fonksiyon bildirimine göre, ilgili fonksiyon "exception" gönderebilir.
+    >> "noexcept" : Modern C++ ile dile eklendi. Aşağıdaki fonksiyon bildirimine göre, ilgili fonksiyon "exception"
+    gönderebilir.
 
         void foo();
 
@@ -2957,16 +3044,17 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
         void foo()noexcept(sizeof(int) == 4);
 
-    biçimindeki bir bildirime göre ilgili sistemde "int" türü dört bayt ise "exception" göndermeme garantisi vermektedir. Aksi 
-    halde "exception" gönderebilir demektir. Fakat bu şekildeki kullanım ekseriyetle şablonlarda çok kullanılmaktadır. Örneğin,
+    biçimindeki bir bildirime göre ilgili sistemde "int" türü dört bayt ise "exception" göndermeme garantisi vermektedir.
+    Aksi halde "exception" gönderebilir demektir. Fakat bu şekildeki kullanım ekseriyetle şablonlarda çok kullanılmaktadır.
+    Örneğin,
 
         template<typename T>
         void func()noexcept(std::is_nothrow_constructible_v<T>);
 
-    ile "T" türünün "Copy Ctor." fonksiyonu "exception" göndermeme garantisi veriyorsa, ben de veriyorum. Öte yandan "noexcept",
-    fonksiyonun imzasının bir parçasıdır fakat "Function Overload Resolution" a dahil edilmemektedir. Dolayısıyla "noexcept"
-    garantisi veren ve vermeyen iki fonksiyonu birbirinin "overload" ı haline getiremeyiz. Fakat fonksiyon göstericisi işler biraz 
-    karışmaktadır. Şöyleki;
+    ile "T" türünün "Copy Ctor." fonksiyonu "exception" göndermeme garantisi veriyorsa, ben de veriyorum. Öte yandan
+    "noexcept", fonksiyonun imzasının bir parçasıdır fakat "Function Overload Resolution" a dahil edilmemektedir. Dolayısıyla
+    "noexcept" garantisi veren ve vermeyen iki fonksiyonu birbirinin "overload" ı haline getiremeyiz. Fakat fonksiyon
+    göstericisi işler biraz karışmaktadır. Şöyleki;
         * Örnek 1,
             //... 
 
@@ -3024,8 +3112,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
             int main() {}
 
-        * Örnek 6, Aşağıdaki durumda "virtual override" söz konusu OLMADIĞI için herhangi bir 
-        sentaks hatası da oluşmayacaktır. 
+        * Örnek 6, Aşağıdaki durumda "virtual override" söz konusu OLMADIĞI için herhangi bir sentaks hatası da
+        oluşmayacaktır. 
             class Base{
                 public:
                     void foo(int) noexcept;
@@ -3055,8 +3143,9 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
         "R_Value Reference" için de kullanılmaktadır. Öte yandan parametresi "T&&" olan fonksiyona gönderebildiğimiz bütün 
         ifadeleri, parametresi "const T&" olan fonksiyonlara da gönderebiliriz. Öyleyse bu iki fonksiyonun arasındaki fark 
         nedir? Parametresi "T&&" olan fonksiyonun gövdesinde, bu fonksiyona geçilen argümanın değer kategorisi ve "constness"
-        bilgigisi bilinir haldeyken parametresi "const T&" olan fonksiyonun gövdesinde bu bilgiler bilinir değildir, KAYBOLMAKTADIR.
-        Şimdi de böylesi referanslara gönderilen ifadelere göre şablon parametresi ve fonksiyon parametresinin durumlarına bakalım:
+        bilgigisi bilinir haldeyken parametresi "const T&" olan fonksiyonun gövdesinde bu bilgiler bilinir değildir,
+        KAYBOLMAKTADIR. Şimdi de böylesi referanslara gönderilen ifadelere göre şablon parametresi ve fonksiyon
+        parametresinin durumlarına bakalım:
             * Örnek 1,
                 template<typename T>
                 void foo(T&& arg) {}
@@ -3115,17 +3204,17 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                     bar(std::forward<T>(arg)); 
                 }
 
-        "Perfect Forwarding" ile amaçlanan şey bir fonksiyonu direkt olarak argümanlar ile çağırmak yerine o argümanları önce 
-        aracı bir fonksiyona göndermek ve aracı olan fonksiyonun esas fonksiyonu çağırmasını sağlatmaktadır. Bir diğer deyişle 
-        esas fonksiyonu direkt olarak çağırmakla aracı kullanarak çağırmak arasında bir farkın olmamasıdır. Anımsayacağınız
-        üzere "container" sınıfların "emplace" isimli fonksiyonları bu mekanizmadan faydalanmaktadır. Anımsayacağınız üzere 
-        "empalce" fonksiyonuna bizler argüman olarak, "container" içerisinde tutulan sınıfın "Ctor." fonksiyonlarına geçilecek
-        argümanları geçmekteyiz. Böylelikle "emplace" fonksiyonu aldığı parametreler ile ilgili sınıf türünden nesneyi 
-        hayata getirmektedir. Benzer mekanizma "std::make_unique" fonksiyonunda da işletilmektedir. Bizler bu fonksiyona 
-        ilgili sınıfın "Ctor." fonksiyonuna geçilecek olan argümanları geçmekteyiz. 
-            * Örnek 1, Aşağıda "Perfect Forwarding" için kara düzen bir mekanizma geliştirilmiştir. Eğer "foo" fonksiyonu birden
-            fazla parametreye sahip olsaydı, her version için ayrı bir "overload" yazmamız gerekecekti. Yine "call_foo" için de 
-            aynısı gerekecekti. 
+        "Perfect Forwarding" ile amaçlanan şey bir fonksiyonu direkt olarak argümanlar ile çağırmak yerine o argümanları
+        önce aracı bir fonksiyona göndermek ve aracı olan fonksiyonun esas fonksiyonu çağırmasını sağlatmaktadır. Bir diğer
+        deyişle esas fonksiyonu direkt olarak çağırmakla aracı kullanarak çağırmak arasında bir farkın olmamasıdır.
+        Anımsayacağınız üzere "container" sınıfların "emplace" isimli fonksiyonları bu mekanizmadan faydalanmaktadır.
+        Anımsayacağınız üzere "empalce" fonksiyonuna bizler argüman olarak, "container" içerisinde tutulan sınıfın "Ctor."
+        fonksiyonlarına geçilecek argümanları geçmekteyiz. Böylelikle "emplace" fonksiyonu aldığı parametreler ile ilgili
+        sınıf türünden nesneyi hayata getirmektedir. Benzer mekanizma "std::make_unique" fonksiyonunda da işletilmektedir.
+        Bizler bu fonksiyona ilgili sınıfın "Ctor." fonksiyonuna geçilecek olan argümanları geçmekteyiz. 
+            * Örnek 1, Aşağıda "Perfect Forwarding" için kara düzen bir mekanizma geliştirilmiştir. Eğer "foo" fonksiyonu
+            birden fazla parametreye sahip olsaydı, her version için ayrı bir "overload" yazmamız gerekecekti. Yine
+            "call_foo" için de aynısı gerekecekti. 
                 #include <iostream>
 
                 class Myclass {};
@@ -3172,8 +3261,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
                 }
 
-            * Örnek 2.0, İşte yukarıdaki kara düzen yerine "std::forward" kullanarak daha rahat edebiliriz. 
-            "foo" fonksiyonu birden fazla argüman alacaksa da artık "variadic" şablonları kullanacağız. 
+            * Örnek 2.0, İşte yukarıdaki kara düzen yerine "std::forward" kullanarak daha rahat edebiliriz. "foo" fonksiyonu
+            birden fazla argüman alacaksa da artık "variadic" şablonları kullanacağız. 
                 #include <iostream>
 
                 class Myclass {};
@@ -3313,9 +3402,11 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 //... 
 
         Şimdi de "std::forward" fonksiyonunun kaba implementasyonunu inceleyelim:
-            * Örnek 1, Aşağıdaki örnekte "t" değişkeni "
+            * Örnek 1, Aşağıdaki örnekte "t" değişkeni : 
                 template<class T>
-                constexpr T&& Forward(typename std::remove_reference<T>::type& t) noexcept { // C++20 ile "typename" kelimesini yazmasak da olur.
+                constexpr T&& Forward(typename std::remove_reference<T>::type& t) noexcept {
+                    // C++20 ile "typename" kelimesini yazmasak da olur.
+
                     /*
                     * Anımsayacağınız üzere "T" türü ya "Myclass" ya da "Myclass&" olabilir. Eğer,
                     * "T" türü "Myclass&" ise "std::remove_reference" çağrısı sonucunda "Myclass" olacak. 
@@ -3327,9 +3418,10 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                     * değeri "Myclass&" olacaktır. 
                     * Eğer "T" türü bir referans değilse, "t" yine "L_Value Reference" olacaktır. Fakat fonksiyonun 
                     * geri dönüş ifadesinde "T" yerine referans türü gelmediği için, "Reference Collapsing" sonucu 
-                    * "Myclass&&" olacaktır. Fonksiyonun geri dönüş değeri türü "T&&" olduğu için, yine bir "Reference Collapsing"
-                    * gerçekleşecektir. Sonuç yine "Myclass&&" olacaktır. Dolayısıyla "T" türü referans tür değilse, "Forward"
-                    * fonksiyonuna yapılan çağrının geri dönüş değeri "Myclass&&" olacaktır.  
+                    * "Myclass&&" olacaktır. Fonksiyonun geri dönüş değeri türü "T&&" olduğu için, yine bir
+                    * "Reference Collapsing" gerçekleşecektir. Sonuç yine "Myclass&&" olacaktır. Dolayısıyla "T" türü
+                    * referans tür değilse, "Forward" fonksiyonuna yapılan çağrının geri dönüş değeri "Myclass&&"
+                    * olacaktır.  
                     */
                     return static_cast<T&&>(t);
                 }
@@ -3366,19 +3458,19 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                     Forward<Myclass&>(Myclass{});
                 }
 
-        Şimdi de "Universal Reference" parametreli fonksiyonların ve diğer referans parametreli fonksiyonların "Function Overload Resolution"
-        sırasındaki ilişkisine değinelim:
+        Şimdi de "Universal Reference" parametreli fonksiyonların ve diğer referans parametreli fonksiyonların
+        "Function Overload Resolution" sırasındaki ilişkisine değinelim:
 
-            Call of             f(Myclass&)           f(const Myclass&)         f(Myclass&&)          f(const Myclass&&)        template<typename T> f(T&&)
-            f(v)                1                     3                             X                           X                           2  
-            f(c)                X                     1                             X                           X                           2
-            f(Myclass{})        X                     4                             1                           3                           2
-            f(std::move(v))     X                     4                             1                           3                           2
-            f(std::move(c))     X                     3                             X                           1                           2
+            Call of         f(Myclass&) f(const Myclass&)   f(Myclass&&)    f(const Myclass&&)  template<typename T> f(T&&)
+            f(v)            1           3                   X               X                   2  
+            f(c)            X           1                   X               X                   2
+            f(Myclass{})    X           4                   1               3                   2
+            f(std::move(v)) X           4                   1               3                   2
+            f(std::move(c)) X           3                   X               1                   2
 
-        Buradan da görüleceği üzere eğer tam uyum yok ise "Universal Reference" olan yüksek öncelikli olacaktır. Dolayısıyla bu 
-        bilgiyi bir sınıfa "Ctor." yazarken de kullanabiliriz. "Universal Ctor." diyebileceğimiz bir "Ctor." yazmamız halinde, 
-        herhangi bir ifadeyi argüman olarak alarak o sınıf türünden nesne oluşturabiliriz. 
+        Buradan da görüleceği üzere eğer tam uyum yok ise "Universal Reference" olan yüksek öncelikli olacaktır. Dolayısıyla
+        bu bilgiyi bir sınıfa "Ctor." yazarken de kullanabiliriz. "Universal Ctor." diyebileceğimiz bir "Ctor." yazmamız
+        halinde, herhangi bir ifadeyi argüman olarak alarak o sınıf türünden nesne oluşturabiliriz. 
             * Örnek 1,
                 class Myclass {
                 public:
@@ -3579,10 +3671,14 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
                 int main()
                 {
-                    func(1, 2);           // OK. "T" türü "int" olarak açılacaktır. 
-                    func("ali", "ahmet"); // OK. "Array-decay" oluşacağı için "T" türü "const char*" olarak açılacaktır. 
+                    // OK. "T" türü "int" olarak açılacaktır. 
+                    func(1, 2);           
                     
-                    func(1, 2.);          // Sentaks Hatası. "T" için iki farklı tür çıkarımı olacağından, "Ambiguity" oluşacaktır. 
+                    // OK. "Array-decay" oluşacağı için "T" türü "const char*" olarak açılacaktır. 
+                    func("ali", "ahmet"); 
+                    
+                    // Sentaks Hatası. "T" için iki farklı tür çıkarımı olacağından, "Ambiguity" oluşacaktır. 
+                    func(1, 2.);          
                 }
 
             * Örnek 1.1,  
@@ -3595,10 +3691,12 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
                 int main()
                 {
-                    func("ali", "amo"); // OK. "Array-decay" OLUŞMAYACAKTIR. "T" nin tür çıkarımı "const char[4]" türüne olacaktır. 
+                    // OK. "Array-decay" OLUŞMAYACAKTIR. "T" nin tür çıkarımı "const char[4]" türüne olacaktır. 
+                    func("ali", "amo"); 
 
-                    func("ali", "ahmet"); // Sentaks Hatası. "Array-decay" OLUŞMAYACAKTIR. Fakat "T" nin tür çıkarımı
-                                          // "const char[4]" ve "const char[6]" türlerine olacağı için "Ambiguity" oluşacaktır.
+                    // Sentaks Hatası. "Array-decay" OLUŞMAYACAKTIR. Fakat "T" nin tür çıkarımı
+                    // "const char[4]" ve "const char[6]" türlerine olacağı için "Ambiguity" oluşacaktır.
+                    func("ali", "ahmet"); 
                 }
 
             * Örnek 1.2,
@@ -3714,15 +3812,16 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                     insert(coll, s);
                 }
 
-    >> Şablon koddan gerçek kodun yazılmasına, o şablonun "Instantiate" edilmesi denir. Oluşturulan ürüne ise "Template Specialization"
-    denmektedir. 
+    >> Şablon koddan gerçek kodun yazılmasına, o şablonun "Instantiate" edilmesi denir. Oluşturulan ürüne ise
+    "Template Specialization" denmektedir. 
         * Örnek 1,
             // Aşağıdaki bir sınıf şablonudur. 
             template<typename T>
             class Myclass{
             public:
-                void func(T); // "T" türünün ne olduğu belirlendiğinde, bu fonksiyonun parametrik yapısı da belirlenmiş olacaktır. 
-                              // Bu fonksiyon bir "member template" DEĞİLDİR.
+                void func(T); 
+                // "T" türünün ne olduğu belirlendiğinde, bu fonksiyonun parametrik yapısı da belirlenmiş olacaktır. 
+                // Bu fonksiyon bir "member template" DEĞİLDİR.
             };
             
             // Aşağıdaki bir sınıf şablonu DEĞİLDİR. 
@@ -3816,8 +3915,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 auto&& r2 = m;         // Myclass &  r2 = m;
             }
 
-    Pekiyi bizler "auto&&" ifadesini değişkenler için hangi amaçlarla kullanmalıyız? Çünkü bu zamana kadar genellikler "auto" ve 
-    "auto&" biçiminde kullanım gördük. Aşağıdaki örnekleri inceleyelim:
+    Pekiyi bizler "auto&&" ifadesini değişkenler için hangi amaçlarla kullanmalıyız? Çünkü bu zamana kadar genellikler
+    "auto" ve "auto&" biçiminde kullanım gördük. Aşağıdaki örnekleri inceleyelim:
         * Örnek 1,
             #include <string>
             #include <iostream>
@@ -3894,9 +3993,10 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 auto&& r4 = func_value(m);			 foo(std::forward<decltype(r4)>(r4)); // foo(Myclass&&)
             }
 
-        * Örnek 3.0, "std::vector" sınıfının "bool" türden açılımı, diğer türlerin açılımından farklıdır. "bit" türüne erişim 
-        olmadığı için "vector" sınıfının "nested" sınıfı olan "reference" sınıfı ilüzyon oluşturmak için kullanılmıştır. 
-        Fakat "range-based for loop" kullanırken dikkatli olmalıyız çünkü ilgili dizinin elemanları değiştirilecektir.  
+        * Örnek 3.0, "std::vector" sınıfının "bool" türden açılımı, diğer türlerin açılımından farklıdır. "bit" türüne
+        erişim olmadığı için "vector" sınıfının "nested" sınıfı olan "reference" sınıfı ilüzyon oluşturmak için
+        kullanılmıştır. Fakat "range-based for loop" kullanırken dikkatli olmalıyız çünkü ilgili dizinin elemanları
+        değiştirilecektir.  
             #include <iostream>
             #include <vector>
 
@@ -3928,7 +4028,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
                 std::cout << "\n";
 
-                // "val" değişkeninin türü "bool" değil, "std::vector<bool>::reference" olacaktır. Bu türün ".operator=" fonksiyonu, değişikliğe yol açacaktır. 
+                // "val" değişkeninin türü "bool" değil, "std::vector<bool>::reference" olacaktır.
+                // Bu türün ".operator=" fonksiyonu, değişikliğe yol açacaktır. 
                 {
                     /*
                         # OUTPUT #
@@ -3955,7 +4056,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
                 std::cout << "\n";
 
-                // "val" değişkeninin türü "bool" değil, "std::vector<bool>::reference" olacaktır. Bu türün ".operator*" fonksiyonu, değişikliğe yol açacaktır. 
+                // "val" değişkeninin türü "bool" değil, "std::vector<bool>::reference" olacaktır.
+                // Bu türün ".operator*" fonksiyonu, değişikliğe yol açacaktır. 
                 {
                     /*
                         # OUTPUT #
@@ -3982,8 +4084,9 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
                 std::cout << "\n";
 
-                // "range-based for loop" kullanırken de dikkatli olmalıyız. Çünkü artık "std::vector<bool>::reference" sınıfının 
-                // ".operator*" ve ".operaotor=" fonksiyonları arka planda çağrılmaktadır ki bunlar da veri elemanını değiştirecektir. 
+                // "range-based for loop" kullanırken de dikkatli olmalıyız. Çünkü artık "std::vector<bool>::reference"
+                // sınıfının ".operator*" ve ".operaotor=" fonksiyonları arka planda çağrılmaktadır ki bunlar da veri
+                // elemanını değiştirecektir. 
                 {
                     /*
                         # OUTPUT #
@@ -4023,8 +4126,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 }
             }
  
-        * Örnek 3.1, Aşağıdaki örnekteki sentaks hatasının nedeni "R-Value" kategorisindeki ifade "L-Value Reference" ye bağlanmaya 
-        çalışılmıştır. 
+        * Örnek 3.1, Aşağıdaki örnekteki sentaks hatasının nedeni "R-Value" kategorisindeki ifade "L-Value Reference" ye
+        bağlanmaya çalışılmıştır. 
             #include <iostream>
             #include <vector>
             #include <string>
@@ -4339,7 +4442,9 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
                     {
                         int x{}, * ptr{ &x };
-                        // decltype(auto)& y = x; // Sentaks hatası. "decltype(auto)" ifadesi ilave bir deklaratör almamaktadır. 
+                        
+                        // Sentaks hatası. "decltype(auto)" ifadesi ilave bir deklaratör almamaktadır. 
+                        // decltype(auto)& y = x;
                     }
                 }
 
@@ -4540,7 +4645,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                         
                         std::vector<std::string>&& ref_ref = create_svec(); // Life Extension.
                         
-                        // auto& ref_ref_ref = create_svec(); // Sentaks Hatası. Sağ taraf değeri, sol taraf referansa bağlanamaz. 
+                        // auto& ref_ref_ref = create_svec();
+                        // Sentaks Hatası. Sağ taraf değeri, sol taraf referansa bağlanamaz. 
 
                         const auto& Ref = create_svec().at(0); // NOT a Life Extension.
                     }
@@ -4574,12 +4680,13 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                     }
                 }
 
-    >> Anımsanacağı üzere sınıfların üye fonksiyonlarında "const" anahtar sözcüğünü kullanabiliyorduk. Böylelikle o üye fonksiyonun 
-    sınıfın anlamında bir değişikliğe yol açmasını engelliyorduk hem de "Function Overload Resolution" sırasında seçilebilmesini 
-    sağlıyorduk. Malümat olduğu üzere; "const" nesneler "non-const" üye fonksiyonları çağıramazken, "non-const" nesneler her iki 
-    türden fonksiyonu da çağırabiliyordu. Artık modern C++ ile fonksiyon bildirimlerinde "&" atomunu kullanabiliriz. Eğer bir adet 
-    "&" atomu kullanırsak ilgili fonksiyon "L-Value" nesneler tarafından, iki adet "&" atomu kullanırsak "R-Value" nesneler tarafından 
-    ilgili fonksiyon çağrılabilecektir. Fakat "&" olanlar, "&" olmayanlar ile birlikte kullanılamazlar. 
+    >> Anımsanacağı üzere sınıfların üye fonksiyonlarında "const" anahtar sözcüğünü kullanabiliyorduk. Böylelikle o üye
+    fonksiyonun sınıfın anlamında bir değişikliğe yol açmasını engelliyorduk hem de "Function Overload Resolution" sırasında
+    seçilebilmesini sağlıyorduk. Malümat olduğu üzere; "const" nesneler "non-const" üye fonksiyonları çağıramazken,
+    "non-const" nesneler her iki türden fonksiyonu da çağırabiliyordu. Artık modern C++ ile fonksiyon bildirimlerinde "&"
+    atomunu kullanabiliriz. Eğer bir adet "&" atomu kullanırsak ilgili fonksiyon "L-Value" nesneler tarafından, iki adet "&"
+    atomu kullanırsak "R-Value" nesneler tarafından ilgili fonksiyon çağrılabilecektir. Fakat "&" olanlar, "&" olmayanlar
+    ile birlikte kullanılamazlar. 
         * Örnek 1,
             #include <iostream>
             #include <vector>
@@ -4625,15 +4732,17 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                     
                 foo(get_str() == "Ahmet");					// OK: foo(bool)
 
-                foo(get_str() = "Yuruk");					// OK: foo(std::string);
-                //foo(get_str().operator=("Yuruk"));		// "std::string" sınıfının ".operator=" fonksiyonu "*this" döndürmektedir. 
-                                                            // "get_str" fonksiyonunun döndürdüğü geçici nesneye "Yuruk" değerini 
-                                                            // atamış olduk. 
+                foo(get_str() = "Yuruk"); // OK: foo(std::string);
+
+                // foo(get_str().operator=("Yuruk"));
+                // "std::string" sınıfının ".operator=" fonksiyonu "*this" döndürmektedir. 
+                // "get_str" fonksiyonunun döndürdüğü geçici nesneye "Yuruk" değerini 
+                // atamış olduk. 
             } 
 
-        * Örnek 3, Sınıfın öze üye fonksiyonları "Implicitly Declared" ise veya bizim tarafımızdan deklare edilmiş ama "default" 
-        edilmişse, "&" olmadan yazılır. Dolayısıyla bu fonksiyonları ister kendimiz tanımlayalım ister derleyiciye tanımlatalım,
-        her iki senaryoda da "&" atomunu belirtmeliyiz.
+        * Örnek 3, Sınıfın öze üye fonksiyonları "Implicitly Declared" ise veya bizim tarafımızdan deklare edilmiş ama
+        "default" edilmişse, "&" olmadan yazılır. Dolayısıyla bu fonksiyonları ister kendimiz tanımlayalım ister derleyiciye
+        tanımlatalım, her iki senaryoda da "&" atomunu belirtmeliyiz.
             #include <iostream>
             #include <vector>
             #include <string>
@@ -4678,7 +4787,10 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
             public:
                 Person(const std::string& name) : m_name{name} {}
 
-                /* "range-based for loop" kullanırken hataya neden olacak noktalar için bu "overload" önlem oluşturacaktır. */
+                /*
+                * "range-based for loop" kullanırken hataya neden olacak noktalar
+                * için bu "overload" önlem oluşturacaktır.
+                */
                 std::string get_name()&& 
                 {
                     std::cout << "get_name()&& => ";
@@ -4717,8 +4829,9 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 foo(Person{"ali"});		// get_name() && => ali
             }
 
-    >> "const" nesneler ile "non-const" üye fonksiyonları çağıramayız. Çünkü ilgili üye fonksiyonların gizli parametresi "const"
-    türden DEĞİLDİR, yani "this" göstericisi için kullanılan parametre. Aksi halde "const" özelliği düşmüş OLACAKTIR. 
+    >> "const" nesneler ile "non-const" üye fonksiyonları çağıramayız. Çünkü ilgili üye fonksiyonların gizli parametresi
+    "const" türden DEĞİLDİR, yani "this" göstericisi için kullanılan parametre. Aksi halde "const" özelliği düşmüş
+    OLACAKTIR. 
         * Örnek 1,
             #include <iostream>
             #include <vector>
@@ -4751,8 +4864,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 cm1.my_const_func(); // CONST!
             }  
 
-    >> "Idiom" demek, bir dile bağlı; "pattern" demek, dilden bağımsız. Eğer bir "Idiom" birden fazla adımdan oluşan kod parçacıkları
-    içerirse, ona da "Technic" denmektedir. 
+    >> "Idiom" demek, bir dile bağlı; "pattern" demek, dilden bağımsız. Eğer bir "Idiom" birden fazla adımdan oluşan
+    kod parçacıkları içerirse, ona da "Technic" denmektedir. 
 
     >> "using declaration": İlgili isim alanı enjekte edilmektedir. 
         * Örnek 1,
@@ -4775,88 +4888,89 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 cout << surname << endl; // Yuruk
             }
 
-        >> "ADL" : 
-        * Örnek 1,
-            #include <iostream>
-            #include <vector>
+        >>> "ADL" : 
+            * Örnek 1,
+                #include <iostream>
+                #include <vector>
 
-            namespace nec{
-                class Myclass{};
-                
-                void swap(Myclass& a, Myclass& b) {
-                    std::cout << "nec::swap was called\n";
+                namespace nec{
+                    class Myclass{};
+                    
+                    void swap(Myclass& a, Myclass& b) {
+                        std::cout << "nec::swap was called\n";
+                    }
+                    
+                    void read(std::vector<Myclass>) {
+                        std::cout << "nec::read was called\n";
+                    }
+                    
+                    void write(Myclass) {
+                        std::cout << "nec::write was called\n";
+                    }
                 }
-                
-                void read(std::vector<Myclass>) {
-                    std::cout << "nec::read was called\n";
+
+                void write(nec::Myclass) {
+                    std::cout << "write was called\n";
                 }
-                
-                void write(Myclass) {
-                    std::cout << "nec::write was called\n";
+
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                    */
+                    
+                    nec::Myclass mx, my;
+                    swap(mx, my); // ADL: nec::swap was called
+                    
+                    std::vector<nec::Myclass> mvec;
+                    read(mvec); // ADL: nec::read was called
+                    
+                    // ERROR: ambiguous call for "write". "ADL"
+                    // mekanizmasından dolayı her iki fonksiyon
+                    // ismi de görülür durumdadır. 
+                    write(mx);
                 }
-            }
 
-            void write(nec::Myclass) {
-                std::cout << "write was called\n";
-            }
+            * Örnek 2,
+                #include <iostream>
+                #include <vector>
 
-            int main()
-            {
-                /*
-                    # OUTPUT #
-                */
-                
-                nec::Myclass mx, my;
-                swap(mx, my); // ADL: nec::swap was called
-                
-                std::vector<nec::Myclass> mvec;
-                read(mvec); // ADL: nec::read was called
-                
-                // ERROR: ambiguous call for "write". "ADL"
-                // mekanizmasından dolayı her iki fonksiyon
-                // ismi de görülür durumdadır. 
-                write(mx);
-            }
+                namespace my_ns{
+                    class Myclass{};
+                    
+                    void swap(Myclass, Myclass) { std::cout << "my_ns::swap(Myclass, Myclass) was called.\n"; }
+                }
 
-        * Örnek 2,
-            #include <iostream>
-            #include <vector>
+                template<typename T>
+                void func(T) {
+                    T x, y;
+                    
+                    // [0]
+                    // "T", bir "namespace" içerisindeki türdense ve o türe
+                    // ilişkin bir "swap" fonksiyonu da varsa, "std" isim alanı 
+                    // içerisindeki "swap" fonksiyonunun ÇAĞRILMA İHTİMALİ 
+                    // KALMAYACAKTIR. 
+                    swap(x, y); 
+                }
 
-            namespace my_ns{
-                class Myclass{};
-                
-                void swap(Myclass, Myclass) { std::cout << "my_ns::swap(Myclass, Myclass) was called.\n"; }
-            }
+                int main()
+                {
+                    /*
+                        # OUTPUT #
+                    */
+                    
+                    my_ns::Myclass mx, my;
+                    swap(mx, my); // ADL, my_ns::swap(Myclass) was called.
+                    
+                    func(mx); // ADL, my_ns::swap(Myclass, Myclass) was called.
+                }
 
-            template<typename T>
-            void func(T) {
-                T x, y;
-                
-                // [0]
-                // "T", bir "namespace" içerisindeki türdense ve o türe
-                // ilişkin bir "swap" fonksiyonu da varsa, "std" isim alanı 
-                // içerisindeki "swap" fonksiyonunun ÇAĞRILMA İHTİMALİ 
-                // KALMAYACAKTIR. 
-                swap(x, y); 
-            }
-
-            int main()
-            {
-                /*
-                    # OUTPUT #
-                */
-                
-                my_ns::Myclass mx, my;
-                swap(mx, my); // ADL, my_ns::swap(Myclass) was called.
-                
-                func(mx); // ADL, my_ns::swap(Myclass, Myclass) was called.
-            }
-
-    >> Tür dönüştürme operatör fonksiyonları: "const" veya "non-const" olabilirler, geri dönüş değerleri hedef türe gösterici veya referams
-    olabilir veya başka bir sınıf türüne dönüşüm de mümkündür. Yine "overload" edilebilirler. Sadece bu fonksiyonun imzasında geri dönüş 
-    türüne ilişkin tür bilgisini yazmıyoruz. Bütün bunların yanı sıra bu fonksiyonu "member template" fonksiyon olarak da yazabiliriz.
-    Bu sebepten dolayı "auto" anahtar sözcüğünü de kullanabiliriz. Bu durumda herhangi bir türe dönüşüm yapabiliriz. Diğer yandan, 
-    Modern C++ ile birlikte, "Conversion Ctor." da olduğu gibi, "explicit" anahtar sözcüğünü de kullanabiliriz.   
+    >> Tür dönüştürme operatör fonksiyonları: "const" veya "non-const" olabilirler, geri dönüş değerleri hedef türe
+    gösterici veya referams olabilir veya başka bir sınıf türüne dönüşüm de mümkündür. Yine "overload" edilebilirler. Sadece
+    bu fonksiyonun imzasında geri dönüş türüne ilişkin tür bilgisini yazmıyoruz. Bütün bunların yanı sıra bu fonksiyonu
+    "member template" fonksiyon olarak da yazabiliriz. Bu sebepten dolayı "auto" anahtar sözcüğünü de kullanabiliriz. Bu
+    durumda herhangi bir türe dönüşüm yapabiliriz. Diğer yandan, Modern C++ ile birlikte, "Conversion Ctor." da olduğu gibi,
+    "explicit" anahtar sözcüğünü de kullanabiliriz.   
         * Örnek 1,
             class A{};
             class B{};
@@ -4896,20 +5010,23 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
             }
 
     >> "Virtual Dispatch" : Taban sınıfların "Dtor." fonksiyonları ya "virtual" ve "public" ya da "non-virtual" ve "protected"
-    olmalıdır. Böylelikle "virtual dispatch" mekanizması sağlıklı bir şekilde işletilebilsin. Şu durumlarda da bu mekanizma devreye 
-    girmemektedir;
-        >>>  Taban sınıfın "Ctor." fonksiyonu içerisinde yapılan sanal fonksiyon çağrılarında, bu mekanizma devreye girmez. Eğer uygulansaydı
-        türemiş sınıf nesnesi hayata gelmeden o nesneye ilişkin sanal fonksiyon çağrılacaktı ki bu da felakete yol açacaktır. Dolayısıyla
-        taban sınıfın "Ctor." fonksiyonu içerisinde sanal fonksiyon çağırırken ya bu durumu bilmeli ya da o çağrıyı yapmamalıyız.
+    olmalıdır. Böylelikle "virtual dispatch" mekanizması sağlıklı bir şekilde işletilebilsin. Şu durumlarda da bu mekanizma
+    devreye girmemektedir;
+        >>>  Taban sınıfın "Ctor." fonksiyonu içerisinde yapılan sanal fonksiyon çağrılarında, bu mekanizma devreye girmez.
+        Eğer uygulansaydı türemiş sınıf nesnesi hayata gelmeden o nesneye ilişkin sanal fonksiyon çağrılacaktı ki bu da
+        felakete yol açacaktır. Dolayısıyla taban sınıfın "Ctor." fonksiyonu içerisinde sanal fonksiyon çağırırken ya bu
+        durumu bilmeli ya da o çağrıyı yapmamalıyız.
 
-        >>> Taban sınıfın "Dtor." fonksiyonu içerisinde yapılan sanal fonksiyon çağrılarında, bu mekanizma devreye girmez. Eğer uygulansaydı 
-        hayatı bitmiş sınıf nesnesi için o nesneye ilişkin sanal fonksiyon çağrılacaktı ki bu felakete yol açacaktır. Dolayısıyla
-        taban sınıfın "Dtor." fonksiyonu içerisinde sanal fonksiyon çağırırken ya bu durumu bilmeli ya da o çağrıyı yapmamalıyız.
+        >>> Taban sınıfın "Dtor." fonksiyonu içerisinde yapılan sanal fonksiyon çağrılarında, bu mekanizma devreye girmez.
+        Eğer uygulansaydı hayatı bitmiş sınıf nesnesi için o nesneye ilişkin sanal fonksiyon çağrılacaktı ki bu felakete
+        yol açacaktır. Dolayısıyla taban sınıfın "Dtor." fonksiyonu içerisinde sanal fonksiyon çağırırken ya bu durumu
+        bilmeli ya da o çağrıyı yapmamalıyız.
 
         >>> "qualifid-name" kullanılan durumlarda bu mekanizma devreye girmez. 
 
         >>> "object-slicing" olduğunda yine bu mekanizma işletilmez. 
 
+    Aşağıda bu konuya ilişkin örnekler verilmiştir;
         * Örnek 1, Taban sınıf türünden bir gösterici ile türemiş sınıfa ilişkin nesneyi kontrol etmek istersek;
             #include <iostream>
 
@@ -4987,9 +5104,9 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
 
     >> Taban sınıfların "private" bölümündeki sanal fonksiyonları da türemiş sınıflar içerisinde "override" edebiliriz. 
 
-    >> "std::tuple" kullanırken, veri elemanlarına erişmek için "std::get" fonksiyonunu kullanmaktayız. Bu fonksiyonun da indeks 
-    bilgisi ve tür bilgisi alan iki farklı versiyonu vardır. Dikkat etmemiz gereken nokta ise tür bilgisi alan versiyonu kullanırken 
-    "std::tuple" içerisinde o türe ait birden fazla öğe varsa, sentaks hatası oluşacaktır.
+    >> "std::tuple" kullanırken, veri elemanlarına erişmek için "std::get" fonksiyonunu kullanmaktayız. Bu fonksiyonun da
+    indeks bilgisi ve tür bilgisi alan iki farklı versiyonu vardır. Dikkat etmemiz gereken nokta ise tür bilgisi alan
+    versiyonu kullanırken "std::tuple" içerisinde o türe ait birden fazla öğe varsa, sentaks hatası oluşacaktır.
         * Örnek 1,
             #include <iostream>
             #include <tuple>
@@ -5094,8 +5211,8 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
                 print_values(a, b, c); // 30 10 20
             } 
 
-        * Örnek 3, "std::tuple" nesnesini karşılaştırma işlemlerinde de kullanabiliriz.  Fakat C++20 ile dile eklenen "3-way Comparison"
-        operatörü sayesinde, bu kullanıma gerek kalmamıştır. 
+        * Örnek 3, "std::tuple" nesnesini karşılaştırma işlemlerinde de kullanabiliriz.  Fakat C++20 ile dile eklenen
+        "3-way Comparison" operatörü sayesinde, bu kullanıma gerek kalmamıştır. 
             #include <iostream>
             #include <tuple>
 
@@ -5221,5 +5338,5 @@ bu garantiyi vermektedir. Fakat üçüncü parti kütüphaneler için bir kesinl
         nm -g -C --defined-only * .o 
 
     >> Değişkenlerimize mutlak suretle ilk değer ataması yapıyoruz; bu amaca yönelim "Lambda Init. Capture" da kullanabiliriz,
-    "Ternary Opt." de kullanabiliriz, herhangi bir ifade de kullanabiliriz. Yeterki ilk değer verebilelim. Böylelikle o nesnemizin 
-    değeri deyişmeyecekse, "const" olarak hayata gelmesini de mümkün kılmış oluruz. 
+    "Ternary Opt." de kullanabiliriz, herhangi bir ifade de kullanabiliriz. Yeterki ilk değer verebilelim. Böylelikle o
+    nesnemizin değeri deyişmeyecekse, "const" olarak hayata gelmesini de mümkün kılmış oluruz. 

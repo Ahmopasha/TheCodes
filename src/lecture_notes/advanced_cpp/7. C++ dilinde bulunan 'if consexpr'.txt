@@ -131,7 +131,8 @@ durumlarında mutlaka "constexpr" belirtecini yazmalıyız. Şimdi de aşağıda
             std::cout << as_string(std::string("kirkIki")) << '\n'; // kirkIki
             
             // Error: no matching function for call to ‘std::__cxx11::basic_string::basic_string(Myclass&)’
-            // "std::string" sınıfındaki "ctor." fonksiyonlar "Myclass" türünden argüman almadıklarından, sentaks hatası oluştu.
+            // "std::string" sınıfındaki "ctor." fonksiyonlar "Myclass" türünden argüman almadıklarından, sentaks hatası
+            // oluştu.
             // std::cout << as_string(Myclass{}) << '\n';
         }
 
@@ -360,7 +361,8 @@ durumlarında mutlaka "constexpr" belirtecini yazmalıyız. Şimdi de aşağıda
         class Neco {
             public:
                 template<std::size_t N>
-                auto get(); // Gerek "explicit specialization" gerek "partial specialization" için fonksiyonun tanımına lüzum YOKTUR.
+                auto get();
+                // Gerek "explicit specialization" gerek "partial specialization" için fonksiyonun tanımına lüzum YOKTUR.
                 
                 int ival{ 17500 };
                 double dval{ 17.5 };

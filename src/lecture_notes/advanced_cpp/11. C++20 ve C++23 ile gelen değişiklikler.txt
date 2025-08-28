@@ -39,9 +39,10 @@
                 std::cout << std::format("{0:032b}	{0}\n", x, x); // -0000000000000000000000000000001        -1
             }
 
-    >> İşaretli tam sayılar ile işaretsiz tam sayıların karşılaştırılmasında derleyiciler tipik olarak uyarı verirler. C++20 itibariyle
-    "ssize" isimli global bir fonksiyon eklendi. Geri dönüş değeri işaretli tam sayı türüdür. Dolayısıyla işaretli tam sayı ile işaretsiz 
-    tam sayıları karşılaştırırken bu global fonksiyonu kullanmamız halinde derleyici uyarı mesajı vermeyecektir. 
+    >> İşaretli tam sayılar ile işaretsiz tam sayıların karşılaştırılmasında derleyiciler tipik olarak uyarı verirler. C++20
+    itibariyle "ssize" isimli global bir fonksiyon eklendi. Geri dönüş değeri işaretli tam sayı türüdür. Dolayısıyla işaretli
+    tam sayı ile işaretsiz tam sayıları karşılaştırırken bu global fonksiyonu kullanmamız halinde derleyici uyarı mesajı
+    vermeyecektir. 
         * Örnek 1,
             #include <vector>
             int main()
@@ -62,8 +63,8 @@
                 }
             }
 
-    >> C++20 ile birlikte yapıların "bitfield" veri elemanları, sınıfların diğer elemanları gibi, "Default Member Init." ya da "In-class Init".
-    ile ilk değer alabilmektedir. 
+    >> C++20 ile birlikte yapıların "bitfield" veri elemanları, sınıfların diğer elemanları gibi, "Default Member Init."
+    ya da "In-class Init". ile ilk değer alabilmektedir. 
         * Örnek 1,
             struct Nec {
                 int x : 4{7};   // "Default Member Init." 
@@ -76,8 +77,8 @@
                 //...
             }
 
-    >> "bit" başlık dosyası ve fonksiyonları: Buradaki fonksiyonlar "constexpr" fonksiyonlardır. İşaretli tam sayılar ile bu başlık dosyasındaki
-    fonksiyonların kullanılması sentaks hatasıdır.
+    >> "bit" başlık dosyası ve fonksiyonları: Buradaki fonksiyonlar "constexpr" fonksiyonlardır. İşaretli tam sayılar ile
+    bu başlık dosyasındaki fonksiyonların kullanılması sentaks hatasıdır.
         * Örnek 1,
             #include <bit>
             #include <iostream>
@@ -282,9 +283,9 @@
                //...
             }
 
-        * Örnek 2, Fakat fonksiyonun parametre parantezinde hala "typename" anahtar sözcüğünü kullanmak zorundayız. Aksi halde 
-        ilgili sınıfın "static" veri elemanı olarak değerlendirilecektir. Bunun istisnası sınıfların üye fonksiyonlarıdır. Öylesi
-        fonksiyonlarda yine "typename" anahtar sözcüğüne gerek yoktur. 
+        * Örnek 2, Fakat fonksiyonun parametre parantezinde hala "typename" anahtar sözcüğünü kullanmak zorundayız. Aksi
+        halde ilgili sınıfın "static" veri elemanı olarak değerlendirilecektir. Bunun istisnası sınıfların üye
+        fonksiyonlarıdır. Öylesi fonksiyonlarda yine "typename" anahtar sözcüğüne gerek yoktur. 
             // ERROR
             template<typename T>
             void foo(T::Erg) {}
@@ -340,8 +341,8 @@
                 //...
             }
 
-    >> "type_traits" başlık dosyasına, işaretli tam sayı ile işaretsiz tam sayıları karşılaştırmada kullanmak üzere, bir takım 
-    fonksiyonlar eklenmiştir. 
+    >> "type_traits" başlık dosyasına, işaretli tam sayı ile işaretsiz tam sayıları karşılaştırmada kullanmak üzere, bir
+    takım fonksiyonlar eklenmiştir. 
         * Örnek 1.0,
             #include <type_traits>
             #include <iostream>
@@ -395,8 +396,8 @@
                 }
             }
 
-    >> "[]" operatörü içerisinde "," operatörü ile oluşturulan ifadeyi, C++23 itibariyle, doğrudan kullanamayacağız. Fakat aynı
-    ifadeyi "()" ile sarmalayarak da kullanabiliriz. 
+    >> "[]" operatörü içerisinde "," operatörü ile oluşturulan ifadeyi, C++23 itibariyle, doğrudan kullanamayacağız. Fakat
+    aynı ifadeyi "()" ile sarmalayarak da kullanabiliriz. 
         * Örnek 1,
             #include <iostream>
 
@@ -414,8 +415,8 @@
                 std::cout << '\n';   
             }
 
-    >> C++20 itibariyle adres türlerinden "bool" türlerine dönüşüm  "Narrowing Conversion" kategorisine eklenmiştir. Tabii sadece "{}" ile 
-    ilk değer verilmesi durumunda geçerlidir. 
+    >> C++20 itibariyle adres türlerinden "bool" türlerine dönüşüm  "Narrowing Conversion" kategorisine eklenmiştir. Tabii
+    sadece "{}" ile ilk değer verilmesi durumunda geçerlidir. 
         * Örnek 1,
             int main()
             {
@@ -426,8 +427,8 @@
                 bool d{vp}; // narrowing conversion of ‘vp’ from ‘void*’ to ‘bool’ [-Wnarrowing]
             }
 
-    >> C++20 itibariyle dinamik ömürlü dizi oluştururken, dizinin boyutunu belirtmeden, "{}" ile ilk değer verdiğimiz zaman sentaks hatası 
-    olurken, artık dizinin boyutunu belirtmeye lüzum kalmamıştır. 
+    >> C++20 itibariyle dinamik ömürlü dizi oluştururken, dizinin boyutunu belirtmeden, "{}" ile ilk değer verdiğimiz zaman
+    sentaks hatası olurken, artık dizinin boyutunu belirtmeye lüzum kalmamıştır. 
         * Örnek 1,
             int main()
             {
@@ -443,7 +444,8 @@
 
             int main()
             {
-                first_int_pair my_pair{ 1, 1.1 }; // alias template deduction only available with ‘-std=c++20’ or ‘-std=gnu++20’
+                // alias template deduction only available with ‘-std=c++20’ or ‘-std=gnu++20’
+                first_int_pair my_pair{ 1, 1.1 };
             }
 
     >> C++20 ile birlikte "inline" isim alanlarını direkt olarak bildirim sırasında kullanabiliriz.
@@ -470,8 +472,8 @@
                 AA::BB::c = 2; // Since C++20 
             }
 
-    >> "source_location" isimli yeni bir başlık dosyası daha geldi. C dilinden gelen "__LINE__", "__FILE__" ve "__func__" sembolik
-    sabitleri yerine bu başlık dosyası ile gelen "source_location" türünü kullanabiliriz. 
+    >> "source_location" isimli yeni bir başlık dosyası daha geldi. C dilinden gelen "__LINE__", "__FILE__" ve "__func__"
+    sembolik sabitleri yerine bu başlık dosyası ile gelen "source_location" türünü kullanabiliriz. 
         * Örnek 1,
             #include <source_location>
             #include <iostream>
@@ -632,9 +634,9 @@
             }
 
     >> C++23 ile dile eklenen, "auto" anahtar sözcüğünün yeni bir "overload" edilmiş halini inceleyelim; Anımsanacağı üzere 
-    fonksiyon şablonlarında fonksiyon çağrısı sırasında "std::initializer_list" kullanılması sentaks hatasıyken, "auto" kullanılarak 
-    değişken bildirimlerinde sentaks hatası meydana gelmemektedir. Hatta "auto" ile şablon parametresi "T" nin farklı olduğu tek 
-    nokta da burasıydı. 
+    fonksiyon şablonlarında fonksiyon çağrısı sırasında "std::initializer_list" kullanılması sentaks hatasıyken, "auto"
+    kullanılarak değişken bildirimlerinde sentaks hatası meydana gelmemektedir. Hatta "auto" ile şablon parametresi "T" nin
+    farklı olduğu tek nokta da burasıydı. 
         * Örnek 1.0,
             #include <iostream>
             #include <initializer_list>
@@ -669,8 +671,8 @@
                 func(std::initializer_list<int>{ 3, 5, 7, 9 }); // 4:3 5 7 9 
             }
 
-    Artık C++23 ile birlikte "auto" anahtar sözcüğünü de "func" fonksiyonu çağrısında kullanabiliriz. Fakat burada unutmamamız gereken 
-    şey, "auto()" ile oluşturulan ifadenin "R-Value" OLDUĞUDUR. 
+    Artık C++23 ile birlikte "auto" anahtar sözcüğünü de "func" fonksiyonu çağrısında kullanabiliriz. Fakat burada
+    unutmamamız gereken şey, "auto()" ile oluşturulan ifadenin "R-Value" OLDUĞUDUR. 
         * Örnek 1,
             #include <iostream>
             #include <initializer_list>
@@ -812,16 +814,17 @@
                 func("Ulya Yuruk", svec); // string
             }
 
-    >> "Explicit Object Parameter" : C++23 ile dile eklenmiştir. "non-static" üye fonksiyonların gizli bir parametre değişkeni vardır
-    ve o sınıf türünden bir göstericidir. Eğer fonksiyon "const" ise iş bu gizli parametre de "const" olur, yani "const T*". İşte bu gizli 
-    parametreyi açık hale getirebiliriz ve ismi ile kullanabiliriz. Fonksiyonun birinci parametresi olmalıdır. Kullanım biçimi şu şekildedir;
+    >> "Explicit Object Parameter" : C++23 ile dile eklenmiştir. "non-static" üye fonksiyonların gizli bir parametre
+    değişkeni vardır ve o sınıf türünden bir göstericidir. Eğer fonksiyon "const" ise iş bu gizli parametre de "const" olur,
+    yani "const T*". İşte bu gizli parametreyi açık hale getirebiliriz ve ismi ile kullanabiliriz. Fonksiyonun birinci
+    parametresi olmalıdır. Kullanım biçimi şu şekildedir;
 
         -> "this" anahtar sözcüğünü yazıyoruz.
         -> Sonrasında sınıfın türünü yazıyoruz. 
-            -> Eğer referans semantiği ile kullanacaksak "&", gösterici semantiği kullanacaksak "*" atomunu yazıyoruz. Pekala bu iki 
-            semantiği KULLANMAYADABİLİRİZ. Bu durumda nesnenin bir kopyası üzerinde işlem yapmış oluruz. 
-            -> Bu aşamada parametreyi "L-Value Reference", "R-Value Reference", "const L-Value Reference", "const R-Value Reference" 
-            olarak da kullanabiliriz. 
+            -> Eğer referans semantiği ile kullanacaksak "&", gösterici semantiği kullanacaksak "*" atomunu yazıyoruz.
+            Pekala bu iki semantiği KULLANMAYADABİLİRİZ. Bu durumda nesnenin bir kopyası üzerinde işlem yapmış oluruz. 
+            -> Bu aşamada parametreyi "L-Value Reference", "R-Value Reference", "const L-Value Reference",
+            "const R-Value Reference" olarak da kullanabiliriz. 
         -> Son olarak da bu parametre için bir isim yazıyoruz.
 
     Dolayısıyla fonksiyonun imzasındaki ilk parametre aşağıdaki gibi olabilir;
@@ -832,8 +835,8 @@
         "this T&& self" 
         "this const T&& self"
 
-    Ancak bu şekilde bir parametre kullanırsak, veri elemanlarını direkt isimleriyle veya "this" göstericileri ile niteleyerek 
-    kullanamayız. 
+    Ancak bu şekilde bir parametre kullanırsak, veri elemanlarını direkt isimleriyle veya "this" göstericileri ile
+    niteleyerek kullanamayız. 
         * Örnek 1.0,
             #include <iostream>
 
@@ -900,7 +903,8 @@
                 
             }
 
-    Tabii "Explicit Object Parameter" ile, fonksiyon imzalarında belittiğimiz "Reference Qualifiers" yerine de kullanabiliriz;   
+    Tabii "Explicit Object Parameter" ile, fonksiyon imzalarında belittiğimiz "Reference Qualifiers" yerine de
+    kullanabiliriz;   
         * Örnek 1.0,
             #include <iostream>
 
@@ -1147,10 +1151,10 @@
                     std::cout << gcd(12, 40) << '\n'; // 4
                 }
 
-    >> "Conditionally Explicit Ctor." : Sınıfın kurucu işlevinin "excplicit" olmasının bir koşula bağlanması durumudur. Anımsanacağı üzere
-    "Default Ctor.", tek parametreli "ctor.", çift parametreli "ctor." fonksiyonlarını "explicit" olarak betimleyebildiğimiz gibi tam tersi 
-    yönde de betimleyebiliyorduk. Artık C++20 ile birlikte bu fonksiyonların "explicit" olup olmamasını da bir "compile time" sabitine 
-    bağlayabiliriz. Kullanım biçimi "noexcept" fonksiyonu gibidir. 
+    >> "Conditionally Explicit Ctor." : Sınıfın kurucu işlevinin "excplicit" olmasının bir koşula bağlanması durumudur.
+    Anımsanacağı üzere "Default Ctor.", tek parametreli "ctor.", çift parametreli "ctor." fonksiyonlarını "explicit" olarak
+    betimleyebildiğimiz gibi tam tersi yönde de betimleyebiliyorduk. Artık C++20 ile birlikte bu fonksiyonların "explicit"
+    olup olmamasını da bir "compile time" sabitine bağlayabiliriz. Kullanım biçimi "noexcept" fonksiyonu gibidir. 
         * Örnek 1,
             class Myclass {
                 public:
@@ -1172,8 +1176,8 @@
                 Myclass<float> m = 5.; // OK
             }
 
-        * Örnek 3, En tipik kullanım yeri sarmalanan sınıflarda görülmektedir. Sarmalanan sınıfın ilgili "ctor." fonksiyonu "explicit" ise 
-        onu sarmalayan sınıfın o fonksiyonunun da "explicit" olmasını istiyoruz. 
+        * Örnek 3, En tipik kullanım yeri sarmalanan sınıflarda görülmektedir. Sarmalanan sınıfın ilgili "ctor." fonksiyonu
+        "explicit" ise onu sarmalayan sınıfın o fonksiyonunun da "explicit" olmasını istiyoruz. 
             #include <type_traits>
 
             class Neco {
@@ -1209,6 +1213,6 @@
 
 
 > Hatırlatıcı Notlar:
-    >> "unspecified behavior", "implementation defined" ın kapsayan kümesidir. İkisi arasındaki fark ise "implementation defined"
-    olması durumunda derleyicinin bunu dökümante etmesi ve ilgili kod farklı yerlerde tekrar tekrar çağrıldığında aynı 
-    sonucun alınması gerekiyor. Halbuki "unspecified behavior" için bunlar geçerli değildir. 
+    >> "unspecified behavior", "implementation defined" ın kapsayan kümesidir. İkisi arasındaki fark ise
+    "implementation defined" olması durumunda derleyicinin bunu dökümante etmesi ve ilgili kod farklı yerlerde tekrar tekrar
+    çağrıldığında aynı sonucun alınması gerekiyor. Halbuki "unspecified behavior" için bunlar geçerli değildir. 

@@ -153,15 +153,16 @@ başına "_" karakterini de eklemeliyiz. Eğer standart olanları çağıracaksa
                 std::cout << "Result : " << x << "\n";
             }
 
-Anımsayacağımız üzere "row" ve "cooked" biçimde "literal" oluşturabiliyorduk. "row" biçimde oluşturduklarımız 
-"const char*" parametreli, "cooked" olanlar ise "unsigned long long" veya "long double" parametreli olacaktır. Pekiyi bizler başka hangi 
+Anımsayacağımız üzere "row" ve "cooked" biçimde "literal" oluşturabiliyorduk. "row" biçimde oluşturduklarımız "const char*"
+parametreli, "cooked" olanlar ise "unsigned long long" veya "long double" parametreli olacaktır. Pekiyi bizler başka hangi
 parametreleri "custom" fonksiyonlar oluşturabiliriz? 
-    >> Normal şartlarda "const char*" parametreli olanlar, argümanı bir yazı biçiminde aldıklarından, yazının adresini geçmiş oluyorduk.
-    Pekiyi böylesi fonksiyonlara "" işareti kullanarak argüman geçmemiz mümkün müdür? Bunun için, tıpkı "++" operatörünün ön ek olarak
-    kullanıldığı senaryolar için ".operator++()" fonksiyonuna boş bir parametre belirtir gibi, bizler de "const char*" parametreli
-    fonksiyona boş bir parametre daha belirtmeliyiz. Fakat ikinci parametrenin türü yine "std::size_t" / "unsigned long" türünden olmalıdır. 
-        * Örnek 1, Aşağıdaki örneğin çıktısında da görüleceği üzere "" kullanarak argüman geçtiğimiz zaman sentaks hatası meydana 
-        gelmektedir. 
+    >> Normal şartlarda "const char*" parametreli olanlar, argümanı bir yazı biçiminde aldıklarından, yazının adresini geçmiş
+    oluyorduk. Pekiyi böylesi fonksiyonlara "" işareti kullanarak argüman geçmemiz mümkün müdür? Bunun için, tıpkı "++"
+    operatörünün ön ek olarak kullanıldığı senaryolar için ".operator++()" fonksiyonuna boş bir parametre belirtir gibi,
+    bizler de "const char*" parametreli fonksiyona boş bir parametre daha belirtmeliyiz. Fakat ikinci parametrenin türü yine
+    "std::size_t" / "unsigned long" türünden olmalıdır. 
+        * Örnek 1, Aşağıdaki örneğin çıktısında da görüleceği üzere "" kullanarak argüman geçtiğimiz zaman sentaks hatası
+        meydana gelmektedir. 
             #include <iostream>
             #include <string>
 
@@ -199,7 +200,9 @@ parametreleri "custom" fonksiyonlar oluşturabiliriz?
                 */
                 
                 123456789_sr;
-                //"12345678"_sr; // error: no matching literal operator for call to 'operator""_sr' with arguments of types 'const char *' and 'unsigned long'
+                //"12345678"_sr;
+                // error: no matching literal operator for call to 'operator""_sr' with arguments of types
+                // 'const char *' and 'unsigned long'
                 
                 987654321_vl;
                 
@@ -262,7 +265,10 @@ parametreleri "custom" fonksiyonlar oluşturabiliriz?
                 */
                 
                 123456789_sr;
-                // "12345678"_sr; // error: no matching literal operator for call to 'operator""_sr' with arguments of types 'const char *' and 'unsigned long'
+                // "12345678"_sr;
+                // error: no matching literal operator for call to 'operator""_sr' with arguments of types
+                // 'const char *' and 'unsigned long'
+                
                 "12345678"_srsr;
                 
                 987654321_vl;   
@@ -323,9 +329,10 @@ parametreleri "custom" fonksiyonlar oluşturabiliriz?
                 std::cout << "A : " << 'A'<< " " << 'A'_i << "\n";
             } 
 
-Bütün bunlar göz önüne alındığında fonksiyonlarımız "cooked" olmalıdır. "cooked" olmaları işimizi görmüyorsa, "raw" yapmalıyız. 
-Fakat hem "cooked" hem "raw" aynı isim alanında görünür olmamalıdır çünkü ya "Ambiguity" oluşacak ya da birisi seçilecektir. Dolayısıyla 
-bizler bu fonksiyon bildirimlerini bir "namespace" içerisine almalıyız. Şimdi de genel olarak örneklere bakalım:
+Bütün bunlar göz önüne alındığında fonksiyonlarımız "cooked" olmalıdır. "cooked" olmaları işimizi görmüyorsa, "raw"
+yapmalıyız. Fakat hem "cooked" hem "raw" aynı isim alanında görünür olmamalıdır çünkü ya "Ambiguity" oluşacak ya da birisi
+seçilecektir. Dolayısıyla bizler bu fonksiyon bildirimlerini bir "namespace" içerisine almalıyız. Şimdi de genel olarak
+örneklere bakalım:
     * Örnek 1, Aşağıdaki örnekte ise ya "Ctor." fonksiyonu "explicit" yapılmalı ya da "PreventUsage"
     parametreli bir "Ctor." yazılmalıdır. Aksi halde "Meter" sınıfına direkt olarak "double" tür atayabiliriz. 
         #include <iostream>
@@ -357,8 +364,8 @@ bizler bu fonksiyon bildirimlerini bir "namespace" içerisine almalıyız. Şimd
             m.print(); // 4.67
         }
 
-> "Raw-String Literal" : Anımsanacağımız üzere "string" içerisinde {", \} karakterlerini kullanabilmek için ve uzun metinleri de
-bölerek alt satırdan devam etmesini sağlamak için '\' karakterini kullanmamız gerekmektedir. 
+> "Raw-String Literal" : Anımsanacağımız üzere "string" içerisinde {", \} karakterlerini kullanabilmek için ve uzun
+metinleri de bölerek alt satırdan devam etmesini sağlamak için '\' karakterini kullanmamız gerekmektedir. 
     * Örnek 1,
         #include <iostream>
 
@@ -390,8 +397,8 @@ bölerek alt satırdan devam etmesini sağlamak için '\' karakterini kullanmam�
             std::cout << surname << "\n"; // \Ahmet "Kandemir" Pehlivanli\
         }
 
-Eğer yazının kendisinde {"(, )"} karakterlerinin de olmasını istiyorsak, tırnak işareti ile açılan parantez ve kapanan parantez ile 
-tırnak işareti arasında bir ayıraç koymalıyız. 
+Eğer yazının kendisinde {"(, )"} karakterlerinin de olmasını istiyorsak, tırnak işareti ile açılan parantez ve kapanan
+parantez ile tırnak işareti arasında bir ayıraç koymalıyız. 
     * Örnek 1,
         #include <iostream>
         #include <string>
@@ -402,15 +409,10 @@ tırnak işareti arasında bir ayıraç koymalıyız.
             std::cout << surname << "\n"; // Ahmet "(Kandemir)" Pehlivanli
         }
 
-
-
-
-
-
 > Hatırlatıcı Notlar:
-    >> "std::initializer_list" sınıfı: Bu sınıf türünden bir nesne oluştururken derleyici arka planda bir dizi meydana getirmekte,
-    bu sınıfa geçtiğimiz elemanları bu diziye kopyalayarak da ilgili diziyi doldurmaktadır. Dolayısıyla "Copy" fonksiyonları "delete"
-    edilmiş sınıfları, "std::initializer_list" sınıfı için kullanamayız. 
+    >> "std::initializer_list" sınıfı: Bu sınıf türünden bir nesne oluştururken derleyici arka planda bir dizi meydana
+    getirmekte, bu sınıfa geçtiğimiz elemanları bu diziye kopyalayarak da ilgili diziyi doldurmaktadır. Dolayısıyla "Copy"
+    fonksiyonları "delete" edilmiş sınıfları, "std::initializer_list" sınıfı için kullanamayız. 
         * Örnek 1,
             #include <string>
             #include <iostream>
@@ -418,11 +420,17 @@ tırnak işareti arasında bir ayıraç koymalıyız.
 
             class Myclass{
                 public:
-                    Myclass(const std::string& name = std::string{"Ulya"}) : m_name{name} { std::cout << "Default Ctor.\n"; }
+                    Myclass(const std::string& name = std::string{"Ulya"}) : m_name{name} { 
+                        std::cout << "Default Ctor.\n";
+                    }
+                    
                     Myclass(const Myclass& other) = delete;
                     Myclass& operator=(const Myclass& other) = delete;
                     Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
-                    Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+                    Myclass& operator=(Myclass&& other) { 
+                        m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;
+                    }
+
                     ~Myclass()noexcept { std::cout << "Dtor\n"; }
                 private:
                     std::string m_name;
@@ -435,12 +443,14 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 * dizinin elemanlarını aşağıdaki değerleri kopyalayarak belirlemektedir.
                 */
                 Myclass a, b, c;
-                std::initializer_list<Myclass> myList{ a,b,c }; // Error: error: use of deleted function ‘Myclass::Myclass(const Myclass&)’
+                
+                // Error: error: use of deleted function ‘Myclass::Myclass(const Myclass&)’
+                std::initializer_list<Myclass> myList{ a,b,c };
             } 
 
-    Diğer yandan "std::initializer_list" sınıfı içerisinde iki adet gösterici barındırmaktadır. Bu göstericilerden birisi arka 
-    plandaki o dizinin başlangıç noktasını, diğeri ise bitiş noktasını göstermektedir. Fonksiyon parametresi bu sınıf türünden 
-    kendisinin olduğu durumlarda ise bu iki gösterici kopyalanmaktadır. 
+    Diğer yandan "std::initializer_list" sınıfı içerisinde iki adet gösterici barındırmaktadır. Bu göstericilerden birisi
+    arka plandaki o dizinin başlangıç noktasını, diğeri ise bitiş noktasını göstermektedir. Fonksiyon parametresi bu sınıf
+    türünden kendisinin olduğu durumlarda ise bu iki gösterici kopyalanmaktadır. 
         * Örnek 1, Aşağıdaki örnekte "myList" objesinin kendisi değil, içerisindeki göstericiler kopyalanmıştır.
             #include <iostream>
             #include <initializer_list>
@@ -471,11 +481,11 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 func(myList);
             } 
 
-    Öte yandan parametresi "std::initializer_list" olan fonksiyonlara geçici nesne de pek tabii gönderebiliriz. Bunun istisnai 
-    durumu, fonksiyon şablonlarıdır. Çünkü fonksiyon şablonlarındaki "T" için yapılan tür çıkarım kuralları ile "auto" kelimesi 
-    için yapılan tür çıkarım kuralları "std::initializer_list" için farklıdır. "Auto Type Deduction" kurallarına göre tür çıkarımı 
-    "std::initializer_list" yönüne doğru yapılırken, "Template Argument Deduction" kurallarına göre durum SENTAKS HATASIDIR. Tür
-    çıkarımı söz konusu olduğunda ikisi arasındaki iki fark da budur. 
+    Öte yandan parametresi "std::initializer_list" olan fonksiyonlara geçici nesne de pek tabii gönderebiliriz. Bunun
+    istisnai durumu, fonksiyon şablonlarıdır. Çünkü fonksiyon şablonlarındaki "T" için yapılan tür çıkarım kuralları ile
+    "auto" kelimesi için yapılan tür çıkarım kuralları "std::initializer_list" için farklıdır. "Auto Type Deduction"
+    kurallarına göre tür çıkarımı "std::initializer_list" yönüne doğru yapılırken, "Template Argument Deduction" kurallarına
+    göre durum SENTAKS HATASIDIR. Tür çıkarımı söz konusu olduğunda ikisi arasındaki iki fark da budur. 
         * Örnek 1,
             #include <iostream>
             #include <initializer_list>
@@ -502,15 +512,18 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 * elemanın olması gerekmektedir.
                 */
                 auto myList = { 2, 4, 6, 8, 10 }; // "myList" is of type "std::initializer_list<int>" 
-                // auto myList{ 2, 4, 6, 8, 10 }; // direct-list-initialization of ‘auto’ requires exactly one element [-fpermissive]
+
+                // auto myList{ 2, 4, 6, 8, 10 };
+                // direct-list-initialization of ‘auto’ requires exactly one element [-fpermissive]
+                
                 func(myList);
                 
                 // func({10, 8, 6, 4, 2}); // "Template Argument Deduction" is failed.
             } 
 
-    Bütün bunlara ek olarak şu noktaya da dikkat etmeliyiz; "STL" içerisindeki "Container" sınıfların "insert" fonksiyonlarını
-    teker teker çağırmak yerine bu fonksiyonları tek seferde çağırmak daha verimli olacaktır. Bunun için yine ilgili fonksiyonların
-    "std::initializer_list" parametreli "overload" larını kullanabiliriz. 
+    Bütün bunlara ek olarak şu noktaya da dikkat etmeliyiz; "STL" içerisindeki "Container" sınıfların "insert"
+    fonksiyonlarını teker teker çağırmak yerine bu fonksiyonları tek seferde çağırmak daha verimli olacaktır. Bunun için
+    yine ilgili fonksiyonların "std::initializer_list" parametreli "overload" larını kullanabiliriz. 
         * Örnek 1,
             #include <iostream>
             #include <vector>
@@ -566,8 +579,9 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 Myclass nnn = {31, 32, 33}; // (std::initializer_list<int>)
             } 
 
-    >> Sınıfımızın veri elemanlarını "init." ederken birden farklı yönteme başvurabiliriz. Örneğin, parametresi "const-reference"
-    olan bir fonksiyon da yazabiliriz veya parametresi bir sınıf türünden olup, aldığı argümanları "std::move" eden de. 
+    >> Sınıfımızın veri elemanlarını "init." ederken birden farklı yönteme başvurabiliriz. Örneğin, parametresi
+    "const-reference" olan bir fonksiyon da yazabiliriz veya parametresi bir sınıf türünden olup, aldığı argümanları
+    "std::move" eden de. 
         * Örnek 1,
             #include <iostream>
             #include <string>
@@ -619,8 +633,12 @@ tırnak işareti arasında bir ayıraç koymalıyız.
             std::chrono::nanoseconds measure(int num);
 
             constexpr int n = 100'000;
-            const char* pname = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-            const char* psurname = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+
+            const char* pname = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\
+                                                                                    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+            
+            const char* psurname = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy\
+                                                                                    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
 
             //using Person = PersonClassic;
             using Person = PersonInitMove;
@@ -672,8 +690,8 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 return total_duration;
             }
 
-    >> Sınıfların "push_back" fonksiyonları iki "overload" a sahiptir. Bunlar "const T&" türünden ve "T&&" türünden "overload"
-    lardır. Bu iki fonksiyonun takribi gösterimi aşağıdaki biçimde olsun;
+    >> Sınıfların "push_back" fonksiyonları iki "overload" a sahiptir. Bunlar "const T&" türünden ve "T&&" türünden
+    "overload" lardır. Bu iki fonksiyonun takribi gösterimi aşağıdaki biçimde olsun;
 
         template<typename T, typename = Allocator = allocator<T>>
         class Vector{
@@ -725,9 +743,9 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 std::cout << "\n";
             } 
 
-    Bu iki fonksiyona ek olarak birde "emplace_back" isimli fonksiyon vardır ki bu fonksiyon çağrısı ne "Copy Ctor." çağrısına 
-    ne de "Move Ctor." çağrısını yapmaktadır. Direkt olarak ilgili nesneyi yerinde oluşturmaktadır. Bu fonksiyonu da kabaca 
-    şu şekilde gösterebiliriz: 
+    Bu iki fonksiyona ek olarak birde "emplace_back" isimli fonksiyon vardır ki bu fonksiyon çağrısı ne "Copy Ctor."
+    çağrısına ne de "Move Ctor." çağrısını yapmaktadır. Direkt olarak ilgili nesneyi yerinde oluşturmaktadır. Bu fonksiyonu
+    da kabaca şu şekilde gösterebiliriz: 
 
         template<typename T, typename = Allocator = allocator<T>>
         class Vector{
@@ -740,8 +758,8 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 //...
         };    
 
-    Buradan da görüleceği üzere argüman olarak aldığı ifadeleri direkt olarak ilgili sınıfın "Ctor." fonksiyonuna geçmektedir.
-    Şöyleki:
+    Buradan da görüleceği üzere argüman olarak aldığı ifadeleri direkt olarak ilgili sınıfın "Ctor." fonksiyonuna
+    geçmektedir. Şöyleki:
         * Örnek 1,
             #include <iostream>
             #include <string>
@@ -751,9 +769,17 @@ tırnak işareti arasında bir ayıraç koymalıyız.
             public:
                 Myclass(const std::string& name) : m_name{name} { std::cout << "Default Ctor.\n"; }
                 Myclass(const Myclass& other) : m_name{other.m_name} { std::cout << "Copy Ctor.\n"; }
-                Myclass& operator=(const Myclass& other) { m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;}
+
+                Myclass& operator=(const Myclass& other) { 
+                    m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;
+                }
+                
                 Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
-                Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+
+                Myclass& operator=(Myclass&& other) { 
+                    m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;
+                }
+                
                 ~Myclass()noexcept { std::cout << "Dtor\n"; }
                 void show_name()const { std::cout << "Name : " << m_name << "\n"; }
             private:
@@ -789,8 +815,8 @@ tırnak işareti arasında bir ayıraç koymalıyız.
                 std::cout << "\n";
             } 
     
-    Artık ne "Move Ctor." ne de "Copy Ctor." çağrısı yapıldı. Dolayısıyla bu iki fonksiyonun getirdiği maliyetten kaçınmış olduk. 
-    Bu da demektir ki "Move Only" sınıfları da kullanabiliriz. Bu fonksiyonun getirdiği bir diğer fayda ise, yerinde hayata
-    getireceğimiz nesnenin "Ctor." fonksiyonu eğer "R-Value" parametreli ise, "emplace_back" e bir "R-Value Expression" geçtiğimiz
-    zaman yine "Move Semantics" işletilmiş olacaktır. Çünkü "R-Value" olan ifadeler yine "R-Value" olarak hedef nesnenin "Ctor." 
-    fonksiyonuna geçilecek.
+    Artık ne "Move Ctor." ne de "Copy Ctor." çağrısı yapıldı. Dolayısıyla bu iki fonksiyonun getirdiği maliyetten kaçınmış
+    olduk. Bu da demektir ki "Move Only" sınıfları da kullanabiliriz. Bu fonksiyonun getirdiği bir diğer fayda ise, yerinde
+    hayata getireceğimiz nesnenin "Ctor." fonksiyonu eğer "R-Value" parametreli ise, "emplace_back" e bir
+    "R-Value Expression" geçtiğimiz zaman yine "Move Semantics" işletilmiş olacaktır. Çünkü "R-Value" olan ifadeler yine
+    "R-Value" olarak hedef nesnenin "Ctor." fonksiyonuna geçilecek.

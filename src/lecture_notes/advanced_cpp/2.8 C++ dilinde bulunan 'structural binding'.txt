@@ -1,6 +1,8 @@
-> "Structural Binding" : Bir dizi için, elemanları "public" olan bir sınıfın ve "tuple" benzeri sınıf türünden nesnelerin elemanlarının 
-ayrıştırılmasının daha pratik ve daha yüksek verimlilikle, örneğin gereksiz kopyalamalar yapılmadan, sağlanmasıdır. 
-    * Örnek 1, Burada "auto" anahtar sözcüğünden sonra "&" deklaratörünü de getirerek referans türler olmasını da sağlayabiliriz. 
+> "Structural Binding" : Bir dizi için, elemanları "public" olan bir sınıfın ve "tuple" benzeri sınıf türünden nesnelerin
+elemanlarının ayrıştırılmasının daha pratik ve daha yüksek verimlilikle, örneğin gereksiz kopyalamalar yapılmadan,
+sağlanmasıdır. 
+    * Örnek 1, Burada "auto" anahtar sözcüğünden sonra "&" deklaratörünü de getirerek referans türler olmasını da
+    sağlayabiliriz. 
         #include <iostream>
         #include <utility>
 
@@ -398,7 +400,10 @@ ayrıştırılmasının daha pratik ve daha yüksek verimlilikle, örneğin gere
             MyUtility::rfill(svec, 20, MyRandom::rname);
             MyRandom::print(svec);
 
-            if(auto [iter_min, iter_max] = minmax_element(svec.begin(), svec.end()); *iter_min > "ulya" && *iter_max < "yuruk"){
+            if(
+                auto [iter_min, iter_max] = minmax_element(svec.begin(), svec.end()); 
+                *iter_min > "ulya" && *iter_max < "yuruk"
+            ){
                 std::cout << "Found!..\n";
             }
             
@@ -642,8 +647,11 @@ ayrıştırılmasının daha pratik ve daha yüksek verimlilikle, örneğin gere
             template<> struct std::tuple_size<Customer>{ static constexpr int value = 3; };
             
         // "tuple_element" : 
-            template<> struct std::tuple_element<2, Customer>{ using type = long; };                         // "explicit/full specialization"
-            template<std::size_t Idx> struct std::tuple_element<Idx, Customer>{ using type = std::string; }; // "partial specialization"
+            // "explicit/full specialization"
+                template<> struct std::tuple_element<2, Customer>{ using type = long; };
+            
+            // "partial specialization"
+            template<std::size_t Idx> struct std::tuple_element<Idx, Customer>{ using type = std::string; };
             
         // "std::get" : 
             template<std::size_t I>

@@ -94,5 +94,4 @@
                 ss >> std::quoted(name);
                 
                 std::cout << name << "\n"; // "ali"
-                
             }

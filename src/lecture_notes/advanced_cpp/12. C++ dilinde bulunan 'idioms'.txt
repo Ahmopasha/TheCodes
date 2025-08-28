@@ -689,7 +689,8 @@ IDIOM -5
     //..
 
     /*
-        Hidden Friend : "ADL" ile bulunma özelliğine sahip, istersek de  "ADL Fallback" den fayda sağladığımıza ilişkin bir örnek.
+        Hidden Friend : "ADL" ile bulunma özelliğine sahip, istersek de  "ADL Fallback" den fayda sağladığımıza
+        ilişkin bir örnek.
     */
 
     * Örnek 0,   
@@ -914,10 +915,11 @@ IDIOM -6
 
     /*
         Scope Guard : Anımsanacağı üzere otomatik ömürlü nesneler, "scope" larının sonunda "destroy" ediliyorlar. Eğer 
-        böylesi bir nesne "exception" gönderirse, ancak bu hata nesnesi yakalanırsa çalıştırılacak "Stack Unwinding" süreci içinde, o nesnelerin
-        "Dtor."fonksiyonları çağrılıyor. Yani otomatik ömürlü nesnelerin "Dtor." fonksiyon çağrıları için ya "scope" sonuna gelmesi ya da 
-        "Stack Unwinding" mekanizmasının çalıştırılması gerekmektedir. Bu mekanizmanın ilk akla gelen kullanımı, akıllı göstericilerdir. 
-        İşte akıllı göstericilerin daha genelleştirilmiş haline de "Scope Guard" denmektedir. Birden fazla uygulanış biçimi vardır. Aşağıdaki örnekleri inceleyelim:
+        böylesi bir nesne "exception" gönderirse, ancak bu hata nesnesi yakalanırsa çalıştırılacak "Stack Unwinding" süreci
+        içinde, o nesnelerin "Dtor."fonksiyonları çağrılıyor. Yani otomatik ömürlü nesnelerin "Dtor." fonksiyon çağrıları
+        için ya "scope" sonuna gelmesi ya da "Stack Unwinding" mekanizmasının çalıştırılması gerekmektedir. Bu mekanizmanın
+        ilk akla gelen kullanımı, akıllı göstericilerdir. İşte akıllı göstericilerin daha genelleştirilmiş haline de
+        "Scope Guard" denmektedir. Birden fazla uygulanış biçimi vardır. Aşağıdaki örnekleri inceleyelim:
     */
      
     * Örnek 1.0, "scope" sonuna gelinmesinden dolayı "Dtor". çağrıldı, o da "clean_up" fonksiyonunu. 
@@ -1030,8 +1032,8 @@ IDIOM -6
             std::cout << "main devam ediyor\n";
         }
 
-    * Örnek 1.2, Tabii böylesi sınıflara "dismiss" amacı taşıyan fonksiyonlar da ekleyerek, "clean_up" fonksiyonlarının "Dtor." tarafından 
-    çağrılmasını da iptal edebiliriz. 
+    * Örnek 1.2, Tabii böylesi sınıflara "dismiss" amacı taşıyan fonksiyonlar da ekleyerek, "clean_up" fonksiyonlarının
+    "Dtor." tarafından çağrılmasını da iptal edebiliriz. 
         #include <iostream>
         #include <stdexcept>
 
@@ -1206,12 +1208,13 @@ IDIOM -8
     //..
 
     /*
-        NVI(non-virtual interface) : Taban sınıfın sanal fonksiyonlarını sınıfın "public" bölümüne değil, "protected" ya da "private"
-        bölümüne koyun. Taban sınıfın sanal olmayan fonksiyonlarını da "public" bölümüne koyun ve "protected" ya da "private" bölümüne koyduğumuz sanal
-        fonksiyonları çağırsın.  Bu şekilde bizler "interface" ile "implementation" kısmını birbirinden ayırmış olduk. Aksi halde "public" kısımdaki
-        "virtual" fonksiyonlarımız hem "interface" hem de "implementation" olacaktı. Fakat esas önemli avantajı ise taban sınıfın, sanal fonksiyon
-        çağrısından evvel, bir takım kontrolleri yapabilme imkanına sahip olmasıdır. Aksi halde direkt olarak türemiş sınıfa ilişkin "overload" çağrılacağından, 
-        taban sınıf tarafından ön kontrol yapabilme imkanı oluşmayacaktır.
+        NVI(non-virtual interface) : Taban sınıfın sanal fonksiyonlarını sınıfın "public" bölümüne değil, "protected" ya da
+        "private" bölümüne koyun. Taban sınıfın sanal olmayan fonksiyonlarını da "public" bölümüne koyun ve "protected" ya da
+        "private" bölümüne koyduğumuz sanal fonksiyonları çağırsın.  Bu şekilde bizler "interface" ile "implementation"
+        kısmını birbirinden ayırmış olduk. Aksi halde "public" kısımdaki "virtual" fonksiyonlarımız hem "interface" hem de
+        "implementation" olacaktı. Fakat esas önemli avantajı ise taban sınıfın, sanal fonksiyon çağrısından evvel, bir takım
+        kontrolleri yapabilme imkanına sahip olmasıdır. Aksi halde direkt olarak türemiş sınıfa ilişkin "overload"
+        çağrılacağından, taban sınıf tarafından ön kontrol yapabilme imkanı oluşmayacaktır.
     */
 
     * Örnek 1,
@@ -1242,8 +1245,9 @@ IDIOM -8
             //...
         } 
 
-    * Örnek 2.0, Aşağıdaki örneği ele alırsak, taban içerisinde "speak" fonksiyonuna ilişkin ön işlemler yapacak DURUMDA DEĞİLİZ. Dolayısıyla ön işlemleri 
-    türemiş sınıf içerisinde yapmak durumunudayız ki bu da aslında bir kod tekrarına neden olmaktadır. 
+    * Örnek 2.0, Aşağıdaki örneği ele alırsak, taban içerisinde "speak" fonksiyonuna ilişkin ön işlemler yapacak DURUMDA
+    DEĞİLİZ. Dolayısıyla ön işlemleri türemiş sınıf içerisinde yapmak durumunudayız ki bu da aslında bir kod tekrarına
+    neden olmaktadır. 
         #include <iostream>
         #include "MyUtility.h"
 
@@ -1338,7 +1342,8 @@ IDIOM -9
     //..
 
     /*
-        Fragile Base Class Problem : Taban sınıfta yapmış olduğumuz bazı değişikliklerin, türemiş sınıflardaki kodları hata durumuna düşürmesidir. 
+        Fragile Base Class Problem : Taban sınıfta yapmış olduğumuz bazı değişikliklerin, türemiş sınıflardaki kodları hata
+        durumuna düşürmesidir. 
     */
 
     * Örnek 1.0, "CountingSet" sınıfındaki "m_count" öğesinin değeri, ilgili "range" içerisindeki öğe sayısı kadar, olacaktır. 
@@ -1394,8 +1399,9 @@ IDIOM -9
             std::cout << cs.get_count() << '\n'; // 5
         } 
 
-    * Örnek 1.1, "CountingSet" sınıfındaki "m_count" öğesinin değeri, ilgili "range" içerisindeki öğe sayısının iki katı kadar, olacaktır. Çünkü 
-    hem "add_range" içerisindeki "add_range_impl" hem de "add" içerisindeki "add_impl" çağrılarından dolayı iki defa arttırım olmuştur. 
+    * Örnek 1.1, "CountingSet" sınıfındaki "m_count" öğesinin değeri, ilgili "range" içerisindeki öğe sayısının iki katı
+    kadar, olacaktır. Çünkü hem "add_range" içerisindeki "add_range_impl" hem de "add" içerisindeki "add_impl" çağrılarından
+    dolayı iki defa arttırım olmuştur. 
         #include <iostream>
         #include <set>
         #include "MyUtility.h"
@@ -1534,29 +1540,42 @@ IDIOM -10
             // türetti. Yani "Derived_I" için "Counter<Derived_I>"
             // açılımı kullanıldı. Aynı şey "Derived_II" için de 
             // geçerlidir. 
-            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 0
-            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 0
+
+            // Live Objects of Derived_I > 0
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_I > 0
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n';
             
             Derived_I mx, my;
             {
                 Derived_I mz;
             }
             
-            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 2
-            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 3
+            // Live Objects of Derived_I > 2
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_I > 3
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n';
             
             std::cout << "\n========================\n\n";
             
-            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 0
-            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 0
+            // Live Objects of Derived_II > 0
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_II > 0
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n';
             
             Derived_II ma, mb;
             {
                 Derived_II mc;
             }
             
-            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 2
-            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 3
+            // Live Objects of Derived_II > 2
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_II > 3
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n';
         }
 
     * Örnek 1.0.1, Pekala aşağıdaki yaklaşımı da kullanabiliriz, yukarıdakine alternatif olarak. Çünkü "closure-type"
@@ -1597,29 +1616,41 @@ IDIOM -10
         };
 
         int main() {
-            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 0
-            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 0
+            // Live Objects of Derived_I > 0
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_I > 0
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n';
             
             Derived_I mx, my;
             {
                 Derived_I mz;
             }
             
-            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 2
-            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 3
+            // Live Objects of Derived_I > 2
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_I > 3
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n';
             
             std::cout << "\n========================\n\n";
             
-            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 0
-            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 0
+            // Live Objects of Derived_II > 0
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_II > 0
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n';
             
             Derived_II ma, mb;
             {
                 Derived_II mc;
             }
             
-            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 2
-            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 3
+            // Live Objects of Derived_II > 2
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_II > 3
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n';
         }
 
     * Örnek 1.1, Aşağıda "CRTP" kullanılmadan kalıtım yapılmanın etkilerini göreceğiz. Görüldüğü üzere tek bir 
@@ -1658,29 +1689,41 @@ IDIOM -10
         };
 
         int main() {
-            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 0
-            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 0
+            // Live Objects of Derived_I > 0
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_I > 0
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n';
             
             Derived_I mx, my;
             {
                 Derived_I mz;
             }
             
-            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n'; // Live Objects of Derived_I > 2
-            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n'; // Total Objects of Derived_I > 3
+            // Live Objects of Derived_I > 2
+            std::cout << "Live Objects of Derived_I > " << Derived_I::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_I > 3
+            std::cout << "Total Objects of Derived_I > " << Derived_I::get_created_objects() << '\n';
             
             std::cout << "\n========================\n\n";
             
-            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 2
-            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 3
+            // Live Objects of Derived_II > 2
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_II > 3
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n';
             
             Derived_II ma, mb;
             {
                 Derived_II mc;
             }
             
-            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n'; // Live Objects of Derived_II > 4
-            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n'; // Total Objects of Derived_II > 6
+            // Live Objects of Derived_II > 4
+            std::cout << "Live Objects of Derived_II > " << Derived_II::get_live_objects() << '\n';
+            
+            // Total Objects of Derived_II > 6
+            std::cout << "Total Objects of Derived_II > " << Derived_II::get_created_objects() << '\n';
         }
 
     * Örnek 2.0.0, "CRTP" yapısını kurarken yazım hatalarına karşı dikkatli olmalıyız. 
@@ -1838,8 +1881,8 @@ IDIOM -10
         }
 
     * Örnek 2.2, Aşağıda da şöyle bir şey yapalım; türemiş sınıfların birer "print" işlevi gören fonksiyonları olduğuna 
-    güvenerek, türemiş sınıflara, bir "interface" enjekte edelim. Bu "interface" sayesinde bünyelerindeki "print" fonksiyonunun 
-    "N" kez çağrılması sağlansın. 
+    güvenerek, türemiş sınıflara, bir "interface" enjekte edelim. Bu "interface" sayesinde bünyelerindeki "print"
+    fonksiyonunun "N" kez çağrılması sağlansın. 
         #include <iostream>
 
         // CRTP Base:
@@ -1883,8 +1926,8 @@ IDIOM -10
             // Der_B::Implementation
         }
 
-    * Örnek 3, Şimdi de türemiş sınıflara şöyle bir "Interface" ekleyelim; "<" operatör fonksiyonunu "overload" ederek "==" ve "!="
-    karşılaştırmalarını mümkün hale getirelim.  
+    * Örnek 3, Şimdi de türemiş sınıflara şöyle bir "Interface" ekleyelim; "<" operatör fonksiyonunu "overload" ederek
+    "==" ve "!=" karşılaştırmalarını mümkün hale getirelim.  
         #include <string>
         #include <iostream>
 
@@ -2617,7 +2660,10 @@ IDIOM -10
 
         class Name {
             public:
-                Name(std::string first_name, std::string second_name) : m_first_name{ std::move(first_name) }, m_second_name{ std::move(second_name) } {}
+                Name(std::string first_name, std::string second_name) : m_first_name{ std::move(first_name) }, 
+                    m_second_name{ std::move(second_name) } 
+                {}
+                
                 void print() const {
                     std::cout << m_second_name << ' ' << m_first_name << '\n';
                 }
@@ -2854,11 +2900,12 @@ IDIOM -11
                     auto orange = yellow | red;
                 }
 
-        Ancak bu tip "enum" türleri de şöyle handikaplara sahiptirler; "unscoped" olmaları, "int" türüne örtülü olarak dönüşmeleri,
-        vb. Modern C++ ile birlikte "scoped enum" kavramının da dile eklenmesiyle bu handikaplar giderildi. Fakat bu sefer de
-        "scoped enum" türünü, yukarıdaki örnekte olduğu gibi, varsayılan olarak "|" operatörüne operand yapamıyoruz. İşte bu problemi
-        çözmek için de "global" bir "operator |" fonksiyonu tanımlıyoruz. Hatırlarsanız "scoped enum" türleri bir sınıf olmadığından,
-        üye fonksiyon kavramı SÖZ KONUSU DEĞİLDİR. İşte "operator |" fonksiyonunu şu şekilde tanımlayabiliriz;
+        Ancak bu tip "enum" türleri de şöyle handikaplara sahiptirler; "unscoped" olmaları, "int" türüne örtülü olarak
+        dönüşmeleri vb. Modern C++ ile birlikte "scoped enum" kavramının da dile eklenmesiyle bu handikaplar giderildi.
+        Fakat bu sefer de "scoped enum" türünü, yukarıdaki örnekte olduğu gibi, varsayılan olarak "|" operatörüne operand
+        yapamıyoruz. İşte bu problemi çözmek için de "global" bir "operator |" fonksiyonu tanımlıyoruz. Hatırlarsanız
+        "scoped enum" türleri bir sınıf olmadığından, üye fonksiyon kavramı SÖZ KONUSU DEĞİLDİR. İşte "operator |"
+        fonksiyonunu şu şekilde tanımlayabiliriz;
     */
 
     * Örnek 1,
@@ -2983,8 +3030,8 @@ IDIOM -14
 
             "Top Level const" ve "Low Level const"
 
-        isimleriyle geçmektedir. "Top Level const" söz konusu olduğunda göstericinin bizzat kendisi "const" iken, "Low Level const" 
-        söz konusu olduğunda gösterilen nesnenin bizzat kendisi "const" olmaktadır. Şöyleki;
+        isimleriyle geçmektedir. "Top Level const" söz konusu olduğunda göstericinin bizzat kendisi "const" iken,
+        "Low Level const" söz konusu olduğunda gösterilen nesnenin bizzat kendisi "const" olmaktadır. Şöyleki;
     */
 
     * Örnek 1, Göstericiler söz konusu olduğunda durum aşağıdaki gibidir. 
@@ -3037,7 +3084,10 @@ IDIOM -14
             // No constness:
             {
                 std::vector ivec{ 17, 9, 1993 };
-                std::vector<int>::iterator iter = ivec.begin(); // "iter" is a "ITERATOR" to the "first element of the vector". 
+                
+                std::vector<int>::iterator iter = ivec.begin();
+                // "iter" is a "ITERATOR" to the "first element of the vector". 
+                
                 *iter = 20; // OK: The "first element of the vector" is "20" now. 
                 iter = ivec.end() - 1; // OK: "iter" is a ITERATOR to previous of ".end()". 
                 *iter = 2024; // OK: "1993" is now "2024"
@@ -3047,7 +3097,10 @@ IDIOM -14
             {
                 std::vector ivec{ 17, 9, 1993 };
                 // const auto iter = ivec.begin();
-                const std::vector<int>::iterator iter = ivec.begin(); // "iter" is a "CONST ITERATOR" to the "first element of the vector". 
+                
+                const std::vector<int>::iterator iter = ivec.begin();
+                // "iter" is a "CONST ITERATOR" to the "first element of the vector". 
+                
                 *iter = 20; // OK: The "first element of the vector" is "20" now. 
                 // iter = ivec.end() - 1; // ERROR: cannot bind "CONST ITERATOR" to another value. 
                 *iter = 2024; // OK: The "first element of the vector" is "2024" now. 
@@ -3057,7 +3110,10 @@ IDIOM -14
             {
                 std::vector ivec{ 17, 9, 1993 };
                 // auto c_iter = ivec.cbegin();
-                std::vector<int>::const_iterator c_iter = ivec.begin(); // "iter" is a "CONST_ITERATOR" to the "first element of the vector". 
+
+                std::vector<int>::const_iterator c_iter = ivec.begin();
+                // "iter" is a "CONST_ITERATOR" to the "first element of the vector". 
+                
                 // *c_iter = 20; // ERROR: cannot change the value of a "const" variable. 
                 c_iter = ivec.end() - 1; // OK: "iter" is a ITERATOR to previous of ".end()". 
                 // *c_iter = 2024; // ERROR: cannot change the value of a "const" variable.
@@ -3067,18 +3123,22 @@ IDIOM -14
             {
                 std::vector ivec{ 17, 9, 1993 };
                 // const auto c_iter = ivec.cbegin();
-                const std::vector<int>::const_iterator c_iter = ivec.begin(); // "iter" is a "CONST CONST_ITERATOR" to the "first element of the vector". 
+                
+                const std::vector<int>::const_iterator c_iter = ivec.begin();
+                // "iter" is a "CONST CONST_ITERATOR" to the "first element of the vector". 
+                
                 // *c_iter = 20; // ERROR: cannot change the value of a "const" variable. 
                 // c_iter = ivec.end() - 1; // ERROR: cannot bind "CONST ITERATOR" to another value. 
                 // *c_iter = 2024; // ERROR: cannot change the value of a "const" variable.
             }
         }
 
-    İşte "const" konusundaki bu farklılık lojik açıdan geçersiz ancak sentaks açısından geçerli durumların meydana gelmesine neden 
-    olabilmektedir. Şöyleki;
-        * Örnek 1.0, Aşağıdaki örnekteki "Erg" sınıfının "g" fonksiyonu bir "const" fonksiyondur, yani bu fonksiyon çağrısı sonucunda 
-        nesnenin problem düzleminde ima ettiği şeyin değişmemesi, yani "state" bilgisinin aynı kalması gerekmektedir. Fakat bünyesinde 
-        yapılan "foo_non_const" çağrısından dolayı lojik açıdan geçersiz durum oluşturmaktadır. 
+    İşte "const" konusundaki bu farklılık lojik açıdan geçersiz ancak sentaks açısından geçerli durumların meydana gelmesine
+    neden olabilmektedir. Şöyleki;
+        * Örnek 1.0, Aşağıdaki örnekteki "Erg" sınıfının "g" fonksiyonu bir "const" fonksiyondur, yani bu fonksiyon çağrısı
+        sonucunda nesnenin problem düzleminde ima ettiği şeyin değişmemesi, yani "state" bilgisinin aynı kalması
+        gerekmektedir. Fakat bünyesinde yapılan "foo_non_const" çağrısından dolayı lojik açıdan geçersiz durum
+        oluşturmaktadır. 
             #include <iostream>
 
             class Neco {
@@ -3215,11 +3275,12 @@ IDIOM -14
 
             }
 
-    Üretilen çözümlerden de görüleceği üzere esas sınıfımızın "private" kısmında sadece gösterici bulunmaktadır. İş bu gösterici ise
-    eskiden "private" bölümde olan şeyleri tutan bir yapı/sınıf türünden. Böylelikle bizler sınıfın "interface" i ile implementasonu
-    arasındaki bağımlılığı kaldırmış oluyoruz. Böylelikle implementasyon tarafında bir değişiklik olduğunda "interface" de değişmeyecek
-    ve bu "interface" i kullanan "client" kodların değiştirilmesine ve yeniden derlenmesine de gerek yoktur. İşte "pimpl" deyimi ile kastedilen 
-    de bu mekanizmadır. Peki neden bizler yeniden derleme ihtiyacı hissederiz? Şu nedenlerden dolayı;
+    Üretilen çözümlerden de görüleceği üzere esas sınıfımızın "private" kısmında sadece gösterici bulunmaktadır. İş bu
+    gösterici ise eskiden "private" bölümde olan şeyleri tutan bir yapı/sınıf türünden. Böylelikle bizler sınıfın
+    "interface" i ile implementasonu arasındaki bağımlılığı kaldırmış oluyoruz. Böylelikle implementasyon tarafında bir
+    değişiklik olduğunda "interface" de değişmeyecek ve bu "interface" i kullanan "client" kodların değiştirilmesine ve
+    yeniden derlenmesine de gerek yoktur. İşte "pimpl" deyimi ile kastedilen de bu mekanizmadır. Peki neden bizler yeniden
+    derleme ihtiyacı hissederiz? Şu nedenlerden dolayı;
 
         -> Sınıfımıza yeni veri elemanı eklersek, halihazırdaki bir veri elemanını çıkartırsak ve/veya veri elemanının yerini 
         değiştirirsek sınıfın "binary compatibility" bozulacaktır. Yani bu sınıfın "include" eden kodların yeniden derlenmesi 
@@ -3230,33 +3291,34 @@ IDIOM -14
         veri elemanı eklenmiş, dolayısıyla "offset" noktası da kaymış olsun. Artık "offset" noktası kaymış olacağı için, 
         çalışma zamanında istenmeyen sonuçlar elde edebiliriz. 
 
-        -> Sınıfımızın "private" bölümünde bulunan fonksiyonların başka bölüme alınması veya "private" bölüme yeni fonksiyonların 
-        eklenmesi de "binary compatibility" bozacaktır, her ne kadar iş bu fonksiyonlar sınıf nesnesi içerisinde yer kaplamadığı ve 
-        dışarıdan çağrılabilir olmasalar da. Çünkü "Function Overload Resolution" dan ötürü. "FO" ya yeni fonksiyonlar da girebileceği
-        için, başka fonksiyonların da seçilme ihtimali olacak. Anımsanacağı üzere önce "FO", daha sonra "access control" yapılmakta. 
+        -> Sınıfımızın "private" bölümünde bulunan fonksiyonların başka bölüme alınması veya "private" bölüme yeni
+        fonksiyonların eklenmesi de "binary compatibility" bozacaktır, her ne kadar iş bu fonksiyonlar sınıf nesnesi
+        içerisinde yer kaplamadığı ve dışarıdan çağrılabilir olmasalar da. Çünkü "Function Overload Resolution" dan ötürü.
+        "FO" ya yeni fonksiyonlar da girebileceği için, başka fonksiyonların da seçilme ihtimali olacak. Anımsanacağı üzere
+        önce "FO", daha sonra "access control" yapılmakta. 
 
-    Buradan hareketle diyebiliriz ki bu mekanizmayla birlikte sınıfın "private" bölümünde olan veri elemanları ve üye fonksiyonlar 
-    taşınmalıdır. Pekiyi bu mekanizmanın avantajlarına değinecek olursak;
+    Buradan hareketle diyebiliriz ki bu mekanizmayla birlikte sınıfın "private" bölümünde olan veri elemanları ve üye
+    fonksiyonlar taşınmalıdır. Pekiyi bu mekanizmanın avantajlarına değinecek olursak;
 
         -> "interface" ile implementason ayrılacağı için daha stabil, kararlı bir sistem kurabileceğiz. 
         -> Derleme zamanının daha kısa sürmesini sağlatabiliriz. 
-        -> Başlık dosyalar normal "text" dosyaları, dolayısıyla programcılar normal bir şekilde gözlemleyebilirler, bu da bizim 
-        kullandığımız tekniklerin de gözlemlenebilir olması demek. Eğer yöntemlerimizi gizlemek istiyorsak da bu mekanizmayı 
-        kullanabiliriz. 
+        -> Başlık dosyalar normal "text" dosyaları, dolayısıyla programcılar normal bir şekilde gözlemleyebilirler, bu da
+        bizim kullandığımız tekniklerin de gözlemlenebilir olması demek. Eğer yöntemlerimizi gizlemek istiyorsak da bu
+        mekanizmayı kullanabiliriz. 
 
-    Öte yandan bu mekanizmanın da bir takım dezavantajları da yok değildir, dolayısıyla bütün sınıflarımız için bu deyimi kullanmak da
-    mantıksız olur. Şöyleki;
+    Öte yandan bu mekanizmanın da bir takım dezavantajları da yok değildir, dolayısıyla bütün sınıflarımız için bu deyimi
+    kullanmak da mantıksız olur. Şöyleki;
         
-        -> Çünkü esas sınıfımızın veri elemanı olan göstericinin gösterdiği "impl" şey, dinamik ömürlü olacaktır. Bu da zamanı geldiğinde
-        yetersiz bellek alanı oluşmasına neden olabilir.
+        -> Çünkü esas sınıfımızın veri elemanı olan göstericinin gösterdiği "impl" şey, dinamik ömürlü olacaktır. Bu da
+        zamanı geldiğinde yetersiz bellek alanı oluşmasına neden olabilir.
         -> Gösterici kullandığımız için işlemlerimizde ilk olarak "dereference" uygulanması gerekmektedir. 
-        -> "private" bölümünde olan fonksiyonlar "inline" olarak ele alınarak bir takım optimizasyonlara tabi tutulabilirdi, ancak 
-        gösterici kullandığımız için derleyiciler artık tanımlarını o başlık dosyasında göremeyeceği için, optimizasyon imkanı da 
-        kalmamış olacaktır. 
+        -> "private" bölümünde olan fonksiyonlar "inline" olarak ele alınarak bir takım optimizasyonlara tabi tutulabilirdi,
+        ancak gösterici kullandığımız için derleyiciler artık tanımlarını o başlık dosyasında göremeyeceği için, optimizasyon
+        imkanı da kalmamış olacaktır. 
         -> "debug" sürecinin zorlaşması. 
         
-    Diğer yandan bu deyim "Opaque Pointer", "Handle-Body", "D Pointer", "Chesire Cat" ve "Compiler Firewall" olarak da geçer. Şimdi de 
-    örnekler ile bu deyimi irdeleyelim;
+    Diğer yandan bu deyim "Opaque Pointer", "Handle-Body", "D Pointer", "Chesire Cat" ve "Compiler Firewall" olarak da geçer.
+    Şimdi de örnekler ile bu deyimi irdeleyelim;
         * Örnek 1.0, "without pimpl idiom": 
             // student.h
                 #include <string>
@@ -3383,7 +3445,10 @@ IDIOM -14
                         //...
                 };
 
-                Student::Student(const char* p_name, const char* p_surname) : m_ptr{ std::make_unique<StudentImpl>(p_name, p_surname) } {}
+                Student::Student(const char* p_name, const char* p_surname) : m_ptr{ 
+                    std::make_unique<StudentImpl>(p_name, p_surname) 
+                } {}
+
                 Student::Student(const Student& other) : m_ptr{ std::make_unique<StudentImpl>(*other.m_ptr) } {}
                 Student& Student::operator=(Student other) {
                     // Programın akışı iş başta parametre değişkeni için "Copy Ctor." 
@@ -3491,7 +3556,10 @@ IDIOM -14
                         //...
                 };
 
-                Student::Student(const char* p_name, const char* p_surname) : m_ptr{ std::make_unique<StudentImpl>(p_name, p_surname) } {}
+                Student::Student(const char* p_name, const char* p_surname) : m_ptr{ 
+                    std::make_unique<StudentImpl>(p_name, p_surname) 
+                } {}
+
                 Student::Student(const Student& other) : m_ptr{ std::make_unique<StudentImpl>(*other.m_ptr) } {}
                 Student& Student::operator=(Student other) {
                     // Programın akışı iş başta parametre değişkeni için "Copy Ctor." 
@@ -3627,17 +3695,19 @@ IDIOM -16
     /*
         Copy-Swap Idiom : Sınıfın "operator=()" fonksiyonlarının yazılmasında kullanılır ve şu avantajlara sahiptir;
     
-            -> İş bu fonksiyonlara "strong exception guarantee" sağlatmak. Anımsanacağı üzere "strong guarantee" verildiğinde o fonksiyon
-            ya işini tam manasıyla yapacak ya da nesnenin durumu o fonksiyon çağrılmadan evvelki durumunda olacak. Bir diğer deyişle
-            "commit-or-roll_back". Bu durumda bizlerin ayrı bir nesneye daha ihtiyacımız var ki işlemleri o ayrı bir nesne üzerinde
-            gerçekleştirip, herhangi bir problem olmadığını gördükten sonra, ayrı nesnemizi orjinal nesnemize atayabilelim. İşte kullanılan
-            bu ayrı nesneden ötürü de maliyetlidir, "strong exception guarantee" sunmak. Dolayısıyla böyle bir garanti verme zorunluluğumuz
-            yoksa, bu maliyetten kaçınmalıyız.
+            -> İş bu fonksiyonlara "strong exception guarantee" sağlatmak. Anımsanacağı üzere "strong guarantee" verildiğinde
+            o fonksiyon ya işini tam manasıyla yapacak ya da nesnenin durumu o fonksiyon çağrılmadan evvelki durumunda olacak.
+            Bir diğer deyişle "commit-or-roll_back". Bu durumda bizlerin ayrı bir nesneye daha ihtiyacımız var ki işlemleri o
+            ayrı bir nesne üzerinde gerçekleştirip, herhangi bir problem olmadığını gördükten sonra, ayrı nesnemizi orjinal
+            nesnemize atayabilelim. İşte kullanılan bu ayrı nesneden ötürü de maliyetlidir, "strong exception guarantee"
+            sunmak. Dolayısıyla böyle bir garanti verme zorunluluğumuz yoksa, bu maliyetten kaçınmalıyız.
+
             -> Ortak kodu tek bir yerde toplamak.  
+            
             -> "Self Assignment" kontrolüne gerek kalmaması, onun getirdiği maliyetin kaldırılması.
 
-        İşte bunları sağlaması için "std::swap" fonksiyonunu kullanıyoruz. Çünkü bu fonksiyonun "strong exception" garantisi verme hususunda
-        bizlere garanti vermektedir, yani bu fonksiyonun "exception" fırlatmayacağına güvenebiliriz.
+        İşte bunları sağlaması için "std::swap" fonksiyonunu kullanıyoruz. Çünkü bu fonksiyonun "strong exception" garantisi
+        verme hususunda bizlere garanti vermektedir, yani bu fonksiyonun "exception" fırlatmayacağına güvenebiliriz.
     */
 
     * Örnek 1,
@@ -3712,9 +3782,9 @@ IDIOM -17
 
     /*  
         Polymorphic Exception : Varsayalım ki elimizde bir "exception" nesnesi var ve türü "std::exception" ailesinden 
-        bir sınıfa ait ve bizler de elimizdeki bu "exception" nesnesini bir fonksiyona gönderterek, o fonksiyonun yine aynı sınıf türünden 
-        bir "exception" göndermesini istiyoruz. Yani dinamik tür koruyarak, bir fonksiyon vasıtasıyla, aynı türden bir "exception" nesnesi
-        daha oluşturmak istiyoruz. 
+        bir sınıfa ait ve bizler de elimizdeki bu "exception" nesnesini bir fonksiyona gönderterek, o fonksiyonun yine aynı
+        sınıf türünden bir "exception" göndermesini istiyoruz. Yani dinamik tür koruyarak, bir fonksiyon vasıtasıyla, aynı
+        türden bir "exception" nesnesi daha oluşturmak istiyoruz. 
     */
 
     * Örnek 1.0, Aşağıdaki bu konuya ilişkin bir problem örneği verilmiştir:
@@ -3865,8 +3935,8 @@ IDIOM -18
 
     /*
         Attorney Client Idiom : "friend" bildirimleriyle ilgilidir. Anımsanacağı üzere sınıflar "friend" bildirimleri 
-        ile kendi "private" kısımlarını başka kodlara açmaktadır. Ancak kısıtlama getiremiyoruz; ya bütün "private" kısmım ya da hiç biri. 
-        İşte bir takım yöntemler ile kısıtlama getirebiliriz. 
+        ile kendi "private" kısımlarını başka kodlara açmaktadır. Ancak kısıtlama getiremiyoruz; ya bütün "private" kısmım
+        ya da hiç biri. İşte bir takım yöntemler ile kısıtlama getirebiliriz. 
     */
 
     * Örnek 1.0, Aşağıdaki kodda bulunan "friend" bildirimini yorum satırı olmaktan çıkartırsak, ilgili sentaks hataları da 
@@ -3953,14 +4023,14 @@ IDIOM -19
 
     /*
         Nifty Counter : Anımsanacağı üzere farklı modül dosyalarındaki statik ömürlü nesnelerin, yani "global" isim
-        alanındaki değişkenler ile sınıfların statik veri elemanlarının, hayata gelme sırası öngörülebilir değildi(bkz. "Static Init. Fiasco"). 
-        Aşağıdaki örneği inceleyelim;
+        alanındaki değişkenler ile sınıfların statik veri elemanlarının, hayata gelme sırası öngörülebilir değildi(bkz.
+        "Static Init. Fiasco"). Aşağıdaki örneği inceleyelim;
     */
 
-    * Örnek 1, Aşağıdaki örnekte her bir modül kendine has "g_mystream_init" değişkenine sahip olacaktır. Derleme sırasında "MyStream"
-    başlık dosyasını "include" eden modüllerin birisinde ilk defa "g_mystream_init" nesnesi hayata gelecektir. Dolayısıyla "nifty_counter"
-    değeri bir olacak, "MyStreamBuffer" adresinde "s_cout" nesnesi hayata gelecektir. "s_cout" nesnesi "inline" oldığından, tek bir tane 
-    olacaktır. 
+    * Örnek 1, Aşağıdaki örnekte her bir modül kendine has "g_mystream_init" değişkenine sahip olacaktır. Derleme sırasında
+    "MyStream" başlık dosyasını "include" eden modüllerin birisinde ilk defa "g_mystream_init" nesnesi hayata gelecektir.
+    Dolayısıyla "nifty_counter" değeri bir olacak, "MyStreamBuffer" adresinde "s_cout" nesnesi hayata gelecektir. "s_cout"
+    nesnesi "inline" oldığından, tek bir tane olacaktır. 
 
         // MyStream.h
             #ifndef MY_STREAM_H
@@ -4160,14 +4230,15 @@ IDIOM -21
     //..
 
     /*
-        Thread-Safe Interface : Sınıf türünden nesnelerin "Internal Synchronization" ile "thread-safe" hale
-        getirilmesidir. Yani "public interface" de bulunan bütün fonksiyonlar bir kilit kullanacak ama bu fonksiyonların kullandığı implementasyon
-        ("private" ve "protected" bölümdekiler) fonksiyonları kilit kullanmayacak. Dolayısıyla "public" fonksiyonlar sadece "protected" ve "private" 
-        bölümündekileri çağırmalı, "public" bölümdeki diğer fonksiyonları ÇAĞIRMAMALIDIR. Böylece "dead_lock" oluşmayacak, "recursive_mutex"
-        kullanmaya gerek kalmayacak vs. Tabii sınıfın "non-const static" veri elemanları da varsa, yine bunları da senkronize etmek 
-        gerekmektedir. Yine "virtual-dispatch" varsa, "override" edilen fonksiyonların da kilit altında çalıştırılması gerekmektedir. Son 
-        olarak referans döndüren fonksiyon çağrıları sonucunda sınıfın veri elemanına doğrudan erişim mümkün olduğu için, "mutex" kapsamından 
-        çıkılmış olmaktadır. 
+        Thread-Safe Interface : Sınıf türünden nesnelerin "Internal Synchronization" ile "thread-safe" hale getirilmesidir.
+        Yani "public interface" de bulunan bütün fonksiyonlar bir kilit kullanacak ama bu fonksiyonların kullandığı
+        implementasyon ("private" ve "protected" bölümdekiler) fonksiyonları kilit kullanmayacak. Dolayısıyla "public"
+        fonksiyonlar sadece "protected" ve "private" bölümündekileri çağırmalı, "public" bölümdeki diğer fonksiyonları
+        ÇAĞIRMAMALIDIR. Böylece "dead_lock" oluşmayacak, "recursive_mutex" kullanmaya gerek kalmayacak vs. Tabii sınıfın
+        "non-const static" veri elemanları da varsa, yine bunları da senkronize etmek gerekmektedir. Yine "virtual-dispatch"
+        varsa, "override" edilen fonksiyonların da kilit altında çalıştırılması gerekmektedir. Son olarak referans döndüren
+        fonksiyon çağrıları sonucunda sınıfın veri elemanına doğrudan erişim mümkün olduğu için, "mutex" kapsamından çıkılmış
+        olmaktadır. 
     */
 
     * Örnek 1,
@@ -4242,11 +4313,12 @@ IDIOM -22
 
     /*
         Type Erasure : Birden çok formu vardır. Örneğin, C dilinde fonksiyonların parametrelerinin "void*" 
-        yapılmaları, C++ dilinde kalıtım hiyerarşisi kullanmak suretiyle fonksiyonların parametrelerinin taban sınıf türünden gösterici/referans 
-        olmaları vb. Dolayısıyla buradaki kritik nokta ortak bir takım özelliklere sahip farklı türlerin bir arada kullanılmasıdır. Yani bir kap 
-        içerisinde "printable" özellikte fakat farklı türden değişkenleri tutmak isteyelim. Bunun için kalıtım kullanamam çünkü "primitive" türler 
-        için kalıtım uygulanamaz. "std::variant" da kullanamam çünkü kapalı bir hiyerarşi oluşturmuş olurum, ileride genişletemem. İşte bunu 
-        gerçekleştiren örnek aşağıdaki gibi olacaktır:
+        yapılmaları, C++ dilinde kalıtım hiyerarşisi kullanmak suretiyle fonksiyonların parametrelerinin taban sınıf türünden
+        gösterici/referans olmaları vb. Dolayısıyla buradaki kritik nokta ortak bir takım özelliklere sahip farklı türlerin
+        bir arada kullanılmasıdır. Yani bir kap içerisinde "printable" özellikte fakat farklı türden değişkenleri tutmak
+        isteyelim. Bunun için kalıtım kullanamam çünkü "primitive" türler için kalıtım uygulanamaz. "std::variant" da
+        kullanamam çünkü kapalı bir hiyerarşi oluşturmuş olurum, ileride genişletemem. İşte bunu gerçekleştiren örnek
+        aşağıdaki gibi olacaktır:
     */
 
     * Örnek 1,

@@ -1,7 +1,8 @@
-> "Attributes" : Derleyiciyi yönlendiren, aynı zamanda da kodu okuyanı bilgilendiren şeylerdir. Her zaman için "[[]]" biçiminde, en 
-içteki parantezin içerisine yazılır. En önemlilerinden birisi "nodiscard" olandır. Tipik olarak fonksiyonların geri dönüş
-değeri ıskartaya çıkartıldığında, derleyicinin uyarı vermesini teşvik eder. Ek olarak o fonksiyonu kullanan kişiyi de
-fonksiyonun geri dönüş değerini kullanması konusunda disipline eder. Bu "attribute" şu senaryolarda kullanılmalıdır:
+> "Attributes" : Derleyiciyi yönlendiren, aynı zamanda da kodu okuyanı bilgilendiren şeylerdir. Her zaman için "[[]]"
+biçiminde, en içteki parantezin içerisine yazılır. En önemlilerinden birisi "nodiscard" olandır. Tipik olarak fonksiyonların
+geri dönüş değeri ıskartaya çıkartıldığında, derleyicinin uyarı vermesini teşvik eder. Ek olarak o fonksiyonu kullanan
+kişiyi de fonksiyonun geri dönüş değerini kullanması konusunda disipline eder. Bu "attribute" şu senaryolarda
+kullanılmalıdır:
 
     -> Fonksiyonun geri dönüş değerinin kullanılmaması bir "Logic Error ise. 
     -> Fonksiyonun geri dönüş değerinin kullanılmaması bir "Logic Error" değil fakat çok büyük bir risk içeriyorsa. 
@@ -41,14 +42,21 @@ Pekala sınıfların üye fonksiyonlarında da kullanılabilir.
 
         int main()
         {
-            Myclass{5}; // WARNING: ignoring return value of ‘Myclass::Myclass(int)’, declared with attribute ‘nodiscard’: ‘Myclass::Myclass return value is discared!’
-            static_cast<Myclass>(7); // WARNING: ignoring return value of ‘Myclass::Myclass(int)’, declared with attribute ‘nodiscard’: ‘Myclass::Myclass return value is discared!’
-            Myclass{10}.foo(50); // WARNING: ignoring return value of ‘int Myclass::foo(int)’, declared with attribute ‘nodiscard’
+            Myclass{5};
+            // WARNING: ignoring return value of ‘Myclass::Myclass(int)’, declared with attribute ‘nodiscard’:
+            // ‘Myclass::Myclass return value is discared!’
+            
+            static_cast<Myclass>(7);
+            // WARNING: ignoring return value of ‘Myclass::Myclass(int)’, declared with attribute ‘nodiscard’:
+            // ‘Myclass::Myclass return value is discared!’
+            
+            Myclass{10}.foo(50); 
+            // WARNING: ignoring return value of ‘int Myclass::foo(int)’, declared with attribute ‘nodiscard’
         }
 
-Diğer yandan "class-type" tanımlarında da kullanılır ki bu durumda geri dönüş değeri türü bu sınıf olan fonksiyonlar çağrıldığında,
-fonksiyonun bu "attribute" kullanmasına bakılmaksızın, yine bir uyarı mesajı verecektir. Tıpkı fonksiyonların geri dönüş değerini
-ıskartaya çıkardığımız gibi. 
+Diğer yandan "class-type" tanımlarında da kullanılır ki bu durumda geri dönüş değeri türü bu sınıf olan fonksiyonlar
+çağrıldığında, fonksiyonun bu "attribute" kullanmasına bakılmaksızın, yine bir uyarı mesajı verecektir. Tıpkı fonksiyonların
+geri dönüş değerini ıskartaya çıkardığımız gibi. 
     * Örnek 1,
         #include <iostream>
 
@@ -61,7 +69,10 @@ fonksiyonun bu "attribute" kullanmasına bakılmaksızın, yine bir uyarı mesaj
         int main()
         {
             foo(); // WARNING: ignoring returned value of type ‘Myclass’, declared with attribute ‘nodiscard’
-            bar(); // WARNING: ignoring returned value of type ‘Neco’, declared with attribute ‘nodiscard’: ‘Neco cannot be discarded!’
+            
+            // WARNING: ignoring returned value of type ‘Neco’, declared with attribute ‘nodiscard’:
+            // ‘Neco cannot be discarded!’
+            bar();
         }
 
     * Örnek 2,
@@ -76,7 +87,10 @@ fonksiyonun bu "attribute" kullanmasına bakılmaksızın, yine bir uyarı mesaj
         int main()
         {
             foo(); // WARNING: ignoring returned value of type ‘ErrorCode’, declared with attribute ‘nodiscard’
-            bar(); // WARNING: ignoring returned value of type ‘WarningCode’, declared with attribute ‘nodiscard’: ‘WarningCode cannot be discarded!’
+            
+            // WARNING: ignoring returned value of type ‘WarningCode’, declared with attribute ‘nodiscard’:
+            // ‘WarningCode cannot be discarded!’
+            bar();
         }
 
     * Örnek 3,
@@ -95,9 +109,9 @@ fonksiyonun bu "attribute" kullanmasına bakılmaksızın, yine bir uyarı mesaj
 
 Burada bizim dikkat etmemiz gereken nokta, bu "attribute" kullanmakla birlikte derleyicileri uyarı mesajı vermeye teşvik
 etmiş oluyoruz. Fakat uyarı mesajı vermek gibi bir zorunlulukları yoktur. Şimdi de sırayla 'attribute' leri inceleyelim: 
-    >> "deprecated" : Nitelediği şeyin artık kullanılmaması gerektiğini, ilerleyen zamanlarda kaldırılacağını belirtir. Genelde kütüphane 
-    tasarlayanlar tarafından kullanılır. Derleyici, bu "attribute" ile nitelenen türlerin/fonksiyonların kullanılması durumunda, uyarı
-    veya hata kodu verecektir. 
+    >> "deprecated" : Nitelediği şeyin artık kullanılmaması gerektiğini, ilerleyen zamanlarda kaldırılacağını belirtir.
+    Genelde kütüphane tasarlayanlar tarafından kullanılır. Derleyici, bu "attribute" ile nitelenen türlerin/fonksiyonların
+    kullanılması durumunda, uyarı veya hata kodu verecektir. 
         * Örnek 1,
             struct [[deprecated("use ErgNect")]] Nec {
                 int a, b, c;
@@ -169,9 +183,9 @@ etmiş oluyoruz. Fakat uyarı mesajı vermek gibi bir zorunlulukları yoktur. Ş
                 old_version::func(); // error C4996: 'old_version': was declared deprecated
             }
 
-    >> "likely" / "unlikely" : Hangi "path" in oluşma ihtimalinin daha yüksek, hangisinin daha düşük olduğunu derleyiciye ve okuyucuya 
-    söylemektedir. Böylelikle derleyiciler daha iyi kod üretebilme şansına sahip olabilmektedir. Buradaki "path" ile kastedilen "if-else",
-    "switch" deyimlerinde programın akışının nereden devam edeceğidir. 
+    >> "likely" / "unlikely" : Hangi "path" in oluşma ihtimalinin daha yüksek, hangisinin daha düşük olduğunu derleyiciye ve
+    okuyucuya söylemektedir. Böylelikle derleyiciler daha iyi kod üretebilme şansına sahip olabilmektedir. Buradaki "path"
+    ile kastedilen "if-else", "switch" deyimlerinde programın akışının nereden devam edeceğidir. 
         * Örnek 1,
             enum class Color {
                 white,
@@ -194,7 +208,9 @@ etmiş oluyoruz. Fakat uyarı mesajı vermek gibi bir zorunlulukları yoktur. Ş
                     case Color::blue: f_blue(); break;
                     [[likely]] case Color::black: f_black(); break; // "c" nin "black" değerinde olma ihtimali daha yüksek. 
                     case Color::red: f_red(); break;
-                    [[unlikely]] case Color::magenta: f_magenta(); break; // "c" nin "magenta" değerinde olma ihtimali daha düşük. 
+
+                    // "c" nin "magenta" değerinde olma ihtimali daha düşük. 
+                    [[unlikely]] case Color::magenta: f_magenta(); break;
                 }
             }
 
@@ -236,8 +252,9 @@ etmiş oluyoruz. Fakat uyarı mesajı vermek gibi bir zorunlulukları yoktur. Ş
                 //...
             }
 
-    >> "maybeunused" : Kodda var olan bazı öğelerin kullanılmaması şüpheli bir durumdur. Çoğu derleyici de böylesi senaryolarda 
-    uyarı mesajı vermektedir. Fakat öyle durumlar var ki "debug" modunda kullandığımız öğeleri, "release" modunda kullanmıyoruz. 
+    >> "maybeunused" : Kodda var olan bazı öğelerin kullanılmaması şüpheli bir durumdur. Çoğu derleyici de böylesi
+    senaryolarda uyarı mesajı vermektedir. Fakat öyle durumlar var ki "debug" modunda kullandığımız öğeleri, "release"
+    modunda kullanmıyoruz. 
         * Örnek 1,
             #include <cmath>
 
@@ -298,9 +315,9 @@ etmiş oluyoruz. Fakat uyarı mesajı vermek gibi bir zorunlulukları yoktur. Ş
                 [[maybe_unused]] auto [i, d, sptr] = std::make_tuple(45, 4.5, "FHAM");
             }
 
-    >> "noreturn" : Fonksiyonun geri dönüş değerinin olmadığını değil, programın çalışma zamanındaki akışının "return" deyimine  
-    ulaşmayacağını garanti etmektedir. Eğer programın akışı bir şekilde ilgili "return" deyimine ulaşırsa, "Tanımsız Davranış" 
-    meydana gelecektir. 
+    >> "noreturn" : Fonksiyonun geri dönüş değerinin olmadığını değil, programın çalışma zamanındaki akışının "return"
+    deyimine ulaşmayacağını garanti etmektedir. Eğer programın akışı bir şekilde ilgili "return" deyimine ulaşırsa,
+    "Tanımsız Davranış" meydana gelecektir. 
         * Örnek 1,
             [[noreturn]] void foo() {}
             void bar() {}
@@ -350,8 +367,8 @@ etmiş oluyoruz. Fakat uyarı mesajı vermek gibi bir zorunlulukları yoktur. Ş
                 foo();
             }
 
-    >> "fallthrough" : "switch" deyiminde kullanılır. Okuyuca ve derleyiciye, ilgili "break;" ifadesinin kasıtlı olarak yazılmadığını
-    söylemek için de kullanılır.  
+    >> "fallthrough" : "switch" deyiminde kullanılır. Okuyuca ve derleyiciye, ilgili "break;" ifadesinin kasıtlı olarak
+    yazılmadığını söylemek için de kullanılır.  
         * Örnek 1,
             void f1() {}
             void f2() {}

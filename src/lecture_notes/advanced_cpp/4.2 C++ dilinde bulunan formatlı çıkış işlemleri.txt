@@ -1,60 +1,68 @@
-> Formatlı Çıkış İşlemleri: Anımsayacağınız üzere C dilinden gelen üç adet çıkış akımına yazı yazmada kullanılan fonksiyon bulunmaktadır.
-Bunlar "printf", "sprintf" ve "fprintf". Bu fonksiyonların prototipleri ise aşağıdaki gibidir:
+> Formatlı Çıkış İşlemleri: Anımsayacağınız üzere C dilinden gelen üç adet çıkış akımına yazı yazmada kullanılan fonksiyon
+bulunmaktadır. Bunlar "printf", "sprintf" ve "fprintf". Bu fonksiyonların prototipleri ise aşağıdaki gibidir:
 
     int printf(const char* p, ...);
     int sprintf(char* b, const char* p, ...);
     int fprintf(FILE* f, const char* p, ...);
 
-Buradaki üç fonksiyonun geri dönüş değeri, yazdığı toplam karakter adedidir. "print" direkt olarak "stdout" akımına yazarken "sprintf" ve 
-"fprintf" ise birinci parametrelerine geçilen adrese yazmaktadır. Şimdi de bu fonksiyonların dezavantajlarına bakalım:
+Buradaki üç fonksiyonun geri dönüş değeri, yazdığı toplam karakter adedidir. "print" direkt olarak "stdout" akımına yazarken
+"sprintf" ve "fprintf" ise birinci parametrelerine geçilen adrese yazmaktadır. Şimdi de bu fonksiyonların dezavantajlarına
+bakalım:
     
-    -> Bu üç fonksiyonun, daha doğrusu bu fonksiyonlar gibi "variadic" fonksiyonların, en büyük dezavantajı "type-safe" olmamalarıdır. Çünkü
-    bu fonksiyonlar argüman olarak hangi türden argüman alacaklarını biliyor ve programcının da bu türden argüman göndereceğine güvenmektedir.
+    -> Bu üç fonksiyonun, daha doğrusu bu fonksiyonlar gibi "variadic" fonksiyonların, en büyük dezavantajı "type-safe"
+    olmamalarıdır. Çünkü bu fonksiyonlar argüman olarak hangi türden argüman alacaklarını biliyor ve programcının da bu
+    türden argüman göndereceğine güvenmektedir.
     
-    -> C dilindeki "variadic" fonksiyonların bir diğer problemi de ilgili fonksiyona toplamda kaç adet argüman gönderildiğini yine bir şekilde
-    fonksiyona argüman göndererek belirtmem gerekmektedir. Örneğin, ilk argüman olarak toplam öğe sayısının argüman olarak gönderilmesi veya
-    "variadic" argümanlar içerisine "sentinel" bir argüman da göndererek bu argüman ile karşılaşıldığında işlemlerin durmasını sağlatabiliriz.
+    -> C dilindeki "variadic" fonksiyonların bir diğer problemi de ilgili fonksiyona toplamda kaç adet argüman gönderildiğini
+    yine bir şekilde fonksiyona argüman göndererek belirtmem gerekmektedir. Örneğin, ilk argüman olarak toplam öğe sayısının
+    argüman olarak gönderilmesi veya "variadic" argümanlar içerisine "sentinel" bir argüman da göndererek bu argüman ile
+    karşılaşıldığında işlemlerin durmasını sağlatabiliriz.
 
-    -> Diğer yandan bu fonksiyonlar "custom" türler için "extendable" değiller, yani bu fonksiyonları "custom" türler için düzeltemiyoruz. 
+    -> Diğer yandan bu fonksiyonlar "custom" türler için "extendable" değiller, yani bu fonksiyonları "custom" türler için
+    düzeltemiyoruz. 
 
 Bu fonksiyon grubunun avantajları ise şunlardır:
     
     -> Bu fonksiyon grubu, C++ dilindeki diğer formatlı giriş çıkış fonksiyonlarına nazaran daha hızlı çalışmaktadır.
 
-    -> Argümanlar ile formatlama özelliklerini birbirinden ayırabiliyoruz. Örneğin, "print" fonksiyonunda "Conversion Specifier" ile argümanları 
-    ayrı ayrı görürüz. 
+    -> Argümanlar ile formatlama özelliklerini birbirinden ayırabiliyoruz. Örneğin, "print" fonksiyonunda
+    "Conversion Specifier" ile argümanları ayrı ayrı görürüz. 
 
 Şimdi de C++ dilindekilere bakalım: 
     
-    -> En büyük dezavantaj, "iostream" kütüphanesinin hantal ve kullanımının "verbose" olmasıdır. Fakat "custom" türler için ilgili fonksiyonlar
-    özelleştirilebiliyor ve fonksiyonların "type-safe" dir. 
+    -> En büyük dezavantaj, "iostream" kütüphanesinin hantal ve kullanımının "verbose" olmasıdır. Fakat "custom" türler için
+    ilgili fonksiyonlar özelleştirilebiliyor ve fonksiyonların "type-safe" dir. 
 
-Dolayısıyla C dilinden kazanacağımız hıza karşılık C++ dilinde güvenlilik ve işlevsellik gelmektedir. İşte bu iki dünyanın güzel taraflarını 
-bünyesinde barındıran sınıf ise "std::format" sınıfıdır. C++20 ile dile eklenmiştir. Bu kütüphanedeki ilk fonksiyon "std::format" fonksiyonudur. 
-Bu fonksiyon argüman olarak "std::string_view" türünden bir nesne alır ve "std::string" türünden nesne döndürür. Ancak bu fonksiyonun aldığı ifadenin 
-değeri derleme zamanında hesaplanabilir bir değer olmalıdır (değeri çalışma zamanında hesaplanacak olan nesneler için başka bir fonksiyon kullanacağız). 
-Bu fonksiyonu kullanırken "format specifier" için "{}" karakterlerini kullanmalıyız. Tıpkı C dilindeki "printf" fonksiyonunda kullandığımız "%" ile başlayan 
-karakterler gibi. Pekiyi nasıl formatlama yapacağız? İşte bunun için şu bileşimi kullanabiliriz:
+Dolayısıyla C dilinden kazanacağımız hıza karşılık C++ dilinde güvenlilik ve işlevsellik gelmektedir. İşte bu iki dünyanın
+güzel taraflarını bünyesinde barındıran sınıf ise "std::format" sınıfıdır. C++20 ile dile eklenmiştir. Bu kütüphanedeki ilk
+fonksiyon "std::format" fonksiyonudur. Bu fonksiyon argüman olarak "std::string_view" türünden bir nesne alır ve
+"std::string" türünden nesne döndürür. Ancak bu fonksiyonun aldığı ifadenin değeri derleme zamanında hesaplanabilir bir
+değer olmalıdır (değeri çalışma zamanında hesaplanacak olan nesneler için başka bir fonksiyon kullanacağız). Bu fonksiyonu
+kullanırken "format specifier" için "{}" karakterlerini kullanmalıyız. Tıpkı C dilindeki "printf" fonksiyonunda kullandığımız
+"%" ile başlayan karakterler gibi. Pekiyi nasıl formatlama yapacağız? İşte bunun için şu bileşimi kullanabiliriz:
 
     [[fill]align] [sign][#][0][width][.precision][type]
         ^    ^       ^   ^  ^    ^        ^         ^
         I   II     III  IV  V    VI       VII       VIII 
 
-    -> I:       Doldurma karakterini belirtmektedir. Yazma alanı genişliği, yazılacak alandan büyükse, o boş kalan alana yazılacak
-                karakterler için burada belirtilen karakter kullanılacaktır. Varsayılan değer boşluk karakteridir. 
+    -> I:       Doldurma karakterini belirtmektedir. Yazma alanı genişliği, yazılacak alandan büyükse, o boş kalan alana
+                yazılacak karakterler için burada belirtilen karakter kullanılacaktır. Varsayılan değer boşluk karakteridir. 
     -> II:      Sağa dayalı, sola dayalı ya da merkezi konumlandırma bilgisini belirtmektedir. 
     -> IIII:    Tam sayıların yazılmasında işaretin yazılıp yazılmayacağını belirtmektedir. 
-    -> IV:      "Number Sign", doğrudan kendisinin bir özelliği yok. En sondaki "type" ile birlikte kullanıldığında onu "modify" etmektedir. 
-    -> V:       "Heading Zero", tam sayıların yazımında yazma alanı genişliği öncesinde yazılacak karakteri belirtmektedir. Yani yazma alanının
-                başlangıç yeri ile yazı arasındaki karakterlerdir. Doldurma karakteri ise yazı ile yazma alanının bittiği yer arasındaki karakterler
-                içindir. 
+    -> IV:      "Number Sign", doğrudan kendisinin bir özelliği yok. En sondaki "type" ile birlikte kullanıldığında onu
+                "modify" etmektedir. 
+    -> V:       "Heading Zero", tam sayıların yazımında yazma alanı genişliği öncesinde yazılacak karakteri belirtmektedir.
+                Yani yazma alanının
+                başlangıç yeri ile yazı arasındaki karakterlerdir. Doldurma karakteri ise yazı ile yazma alanının bittiği
+                yer arasındaki karakterler içindir. 
     -> VI:      Yazma alanı genişliğini belirtmektedir. 
     -> VII:     Gerçek sayılar için "." karakterinden sonra kaç basamak yazılacağını belirtmektedir. 
     -> VIII:    Yazdırılmak istenen sayının tür bilgisini belirtmektedir. Tam sayı mı gerçek sayı mı vs. 
 
-Buradaki bileşenleri "{}" içerisine yazıyoruz fakat bunlardan önce ":" karakterini yazmak zorundayız. Eğer varsayılan değerleri kullanmak istiyorsak, "{}" 
-içerisini boş bırakabiliriz. Eğer formatlamada bir hata oluşursa, bir "exception" gönderilecektir. Pekala formatlama yaparken de "{}" içerisine rakamlar
-yazarak "Positional Placeholder" mekanizmasını işletebiliriz. Şöyleki:         
+Buradaki bileşenleri "{}" içerisine yazıyoruz fakat bunlardan önce ":" karakterini yazmak zorundayız. Eğer varsayılan
+değerleri kullanmak istiyorsak, "{}" içerisini boş bırakabiliriz. Eğer formatlamada bir hata oluşursa, bir "exception"
+gönderilecektir. Pekala formatlama yaparken de "{}" içerisine rakamlar yazarak "Positional Placeholder" mekanizmasını
+işletebiliriz. Şöyleki:         
     * Örnek 1,
         #include <format>
         #include <string>
@@ -272,8 +280,11 @@ Aşağıda bu konuya ilişkin örnek verilmiştir:
             std::cout << std::format("|{:#x}|\n", 10 < 56) << '\n';	// |0x1|
             std::cout << std::format("|{:#X}|\n", 10 > 56) << '\n';	// |0X0|
             puts("-----------------");
-            //std::cout << std::format("|{}|\n", &dval);	// ERROR: Göstericiler söz konusu olduğunda varsayılan "specifier" mevcut değildir. 
+
+            //std::cout << std::format("|{}|\n", &dval);
+            // ERROR: Göstericiler söz konusu olduğunda varsayılan "specifier" mevcut değildir. 
             std::cout << std::format("|{}|\n", (void*) &dval); // Adresi "void*" türüne dönüştürmeliyiz. // |0x8ff854|
+            
             puts("-----------------");
             int x = 56;
             std::cout << std::format("|{}|\n", x) << '\n';		// |56|
@@ -902,9 +913,9 @@ tanımlamamız gerekmektedir.
             f = Fruit::Apple; std::cout << std::format("|{:-^16}|\n", f);
         }
 
-Buraya kadar gördüğümüz bütün örneklerde format yazısı derleme zamanında değeri belli olan ve "std::string_view" sınıfına dönüştürülebilir 
-bir türe ilişkindi. Çalışma zamanında format yazısını belirlemek istediğimizde ise karşımıza "vformat" ve "vformat_to" fonksiyonları 
-çıkmaktadır. 
+Buraya kadar gördüğümüz bütün örneklerde format yazısı derleme zamanında değeri belli olan ve "std::string_view" sınıfına
+dönüştürülebilir bir türe ilişkindi. Çalışma zamanında format yazısını belirlemek istediğimizde ise karşımıza "vformat" ve
+"vformat_to" fonksiyonları çıkmaktadır. 
     * Örnek 1,
         #include <iostream>
         #include <string>
@@ -919,5 +930,7 @@ bir türe ilişkindi. Çalışma zamanında format yazısını belirlemek istedi
             
             char format_string[20]{}; std::cout << "Format String: "; std::cin >> format_string; 
             int format_value{ 123 };
-            auto formatted_string{ vformat(format_string, make_format_args(123)) }; std::cout << "Formatted String: " << formatted_string << '\n';
+
+            auto formatted_string{ vformat(format_string, make_format_args(123)) };
+            std::cout << "Formatted String: " << formatted_string << '\n';
         }

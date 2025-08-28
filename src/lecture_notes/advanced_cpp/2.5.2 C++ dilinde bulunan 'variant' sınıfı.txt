@@ -1,8 +1,9 @@
-> "std::variant" : C dilindeki "union" yapısının C++ diline uyarlanmış halidir. Tıpkı "std::optional" gibi "std::variant" da bir
-"Value Type" dır. Şablon parametresi olan türlerden birisini tutmaktadır. Buradaki şablon parametreleri aynı tür olabilir fakat 
-bir "t" anında bunlardan sadece bir tanesini tutmaktadır. Doğrudan "nullable" tür değildir, fakat bir takım yöntemler ile "nullable"
-hale getirebiliriz. Kendi bünyesinde tuttuğu nesne için dinamik bellek yönetimi uygulamamaktadır. Fakat o nesne kendi bünyesinde 
-dinamik bellek yönetimi uygulayabilir. Son olarak kalıtıma alternatif olarak da kullanabiliriz. 
+> "std::variant" : C dilindeki "union" yapısının C++ diline uyarlanmış halidir. Tıpkı "std::optional" gibi "std::variant"
+da bir "Value Type" dır. Şablon parametresi olan türlerden birisini tutmaktadır. Buradaki şablon parametreleri aynı tür
+olabilir fakat bir "t" anında bunlardan sadece bir tanesini tutmaktadır. Doğrudan "nullable" tür değildir, fakat bir takım
+yöntemler ile "nullable" hale getirebiliriz. Kendi bünyesinde tuttuğu nesne için dinamik bellek yönetimi uygulamamaktadır.
+Fakat o nesne kendi bünyesinde dinamik bellek yönetimi uygulayabilir. Son olarak kalıtıma alternatif olarak da
+kullanabiliriz. 
     * Örnek 1,
         #include <iostream>
         #include <string>
@@ -874,6 +875,6 @@ dinamik bellek yönetimi uygulayabilir. Son olarak kalıtıma alternatif olarak 
 
 
 > Hatırlatıcı Notlar:
-    >> "Value Type" : Her nesnenin değeri kendine demektir. Yani ortada paylaşılan bir alan/değer söz konusu değildir. Yani kopyalama 
-    yapıldığında "Deep Copy" yapılmakta, "Shallow Copy" yapılmamaktadır.  
+    >> "Value Type" : Her nesnenin değeri kendine demektir. Yani ortada paylaşılan bir alan/değer söz konusu değildir. Yani
+    kopyalama yapıldığında "Deep Copy" yapılmakta, "Shallow Copy" yapılmamaktadır.  
 

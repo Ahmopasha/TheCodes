@@ -1,13 +1,13 @@
-> "strong types" : "chrono" kütüphanesindeki "duration" türleri çok güzel bir örnek olarak verilebilir. Gerçek hayattaki şeyler için 
-dilin "primitive type" larını sarmalanması konusudur. Örneğin, mesafe bilgisi için bizler "float" değişken kullandığımızı varsayalım. 
-Bu değişken için "int" türden bir sabit atarsak, şöyle problemler ile karşılaşabiliriz;
+> "strong types" : "chrono" kütüphanesindeki "duration" türleri çok güzel bir örnek olarak verilebilir. Gerçek hayattaki
+şeyler için dilin "primitive type" larını sarmalanması konusudur. Örneğin, mesafe bilgisi için bizler "float" değişken
+kullandığımızı varsayalım. Bu değişken için "int" türden bir sabit atarsak, şöyle problemler ile karşılaşabiliriz;
 
     -> Örtülü tür dönüşümü gerçekleşebilir. 
     -> Okunabilirlik azalır. 
 
-İşte bu gibi problemleri gidermek adına, tıpkı "chrono" kütüphanesindeki "milliseconds" tür eş isminde olduğu gibi, temel türlerimizi 
-bir şekilde sarmalıyoruz. "Assembly" düzeyinde yine "primitive type" lar üzerinde işlem yapılırken, dil katmanında sarmalanmış halleri 
-üzerinde işlem yapılmaktadır. 
+İşte bu gibi problemleri gidermek adına, tıpkı "chrono" kütüphanesindeki "milliseconds" tür eş isminde olduğu gibi, temel
+türlerimizi bir şekilde sarmalıyoruz. "Assembly" düzeyinde yine "primitive type" lar üzerinde işlem yapılırken, dil
+katmanında sarmalanmış halleri üzerinde işlem yapılmaktadır. 
     * Örnek 1, İşte bir milisaniyeyi temsil etmesi için standart kütüphanedeki "std::chrono::milliseconds" isimli bir tür 
     kullanılmıştır. 
         #include <chrono>
@@ -90,8 +90,8 @@ bu gibi durumlarda türlerin aynı olmamasını sağlamaktır. Bunu gerçekleşt
     -> Şablonumuza ikinci bir parametre daha ekliyoruz. Bu parametre etiketlem için kullanılacaktır. 
 
 Aşağıda bu adıma yönelik örnekler verilmiştir;
-    * Örnek 1.0, Aşağıdaki örnekte yukarıda bahsedilen amaca ulaşılmıştır. Fakat "KilogramTag", "MeterTag" türleri için pekala 
-    "incomplete type" da kullanabiliriz. 
+    * Örnek 1.0, Aşağıdaki örnekte yukarıda bahsedilen amaca ulaşılmıştır. Fakat "KilogramTag", "MeterTag" türleri için
+    pekala "incomplete type" da kullanabiliriz. 
         #include <type_traits>
 
         template<typename T, typename TypeTag>
@@ -141,8 +141,8 @@ Aşağıda bu adıma yönelik örnekler verilmiştir;
             constexpr auto is_same = std::is_same_v<Kilogram, Meter>; // false
         }
 
-    * Örnek 1.3, Eğer bir nedenden dolayı "non-type template parameter" kullanamıyorsak, pekala aynı sonuca "type tempalte parameter"
-    ile de ulaşabiliriz;
+    * Örnek 1.3, Eğer bir nedenden dolayı "non-type template parameter" kullanamıyorsak, pekala aynı sonuca
+    "type tempalte parameter" ile de ulaşabiliriz;
         #include <type_traits>
 
         template<typename T, typename = decltype([] {})>
@@ -191,8 +191,8 @@ Aşağıda bu adımlara yönelik örnek verilmiştir;
 
 Şimdi de bu sınıfımız için "operator" fonksiyonları belirleyelim;
     
-    -> Burada dikkat etmemiz gereken nokta bir tür için mantıklı olan "operator" fonksiyonu, başka tür için mantıksız gelebilir.
-    Pekiyi bunu nasıl belirleyeceğiz? Tabii ki "CRTP" örüntüsünü kullanarak. 
+    -> Burada dikkat etmemiz gereken nokta bir tür için mantıklı olan "operator" fonksiyonu, başka tür için mantıksız
+    gelebilir. Pekiyi bunu nasıl belirleyeceğiz? Tabii ki "CRTP" örüntüsünü kullanarak. 
 
 Aşağıda bu adımlara yönelik örnek verilmiştir;
     * Örnek 1,

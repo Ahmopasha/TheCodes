@@ -1,7 +1,7 @@
-> "constexpr" Fonksiyonlar: "Updates on constexpr functions from C++11 to C++20" isimli resim dosyasından da "constexpr" fonksiyonların 
-yaşadığı değişimi görebiliriz. 
-    >> "constexpr" bir fonksiyonun derleme aşamasında çağrılmasını garanti altına almak için fonksiyona gönderilen ifade bir sabit ifadesi 
-    olmalı ve "constant expression" gereken yerde bu fonksiyonun çağrılması gerekmektedir. 
+> "constexpr" Fonksiyonlar: "Updates on constexpr functions from C++11 to C++20" isimli resim dosyasından da "constexpr"
+fonksiyonların yaşadığı değişimi görebiliriz. 
+    >> "constexpr" bir fonksiyonun derleme aşamasında çağrılmasını garanti altına almak için fonksiyona gönderilen ifade bir
+    sabit ifadesi olmalı ve "constant expression" gereken yerde bu fonksiyonun çağrılması gerekmektedir. 
         * Örnek 1,
             constexpr int foo(int x) { return x+5; }
 
@@ -62,8 +62,8 @@ yaşadığı değişimi görebiliriz.
                 std::bitset<foo(10)> bs; // std::bitset<1000> bs; 
             }
 
-    >> "constexpr" bir fonksiyonun derleme aşamasnda çağrılmasını garanti ettiğimiz bir senaryoda tanımsız davranış varsa, derleyici 
-    sentaks hatası vermek zorundadır. 
+    >> "constexpr" bir fonksiyonun derleme aşamasnda çağrılmasını garanti ettiğimiz bir senaryoda tanımsız davranış varsa,
+    derleyici sentaks hatası vermek zorundadır. 
         * Örnek 1,
             int foo_ub(int idx)
             {
@@ -92,22 +92,27 @@ yaşadığı değişimi görebiliriz.
                 int a = foo_ub(20); // Tanımsız Davranış oluşacaktır. Çünkü dizinin boyutu taşmıştır. 
                 
                 // ERROR: call to non-‘constexpr’ function ‘int foo_ub(int)’
-                constexpr int b = foo_ub(20); // "constexpr" bir nesneye ilk değer veren ifadenin "constant expression" olması gerekmektedir. 
+                // "constexpr" bir nesneye ilk değer veren ifadenin "constant expression" olması gerekmektedir. 
+                constexpr int b = foo_ub(20);
                 
                 // ERROR: array subscript value ‘20’ is outside the bounds of array ‘ar’ of type ‘int [10]’
-                constexpr int c = foo(20);  // "constexpr" bir fonksiyonu derleme aşamasında çağırmaya zorlarsak ki burada zorluyoruz, derleyici 
-                                            // tanımsız davranışı tespit edip, Tanımsız Davranış olması durumunda, sentaks hatası olarak değerlendirmek
-                                            // zorundadır. 
+                // "constexpr" bir fonksiyonu derleme aşamasında çağırmaya zorlarsak ki burada zorluyoruz, derleyici 
+                // tanımsız davranışı tespit edip, Tanımsız Davranış olması durumunda, sentaks hatası olarak değerlendirmek
+                // zorundadır. 
+                constexpr int c = foo(20); 
                                             
-                int d = factorial(14);  // Tanımsız Davranış olacaktır. Çünkü 12! itibariyle "4-byte" işaretli tam sayılarda taşma oluşmaktadır. İşaretli 
-                                        // tam sayılarda taşma ise Tanımsız Davranıştır. 
+                // Tanımsız Davranış olacaktır. Çünkü 12! itibariyle "4-byte" işaretli tam sayılarda taşma oluşmaktadır.
+                // İşaretli tam sayılarda taşma ise Tanımsız Davranıştır. 
+                int d = factorial(14);  
                 
                 // ERROR: overflow in constant expression [-fpermissive]                        
-                constexpr int e = factorial(14); // Artık bu noktada sentaks hatası oluşacaktır, yukarıdaki taşmanın getirdiği tanımsız davranıştan ötürü. 
+                // Artık bu noktada sentaks hatası oluşacaktır, yukarıdaki taşmanın getirdiği tanımsız davranıştan ötürü. 
+                constexpr int e = factorial(14);
                 
-                constexpr int f = shift(20, 32); // Sentaks hatası oluşacaktır. Çünkü tam sayının bit adedine eşit ya da ondan büyük değerde olan sağ operand,
-                                                // sağa ya da sola kaydırma fark etmeksizin, tanımsız davranış oluşturur. Yukarıdaki sebepten ötürü de sentaks 
-                                                // hatası oluşmaktadır. "32-bit" değerindeki bir sayıyı en fazla "31" bit kaydırabiliriz. 
+                // Sentaks hatası oluşacaktır. Çünkü tam sayının bit adedine eşit ya da ondan büyük değerde olan sağ operand,
+                // sağa ya da sola kaydırma fark etmeksizin, tanımsız davranış oluşturur. Yukarıdaki sebepten ötürü de
+                // sentaks hatası oluşmaktadır. "32-bit" değerindeki bir sayıyı en fazla "31" bit kaydırabiliriz. 
+                constexpr int f = shift(20, 32); 
             }
 
     >> "constexpr" fonksiyonlarda "throw" ifadelerini kullanabiliyoruz fakat çalışma zamanına ilişkin bağlamda kullanmalıyız. 
@@ -182,12 +187,14 @@ yaşadığı değişimi görebiliriz.
                 for(int i{}; i < n; ++i)
                     p[i] = 1. / factorial(i);
                 auto sum = std::accumulate(p, p + n, 0.);
-                //delete p; // Bu şekilde bir "delete" işlemi tanımsız davranış olduğundan, sentaks hatası olmuştur. 
-                            // ERROR: non-array deallocation of object allocated with array allocation
-                            // Eğer "deallocation" işlemini hiç yapmazsak, tanımsız davranış oluşacağından, sentaks hatası alırız. 
-                            // ERROR: ‘get_e(10)’ is not a constant expression because allocated storage has not been deallocated
+                //delete p; 
+                // Bu şekilde bir "delete" işlemi tanımsız davranış olduğundan, sentaks hatası olmuştur. 
+                // ERROR: non-array deallocation of object allocated with array allocation
+                // Eğer "deallocation" işlemini hiç yapmazsak, tanımsız davranış oluşacağından, sentaks hatası alırız. 
+                // ERROR: ‘get_e(10)’ is not a constant expression because allocated storage has not been deallocated
+
                 delete []p; // OK
-                //foo(p);     // OK - Alternative Way 1 
+                //foo(p); // OK - Alternative Way 1 
                 return sum; 
             }
 
@@ -313,9 +320,10 @@ yaşadığı değişimi görebiliriz.
                 static_assert(test(10));
             }
 
-> "consteval" Fonksiyonlar: "constexpr" fonksiyonlardan farklı olarak, "compile time context" içerisinde çağrılmaları GARANTİ 
-altındadır. Yani derleme zamanı bağlamında çağrılması mümkün değilse, SENTAKS HATASI oluyor. Yani sadece derleme zamanında 
-çağrılabilir. Koşul kümesinin "constexpr" fonksiyonlarınınki ile aynı olduğunu düşünebiliriz. "Immediate Function" olarak da geçer. 
+> "consteval" Fonksiyonlar: "constexpr" fonksiyonlardan farklı olarak, "compile time context" içerisinde çağrılmaları
+GARANTİ altındadır. Yani derleme zamanı bağlamında çağrılması mümkün değilse, SENTAKS HATASI oluyor. Yani sadece derleme
+zamanında çağrılabilir. Koşul kümesinin "constexpr" fonksiyonlarınınki ile aynı olduğunu düşünebiliriz.
+"Immediate Function" olarak da geçer. 
     * Örnek 1,
         consteval int square(int x)
         {
@@ -330,27 +338,29 @@ altındadır. Yani derleme zamanı bağlamında çağrılması mümkün değilse
             square(ival); // ERROR: the value of ‘ival’ is not usable in a constant expression
         }
 
-> "constinit" Anahtar Sözcüğü: Bu anahtar sözcük ile tanımlanmış bir değişken, "static" olarak derleme zamanında "init." edilmiş 
-bir değişkendir. Fakat bu konudan önce değişkenlerin hayata gelme aşamalarını irdeleyelim:
+> "constinit" Anahtar Sözcüğü: Bu anahtar sözcük ile tanımlanmış bir değişken, "static" olarak derleme zamanında "init."
+edilmiş bir değişkendir. Fakat bu konudan önce değişkenlerin hayata gelme aşamalarını irdeleyelim:
 
-    -> Aynı kaynak dosyadaki "global" isim alanındaki değişkenler, bildirim sırasında göre hayata gelirler. Dil bu garantiyi vermektedir.  
-    Fakat farklı kaynak dosyalardaki "global" isim alanındaki değişkenlerden hangisinin ilk hayata geleceğini garanti eden bir 
-    mekanizma malesef yoktur. Örneğin,
+    -> Aynı kaynak dosyadaki "global" isim alanındaki değişkenler, bildirim sırasında göre hayata gelirler. Dil bu garantiyi
+    vermektedir. Fakat farklı kaynak dosyalardaki "global" isim alanındaki değişkenlerden hangisinin ilk hayata geleceğini
+    garanti eden bir mekanizma malesef yoktur. Örneğin,
 
         // ali.cpp 
             A ax; 
         // veli.cpp 
             B bx;
 
-    biçiminde iki adet kaynak dosyamız olsun. Bu değişkenlerden birisini, diğer sınıfın "Ctor." fonksiyonu içerisinde de pekala 
-    kullanabilirim. Dil, bu değişkenlerden hangisinin ilk hayata geleceğini garanti etmediğinden, felaket oluşacaktır. İşte bu 
-    duruma ise "Static Initialization (Order) Fiasco" denmektedir. İşte "constinit" anahtar sözcüğü bu problemin çözüm yollarından 
-    bir tanesidir. Detaylı bilgi için: https://www.jonathanmueller.dev/talk/static-initialization-order-fiasco/
+    biçiminde iki adet kaynak dosyamız olsun. Bu değişkenlerden birisini, diğer sınıfın "Ctor." fonksiyonu içerisinde de
+    pekala kullanabilirim. Dil, bu değişkenlerden hangisinin ilk hayata geleceğini garanti etmediğinden, felaket oluşacaktır.
+    İşte bu duruma ise "Static Initialization (Order) Fiasco" denmektedir. İşte "constinit" anahtar sözcüğü bu problemin
+    çözüm yollarından bir tanesidir. Detaylı bilgi için:
 
-    -> "Storage Duration" ve "Lifetime/Life span" kavramları birbirleri ile ilişkili kavramlardır. Bunlardan ilki bir nesnenin yerinin 
-    nasıl ayrıldığını ayarlamaktadır. İkincisi ise nesne ne zaman hayata gelecek, ne zaman hayatı bitecek konularıyla alakalıdır. Burada 
-    "lifetime != storage duration". Örneğin, "static storage duration" a sahip nesneler için yer ayrılır fakat o nesnenin bulunduğu 
-    fonksiyon çağrılmadan ilgili "ctor." fonksiyonu çağrılmaz. Bir diğer deyişle
+        https://www.jonathanmueller.dev/talk/static-initialization-order-fiasco/
+
+    -> "Storage Duration" ve "Lifetime/Life span" kavramları birbirleri ile ilişkili kavramlardır. Bunlardan ilki bir
+    nesnenin yerinin nasıl ayrıldığını ayarlamaktadır. İkincisi ise nesne ne zaman hayata gelecek, ne zaman hayatı bitecek
+    konularıyla alakalıdır. Burada "lifetime != storage duration". Örneğin, "static storage duration" a sahip nesneler için
+    yer ayrılır fakat o nesnenin bulunduğu fonksiyon çağrılmadan ilgili "ctor." fonksiyonu çağrılmaz. Bir diğer deyişle
 
         "When does the lifetime of variables with static storage duration begins?" 
 
@@ -358,13 +368,13 @@ bir değişkendir. Fakat bu konudan önce değişkenlerin hayata gelme aşamalar
 
         -> Global değişkenler iki kademe "init." ediliyorlar. Birinci kademeye "Static Init", ikinci kademeye "Dynamic Init."
         denmektedir. Buradaki ilk kademe derleme zamanında, ikinci kademe ise programın çalışma zamanında gerçekleştiriliyor. 
-        Buradaki ilk aşamada nesneye ilişkin bellek alanı sıfırlanıyor. Nesnenin asıl değerini aldığı süreç ise ikinci kademede 
-        gerçekleştiriliyor. Fakat öyle varlıklar var ki ikinci kademe bunlar için hiç uygulanmamaktadır.  
+        Buradaki ilk aşamada nesneye ilişkin bellek alanı sıfırlanıyor. Nesnenin asıl değerini aldığı süreç ise ikinci
+        kademede gerçekleştiriliyor. Fakat öyle varlıklar var ki ikinci kademe bunlar için hiç uygulanmamaktadır.  
 
 "static" ömürlü bir değişkeni ki bunlar "global" isim alanındaki değişken, "static" ömürlü 
-yerel değişken veya "static" ömürlü sınıfların veri elemanı olabilir, bu anahtar sözcük ile tanımladığımızda, değişkenin "constant init."
-edilmesini garanti ediyoruz. Yani yukarıdaki "Dynamic Init." uygulanmamaktadır. Eğer "Dynamic Init." uygulanması gerekiyorsa da sentaks
-hatası meydana gelecektir. Bunu şu denklem ile de açıklayabiliriz:
+yerel değişken veya "static" ömürlü sınıfların veri elemanı olabilir, bu anahtar sözcük ile tanımladığımızda, değişkenin
+"constant init." edilmesini garanti ediyoruz. Yani yukarıdaki "Dynamic Init." uygulanmamaktadır. Eğer "Dynamic Init."
+uygulanması gerekiyorsa da sentaks hatası meydana gelecektir. Bunu şu denklem ile de açıklayabiliriz:
 
     " constinit = constexpr - const " 
 
@@ -430,7 +440,6 @@ olan değişkenler için "constinit" anahtar sözcüğünü kullanmalıyız.
             
             for(auto i : g_arr) std::cout << i << ' '; std::cout << '\n'; // 1 1 1 1 1 1 1 1 1 1
         }
-
 
 > Hatırlatıcı Notlar:
     >> "https://www.jonathanmueller.dev/"

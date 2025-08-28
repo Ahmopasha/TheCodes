@@ -1,12 +1,12 @@
 > "Adaptors in STL" : Anımsayacağımız üzere üç farklı "Uyumlandırıcı (Adaptor)" bulunmaktadır. Bunlar Fonksiyon, Sınıf ve 
 iteratör uyumlandırıcıları. 
-    >> Fonksiyon Uyumlandırıcıları ("Function Adaptors") : Argüman olarak bir "Callable" alan ve bir "Callable" geri döndürenlerdir.
-    Örneğin, "std::bind". 
-    >> Sınıf Uyumlandırıcıları ("Container Adaptors") : "std::stack", "std::queue" ve "std::priority_queue". Bunlar ise bir "Container" 
-    ı veri elemanı olarak alırlar ve onun "interface" bilgisini temsil ettikleri "abstrack data type" a göre uyumlandırırlar. Örneğin,
-    "std::stack" arka planda varsayılan durumda "std::dequeu" isimli sınıfı kullanır. "std::stack" sınıfına ilişkin bir fonksiyonu 
-    çağırdığımızda ise "std::dequeu" sınıfının ilgili fonksiyonları çağrılır. İki farklı biçimde oluşturabiliriz. Bunlar "Composition"
-    ve "Inheritence". 
+    >> Fonksiyon Uyumlandırıcıları ("Function Adaptors") : Argüman olarak bir "Callable" alan ve bir "Callable" geri
+    döndürenlerdir. Örneğin, "std::bind". 
+    >> Sınıf Uyumlandırıcıları ("Container Adaptors") : "std::stack", "std::queue" ve "std::priority_queue". Bunlar ise bir
+    "Container" ı veri elemanı olarak alırlar ve onun "interface" bilgisini temsil ettikleri "abstrack data type" a göre
+    uyumlandırırlar. Örneğin, "std::stack" arka planda varsayılan durumda "std::dequeu" isimli sınıfı kullanır. "std::stack"
+    sınıfına ilişkin bir fonksiyonu çağırdığımızda ise "std::dequeu" sınıfının ilgili fonksiyonları çağrılır. İki farklı
+    biçimde oluşturabiliriz. Bunlar "Composition" ve "Inheritence". 
         >>> "Composition": 
             * Örnek 1, Artık "Iter" için hangi "Container" açılmışsa, "foo" içerisinde onun üye fonksiyonlarını çağırabiliriz.
                 template<typename Iter>
@@ -28,8 +28,9 @@ iteratör uyumlandırıcıları.
                     */
                 };
 
-    >> İterator Uyumlandırıcıları ("Iterator Adaptors") : "reverse_iterator", "back_inserter", "front_inserter" şeklinde örnekler 
-    verebiliriz. Yine bu tip uyumlandırıcılar, arka planda kullandıkları iteratör sınıfını özel biçimde uyarlamaktadır. 
+    >> İterator Uyumlandırıcıları ("Iterator Adaptors") : "reverse_iterator", "back_inserter", "front_inserter" şeklinde
+    örnekler verebiliriz. Yine bu tip uyumlandırıcılar, arka planda kullandıkları iteratör sınıfını özel biçimde
+    uyarlamaktadır. 
         * Örnek 1, Aşağıda "std::move_iterator" iterator sınıfı için bir örnek verilmiştir. Sonuçlardan da görüldüğü üzere bu 
         uyumlandırıcı "Move Semantics" mekanizmasını işletmektedir. 
             #include <vector>
@@ -295,9 +296,17 @@ iteratör uyumlandırıcıları.
             public:
                 Myclass(const std::string& name) : m_name{name} { std::cout << "Default Ctor.\n"; }
                 Myclass(const Myclass& other) : m_name{other.m_name} { std::cout << "Copy Ctor.\n"; }
-                Myclass& operator=(const Myclass& other) { m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;}
+
+                Myclass& operator=(const Myclass& other) { 
+                    m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;
+                }
+                
                 Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
-                Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+                
+                Myclass& operator=(Myclass&& other) { 
+                    m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;
+                }
+                
                 ~Myclass()noexcept { std::cout << "Dtor\n"; }
                 void show_name()const { std::cout << "Name : " << m_name << "\n"; }
                 std::string get_name() const { return m_name; }

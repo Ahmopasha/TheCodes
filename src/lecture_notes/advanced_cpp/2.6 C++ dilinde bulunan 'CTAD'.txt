@@ -88,7 +88,8 @@
                     * Gösterilen fonksiyon ise geri dönüş değeri "T" türünden,
                     * parametresi ise "U" türünden "N" elemanlı diziye referans. 
                     */
-                    std::cout << typeid(f_ptr).name() << " : " << typeid(T).name() << "(*)(" << typeid(U).name() << "[" << N << "])\n";
+                    std::cout << typeid(f_ptr).name() 
+                        << " : " << typeid(T).name() << "(*)(" << typeid(U).name() << "[" << N << "])\n";
                 }
         };
 

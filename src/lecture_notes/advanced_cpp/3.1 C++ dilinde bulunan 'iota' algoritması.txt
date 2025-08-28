@@ -1,7 +1,8 @@
-> "std::iota" algoritmasının incelenmesi: "numeric" başlık dosyasında bulunur. Parametre olarak bir "range" ki minimal "forward_iterator"
-olacak, ve bir değer alır. Bu "range" içerisindeki öğeleri, almış olduğu değerden başlayarak ardışık bir sonraki öğeyi, o değerin bir fazlası 
-olarak "set" edeceğim. Yani ilk öğenin yeni değeri, almış olduğu değer olacak. İkinci öğe ise, almış olduğu değerin bir fazlası olacak vs.
-Tabii bu "set" işlemi için "toplama" işleminin öğeler bazında desteklenmesi gerekmektedir. 
+> "std::iota" algoritmasının incelenmesi: "numeric" başlık dosyasında bulunur. Parametre olarak bir "range" ki minimal
+"forward_iterator" olacak, ve bir değer alır. Bu "range" içerisindeki öğeleri, almış olduğu değerden başlayarak ardışık bir
+sonraki öğeyi, o değerin bir fazlası olarak "set" edeceğim. Yani ilk öğenin yeni değeri, almış olduğu değer olacak. İkinci
+öğe ise, almış olduğu değerin bir fazlası olacak vs. Tabii bu "set" işlemi için "toplama" işleminin öğeler bazında
+desteklenmesi gerekmektedir. 
     * Örnek 1,
         #include <numeric>
         #include <vector>

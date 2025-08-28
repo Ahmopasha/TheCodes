@@ -1,11 +1,12 @@
-> "std::clamp" : İki tane "overload" versiyonu vardır. Dİğer versiyonu, bir adet karşılaştırma kriteri alır ki varsayılan durumda 
-"std::less" dir. "algorithm" başlık dosyasındadır. İşlevi şudur: Bizim bir aralığımız var. Elimizde de değerler var. Elimizdeki
-değerlerden;
+> "std::clamp" : İki tane "overload" versiyonu vardır. Dİğer versiyonu, bir adet karşılaştırma kriteri alır ki varsayılan
+durumda "std::less" dir. "algorithm" başlık dosyasındadır. İşlevi şudur: Bizim bir aralığımız var. Elimizde de değerler var.
+Elimizdeki değerlerden;
 
     -> Aralığın başlangıç değerinden küçük olanlarını, aralığın başlangıç değerine eşitliyoruz.
     -> Aralığın bitiş değerinden büyük olanlarını, aralığın bitiş değerine eşitliyoruz.   
-    -> Aralıktaki diğer değerler kendi değerlerinde kalıyor. 
-    
+    -> Aralıktaki diğer değerler kendi değerlerinde kalıyor.
+
+Şimdi de örneklerle inceleyelim:    
     * Örnek 1, Temsili implementasyonu aşağıdaki gibidir;
         template<class T>
         constexpr const T& clamp(const T& value, const T& low, const T& high) {

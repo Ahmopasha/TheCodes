@@ -1,17 +1,19 @@
 > Exceptions & Exception Handling: 
-    >> "std::exception_ptr" : C++11 ile dile eklendi. Amacı bir hatayı yakalamak ancak hatanın işlenmesini başka bir bağlama aktarmak,
-    aktarmasak bile daha sonra işlemek adına bir yerde saklamaktır. Bu sınıf türüyle ilişkili şu fonksiyonlar da vardır;
+    >> "std::exception_ptr" : C++11 ile dile eklendi. Amacı bir hatayı yakalamak ancak hatanın işlenmesini başka bir bağlama
+    aktarmak, aktarmasak bile daha sonra işlemek adına bir yerde saklamaktır. Bu sınıf türüyle ilişkili şu fonksiyonlar da
+    vardır;
         
         "std::current_exception()", "std::rethrow_exception()", "std::make_exception_ptr".  
 
     Bu fonksiyonlardan,
-        >>> "std::current_exception" fonksiyonu, en son yakalanan hata nesnesini geri döndürür. Bu fonksiyonun geri döndürdüğü 
-        nesneyi, "std::exception_ptr" türünden bir nesnede saklayabiliriz. 
+        >>> "std::current_exception" fonksiyonu, en son yakalanan hata nesnesini geri döndürür. Bu fonksiyonun geri
+        döndürdüğü nesneyi, "std::exception_ptr" türünden bir nesnede saklayabiliriz. 
 
-        >>> "std::rethrow_exception" fonksiyonu, argüman olarak "std::exception_ptr" türündeki nesnenin tuttuğu hata nesnesini 
-        "rethrow" eder. 
+        >>> "std::rethrow_exception" fonksiyonu, argüman olarak "std::exception_ptr" türündeki nesnenin tuttuğu hata
+        nesnesini "rethrow" eder. 
 
-        >>> "std::make_exception_ptr" fonksiyonu, bir fabrika fonksiyondur ve bize "std::exception_ptr" türünden nesne döndürür. 
+        >>> "std::make_exception_ptr" fonksiyonu, bir fabrika fonksiyondur ve bize "std::exception_ptr" türünden nesne
+        döndürür. 
 
     Bu fonksiyonlar yine dinamik türün korunmasını sağlamaktadır. Şimdi örnekler ile irdeleyelim;
         * Örnek 1, Aşağıda yakalamış olduğumuz hata nesnesini daha sonra işleme aldık. 
@@ -200,11 +202,11 @@
                 }
             }
 
-    >> "Nested Exception" Kavramı: Alt seviyeli fonksiyonlardan gönderilen hata nesnelerini yakalıyoruz, yapabileceğimiz şey(ler)
-    varsa yapıyoruz, yapamadığımız şeyler için de hata nesnesinin türünü değiştirip tekrardan gönderiyoruz. Buna da hata nesnesinin 
-    "translate" edilmesi denmektedir. Fakat bazı durumlarda bu mekanizma bilgi kaybına da neden olabilir. İşte buna çözüm olarak da 
-    alt seviyeden gelen hata nesnesini sarmalayarak üst seviyelere gönderiyoruz. Böylelikle daha dışarıda olanlar üst seviyeyle 
-    ilgiliyken, içeride olanlar alt seviye ile ilgili olacak. 
+    >> "Nested Exception" Kavramı: Alt seviyeli fonksiyonlardan gönderilen hata nesnelerini yakalıyoruz, yapabileceğimiz
+    şey(ler) varsa yapıyoruz, yapamadığımız şeyler için de hata nesnesinin türünü değiştirip tekrardan gönderiyoruz. Buna da
+    hata nesnesinin "translate" edilmesi denmektedir. Fakat bazı durumlarda bu mekanizma bilgi kaybına da neden olabilir.
+    İşte buna çözüm olarak da alt seviyeden gelen hata nesnesini sarmalayarak üst seviyelere gönderiyoruz. Böylelikle daha
+    dışarıda olanlar üst seviyeyle ilgiliyken, içeride olanlar alt seviye ile ilgili olacak. 
         * Örnek 1.0, Aşağıdaki örnekte alt seviyeden gelen hata nesneleri hakkında bilgi üst seviyelere iletilememiştir. 
             #include <exception>
             #include <stdexcept>
@@ -247,8 +249,8 @@
                 }
             }
 
-        * Örnek 1.1, Aşağıdaki örnekte ise üst seviyelere gönderilen hata mesajlarına bilgi ekleyerek gönderilmiştir. Böylelikle 
-        üst seviyelere daha çok bilgi aktarıldı. 
+        * Örnek 1.1, Aşağıdaki örnekte ise üst seviyelere gönderilen hata mesajlarına bilgi ekleyerek gönderilmiştir.
+        Böylelikle üst seviyelere daha çok bilgi aktarıldı. 
             #include <exception>
             #include <stdexcept>
             #include <iostream>
@@ -291,8 +293,8 @@
                 }
             }
 
-        * Örnek 1.2.0, İşte Modern C++ ile dile eklenen "std::throw_with_nested" ve "std::rethrow_if_nested" gibi araçlar sayesinde 
-        daha modern bir çözüm üretmiş olduk. 
+        * Örnek 1.2.0, İşte Modern C++ ile dile eklenen "std::throw_with_nested" ve "std::rethrow_if_nested" gibi araçlar
+        sayesinde daha modern bir çözüm üretmiş olduk. 
             #include <exception>
             #include <stdexcept>
             #include <iostream>
@@ -358,7 +360,8 @@
                 }
             }
 
-        * Örnek 1.2.1, Pekala "main" çağrısındaki iç içe "try-catch" bloklarını "recursive" fonksiyon çağrısıyla da halledebilirdik;
+        * Örnek 1.2.1, Pekala "main" çağrısındaki iç içe "try-catch" bloklarını "recursive" fonksiyon çağrısıyla da
+        halledebilirdik;
             #include <exception>
             #include <stdexcept>
             #include <iostream>

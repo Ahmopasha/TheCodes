@@ -1,7 +1,8 @@
-> "concepts" : Buradaki amaç şablon kodlarını "constraint" etmektir. Yani şablon argümanını belirli bir miktarda kısıtlamak için kullanılır. 
-Böylelikle yanlış bir şablon argümanı kullanıldığında ya direkt sentaks hatası oluşacak ya ilgili şablonun belli bir kısmı kullanılacak ya da 
-derleyici nokta atışı mesaj vererek hatanın tam olarak nereden kaynaklandığını belirtecektir. Burada kendi kısıtlamalarımızı kendimiz 
-oluşturabildiğimiz gibi, standart kütüphanenin bize hazır olarak verdiği kısıtlamaları da kullanabiliriz. 
+> "concepts" : Buradaki amaç şablon kodlarını "constraint" etmektir. Yani şablon argümanını belirli bir miktarda kısıtlamak
+için kullanılır. Böylelikle yanlış bir şablon argümanı kullanıldığında ya direkt sentaks hatası oluşacak ya ilgili şablonun
+belli bir kısmı kullanılacak ya da derleyici nokta atışı mesaj vererek hatanın tam olarak nereden kaynaklandığını
+belirtecektir. Burada kendi kısıtlamalarımızı kendimiz oluşturabildiğimiz gibi, standart kütüphanenin bize hazır olarak
+verdiği kısıtlamaları da kullanabiliriz. 
     * Örnek 1,
         #include <iostream>
         #include <concepts>
@@ -104,20 +105,27 @@ fonksiyon şablonu, "variable templates", "allias template" ve "concepts". Aynı
             print(12);
             print(1.2);
             print(std::string{"Merve"});
-            std::vector vec{ 45, 5, 7, 2 }; print(vec); // ERROR: no match for ‘operator<<’ (operand types are ‘std::ostream’ {aka ‘std::basic_ostream’} and ‘const std::vector >’)
+            
+            // ERROR: no match for ‘operator<<’ (operand types are ‘std::ostream’ 
+            // {aka ‘std::basic_ostream’} and ‘const std::vector >’)
+            std::vector vec{ 45, 5, 7, 2 }; print(vec);
 
-            convert_to_int(std::string{"Merve"}); // ERROR: cannot convert ‘const std::__cxx11::basic_string’ to ‘int’ in initialization
+            // ERROR: cannot convert ‘const std::__cxx11::basic_string’ to ‘int’ in initialization
+            convert_to_int(std::string{"Merve"});
         }
 
-Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza çıkmaktadır. Bunlar "requires clause", "requires expression", 
-"named constraints(concept)".
+Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza çıkmaktadır. Bunlar,
+    "requires clause",
+    "requires expression", 
+    "named constraints(concept)"
+araçlarıdır. Bu araçlardan,
     >> "requires clause" : Genel sentaks şu şekildedir:
     
         " requires ("boolean" olarak yorumlanacak "Compile Time Expression") "
     
     İki biçimde kullanılır. Bunlar "prefix" ve "trailing" biçimde. 
-        >>> "prefix" yönteminde fonksiyonun parametre değişkeninin ismini kullanamayız. Çünkü bu yöntemde, yukarıdaki ifadeyi, fonksiyonun 
-        geri dönüş değerinin türünden önce yazmaktayız. 
+        >>> "prefix" yönteminde fonksiyonun parametre değişkeninin ismini kullanamayız. Çünkü bu yöntemde, yukarıdaki
+        ifadeyi, fonksiyonun geri dönüş değerinin türünden önce yazmaktayız. 
             * Örnek 1, Aşağıdaki "requires clause" kullanımında "prefix" biçimi uygulanmıştır. 
                 #include <iostream>
 
@@ -133,8 +141,8 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                     foo(45); // OK : sizeof x : 4
                 }
 
-        >>> "trailing" yönteminde ise fonksiyonun parametre değişkeninin ismini kullanabiliriz. Çünkü bu yöntemde yukarıdaki ifadeyi 
-        fonksiyonun imzası ile "{" arasındaki kısma yazmaktayız. 
+        >>> "trailing" yönteminde ise fonksiyonun parametre değişkeninin ismini kullanabiliriz. Çünkü bu yöntemde yukarıdaki
+        ifadeyi fonksiyonun imzası ile "{" arasındaki kısma yazmaktayız. 
             * Örnek 1,
                 #include <iostream>
 
@@ -238,9 +246,9 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
             #include <concepts>
 
             template<typename T>
-            requires (sizeof(T) > 2) &&             // "requires clause"        => "T" türünün "sizeof" değerinin "2" den büyük olması 
-            requires { typename T::size_type; } &&  // "requires expression"    => "T" türü "size_type" isminde "nested type" a sahip olması
-            std::input_iterator<T>                  // "concept"                => "input_iterator" konseptinin "T" türüne açılabilir olması 
+            requires (sizeof(T) > 2) &&             // "requires clause" => "T" türünün "sizeof" değerinin "2" den büyük olması 
+            requires { typename T::size_type; } &&  // "requires expression" => "T" türü "size_type" isminde "nested type" a sahip olması
+            std::input_iterator<T>                  // "concept" => "input_iterator" konseptinin "T" türüne açılabilir olması 
             class Myclass{
                 
             };
@@ -263,7 +271,9 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
 
             int main()
             {
-                Myclass<int> m1; // ERROR: template constraint failure for ‘template  requires (is_pointer_v) || (is_reference_v) class Myclass’
+                // ERROR: template constraint failure for
+                // ‘template  requires (is_pointer_v) || (is_reference_v) class Myclass’
+                Myclass<int> m1;
             }
 
         * Örnek 5,
@@ -281,16 +291,17 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
     
     Buradaki önemli nokta, derleme zamanında "constant expression" olabilmesidir. 
     
-    >> "concept" : İsimlendirilmiş "constraint" lerdir. Tekrar tekrar belirtmek yerine, vermiş olduğumuz ismi kullanıyoruz. Yine 
-    derleme zamanında "boolean" değer üretmesi gerekmektedir. 
+    >> "concept" : İsimlendirilmiş "constraint" lerdir. Tekrar tekrar belirtmek yerine, vermiş olduğumuz ismi kullanıyoruz.
+    Yine derleme zamanında "boolean" değer üretmesi gerekmektedir. 
         * Örnek 1,
             #include <type_traits>
             #include <iterator>
             #include <concepts>
 
             template<typename T>
-            concept Integral = std::is_integral_v<T>; // Bu noktada diğer "concept", "requires clause" ve "requires expression" 
-                                                      // kullanarak istediğimiz kombinasyonları yapabiliriz. 
+            concept Integral = std::is_integral_v<T>;
+            // Bu noktada diğer "concept", "requires clause" ve "requires expression" 
+            // kullanarak istediğimiz kombinasyonları yapabiliriz. 
 
             template<typename T>
             requires Integral<T> 
@@ -326,8 +337,11 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                                         // "std::is_integral_v<T> && std::is_integral_v<U>" ifadesinin "true" değer 
                                         // üretmesidir. 
                                         
-                Myclass<double, long> m2;   // ERROR: template constraint failure for ‘template  requires (Integral) && (Integral) class Myclass’
-                Myclass<int, double> m3;    // ERROR: template constraint failure for ‘template  requires (Integral) && (Integral) class Myclass’ 
+                // ERROR: template constraint failure for ‘template  requires (Integral) && (Integral) class Myclass’
+                Myclass<double, long> m2;  
+                
+                // ERROR: template constraint failure for ‘template  requires (Integral) && (Integral) class Myclass’ 
+                Myclass<int, double> m3;   
             }
 
         * Örnek 2,
@@ -440,7 +454,8 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
             #include <concepts>
             #include <iostream>
 
-            std::integral auto bar(int x) { return x * 1.1; } // ERROR: deduced return type does not satisfy placeholder constraints
+            std::integral auto bar(int x) { return x * 1.1; }
+            // ERROR: deduced return type does not satisfy placeholder constraints
 
             int foo() { return 1; }
             double func() { return 1.1; }
@@ -563,8 +578,14 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                     
                 */
                 
-                Myclass<5> m1; // ERROR: template constraint failure for ‘template  requires  std::has_single_bit(N) && N > 32 class Myclass’
-                Myclass<45> m2; // ERROR: template constraint failure for ‘template  requires  std::has_single_bit(N) && N > 32 class Myclass’
+                // ERROR: template constraint failure for
+                // ‘template  requires  std::has_single_bit(N) && N > 32 class Myclass’
+                Myclass<5> m1;
+
+                // ERROR: template constraint failure for
+                // ‘template  requires  std::has_single_bit(N) && N > 32 class Myclass’
+                Myclass<45> m2;
+                
                 Myclass<64> m3; // OK 
             }
 
@@ -608,11 +629,17 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                 func<19>(); // OK 
             }
 
-    >> "requires expression" : Diğerleri gibi derleme zamanında "boolean" değer üretmesi gerekmektedir. Kendi içerisinde üç aşama 
-    barındırır. Bunlar: "Simple Requiretments", "Type Requiretments", "Compound Requiretments" ve "Nested Requirements".  
-        >>> "Simple Requiretments" : Belirtilen ifade, derleyici tarafından geçerli bir ifade olmalıdır. Örneğin, "T" herhangi bir 
-        tür olmak şartıyla, bu türden "x" değişkenimiz olsun. "x++;" ifadesi geçerli bir ifade olmalıdır. Bir diğer deyişle "x"
-        değişkeni "++ son ek" operatörünün operandı olmalıdır. Burada "x" değişkeninin değeri bir arttırılmamaktadır. 
+    >> "requires expression" : Diğerleri gibi derleme zamanında "boolean" değer üretmesi gerekmektedir. Kendi içerisinde üç
+    aşama barındırır. Bunlar,
+        "Simple Requiretments", 
+        "Type Requiretments", 
+        "Compound Requiretments",
+        "Nested Requirements"
+    aşamalarıdır.   
+        >>> "Simple Requiretments" : Belirtilen ifade, derleyici tarafından geçerli bir ifade olmalıdır. Örneğin, "T"
+        herhangi bir tür olmak şartıyla, bu türden "x" değişkenimiz olsun. "x++;" ifadesi geçerli bir ifade olmalıdır. Bir
+        diğer deyişle "x" değişkeni "++ son ek" operatörünün operandı olmalıdır. Burada "x" değişkeninin değeri bir
+        arttırılmamaktadır. 
             * Örnek 1,
                 #include <concepts>
                 #include <vector>
@@ -636,8 +663,13 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                     
                     static_assert(Nec<int>); // "int" türden nesne "++" operatörünün operandı olabilir. 
                     static_assert(Nec<int*>); // "int*" türden nesne "++" operatörünün operandı olabilir. 
-                    static_assert(Nec<std::vector<int>::iterator>); // "std::vector<int>::iterator" nesnesi "++" operatörünün operandı olabilir. 
-                    static_assert(Nec<X>); // "X" türünden nesne "++" operatörünün operandı olamayacağı için, sentaks hatası olacaktır. 
+
+                    // "std::vector<int>::iterator" nesnesi "++" operatörünün operandı olabilir. 
+                    static_assert(Nec<std::vector<int>::iterator>);
+                    
+                    // "X" türünden nesne "++" operatörünün operandı olamayacağı için, sentaks hatası olacaktır. 
+                    static_assert(Nec<X>);
+                    
                     static_assert(Nec<Y>); // "Y" türünden nesne "++" operatörünün operandı olabilir. 
                 }  
 
@@ -865,8 +897,13 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
 
                 template<typename T>
                 concept my_custom_constraint = requires {
-                    sizeof(int) > 100;  // "sizeof(int) > 100;" ifadesi hiç bir zaman sentaks hatası oluşturmaz. Yani "Always True".
-                    std::is_integral_v<int>; // "std::is_integral_v<int>;" ifadesi de hiç bir zaman sentaks hatası oluşturmaz. Yani "Always True". 
+
+                    // "sizeof(int) > 100;" ifadesi hiç bir zaman sentaks hatası oluşturmaz. Yani "Always True".
+                    sizeof(int) > 100;  
+                    
+                    // "std::is_integral_v<int>;" ifadesi de hiç bir zaman sentaks hatası oluşturmaz. Yani "Always True". 
+                    std::is_integral_v<int>; 
+                
                 }; // Yani aslında hiç bir "constraints" mevcut değildir. 
 
                 int main()
@@ -874,8 +911,13 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                     constexpr bool a = my_custom_constraint<float>; 
                     std::cout << "a: " << std::boolalpha << a << '\n';
                     
-                    constexpr bool b = Neco<char>;  // ERROR: template constraint failure for ‘template  requires requires(T x) {std::cout << x;*x;} && sizeof (T) > 4 class Neco’
-                    constexpr bool c = Myclass<char>; // ERROR: template constraint failure for ‘template  requires requires(T x) {std::cout << x;*x;sizeof x > 100;} class Myclass’
+                    // ERROR: template constraint failure for 
+                    // ‘template  requires requires(T x) {std::cout << x;*x;} && sizeof (T) > 4 class Neco’
+                    constexpr bool b = Neco<char>;  
+                    
+                    // ERROR: template constraint failure for 
+                    // ‘template  requires requires(T x) {std::cout << x;*x;sizeof x > 100;} class Myclass’
+                    constexpr bool c = Myclass<char>; 
                 }
 
             * Örnek 11,
@@ -887,8 +929,11 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
 
                 template<typename T>
                 concept my_custom_constraint = requires {
-                    requires (sizeof(T) > 100); // "sizeof(int) > 100" ifadesinin "true" değer döndürmesi gerekmektedir. 
-                    requires (!std::is_integral_v<T>); // "!std::is_integral_v<T>" ifadesinin "true" değer döndürmesi gerekmektedir. 
+                    // "sizeof(int) > 100" ifadesinin "true" değer döndürmesi gerekmektedir. 
+                    requires (sizeof(T) > 100);
+                    
+                    // "!std::is_integral_v<T>" ifadesinin "true" değer döndürmesi gerekmektedir. 
+                    requires (!std::is_integral_v<T>);
                 }; 
 
                 struct Buffer{
@@ -976,8 +1021,8 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                 *	(II)  Bunun için de "std::remove_reference_t<decltype(*std::declval<T>())>" ifadesinin "std::integral"
                 *	"concept" ini karşılaması gerekmektedir. 
                 *	(III) "std::declval<T>()" ifadesi ise "T" türünden bir nesne oluşturma ifadesidir. Tıpkı "T{}" veya 
-                *	"T()" gibi. Burada "declval" fonksiyon şablonunun kullanılma amacı, "T{}" veya "T()" biçimindeki kullanımda 
-                *	ilgili tür için "Default Ctor." olması gerekmesidir. 
+                *	"T()" gibi. Burada "declval" fonksiyon şablonunun kullanılma amacı, "T{}" veya "T()" biçimindeki
+                *   kullanımda ilgili tür için "Default Ctor." olması gerekmesidir. 
                 *	(IV)  "*std::declval<T>()" ifadesi ise "std::declval<T>()" ifadesinin "dereference" edilebilir olması
                 *	demektir. 
                 *	(V)   "decltype(*std::declval<T>())" ifadesi ise "std::declval<T>()" ifadesi "dereference" edildiğinde
@@ -1051,11 +1096,12 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
 
                 int main()
                 {
-                    constexpr auto a = my_custom_concept<A, B>; // "a" is "true". Çünkü artık
-                                                                // "requires(T x) { x.foo(); } || requires (T x) { x.bar(); }"
-                                                                // ifadesinin "true" olması halinde sonuç "true" olacaktır. Yani 
-                                                                // "constraint" ifadelerinin kendilerinin "||" ile birleştirilmesi 
-                                                                // gerekmektedir. 
+                    constexpr auto a = my_custom_concept<A, B>;
+                    // "a" is "true". Çünkü artık
+                    // "requires(T x) { x.foo(); } || requires (T x) { x.bar(); }"
+                    // ifadesinin "true" olması halinde sonuç "true" olacaktır. Yani 
+                    // "constraint" ifadelerinin kendilerinin "||" ile birleştirilmesi 
+                    // gerekmektedir. 
                 }
             
             * Örnek 16.2,
@@ -1112,10 +1158,11 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                     //... 
                 }
         
-        >>> "Type Requiretments": Derleyici bir türün var olduğunu ve o türün kullanımının geçerli olduğunu sınamak zorunda. Burada 
-        "typename" anahtar sözcüğünü kullanmak zorundayız. Örneğin, "T" herhangi bir tür olmak şartıyla, "typename T::value_type;"
-        ifadesi demek "T" türünün alt türü olarak "value_type" türünün olması gerekmektedir. Burada "using" bildirimi de kullanılabilir,
-        "sub-class" olarak da. Önemli olan "value_type" a karşılık bir türün olmasıdır. 
+        >>> "Type Requiretments": Derleyici bir türün var olduğunu ve o türün kullanımının geçerli olduğunu sınamak zorunda.
+        Burada "typename" anahtar sözcüğünü kullanmak zorundayız. Örneğin, "T" herhangi bir tür olmak şartıyla,
+        "typename T::value_type;" ifadesi demek "T" türünün alt türü olarak "value_type" türünün olması gerekmektedir.
+        Burada "using" bildirimi de kullanılabilir, "sub-class" olarak da. Önemli olan "value_type" a karşılık bir türün
+        olmasıdır. 
             * Örnek 1,
                 #include <concepts>
                 #include <vector>
@@ -1136,22 +1183,27 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
 
                 int main()
                 {
-                    constexpr auto a =  my_custom_constraint<int>;  // "int" türü alt tür olarak "value_type" türüne
-                                                                    // sahip olmadığından, "a" değişkeni "false" değerdedir. 
+                    // "int" türü alt tür olarak "value_type" türüne
+                    // sahip olmadığından, "a" değişkeni "false" değerdedir. 
+                    constexpr auto a =  my_custom_constraint<int>;  
                                                                     
-                    constexpr auto b = my_custom_constraint<std::vector<int>>;  // "std::vector<int>" türü alt tür olarak 
-                                                                                // "value_type" türüne sahip olduğundan dolayı
-                                                                                // "b" değişkeni "true" değerdedir. 
+                    // "std::vector<int>" türü alt tür olarak 
+                    // "value_type" türüne sahip olduğundan dolayı
+                    // "b" değişkeni "true" değerdedir. 
+                    constexpr auto b = my_custom_constraint<std::vector<int>>;  
                                                                                 
-                    constexpr auto c = my_custom_constraint<std::vector<int>::iterator>;    // "std::vector<int::iterator>" türü alt tür olarak 
-                                                                                            // "value_type" türüne sahip olduğundan dolayı
-                                                                                            // "c" değişkeni "true" değerdedir. 
+                    // "std::vector<int::iterator>" türü alt tür olarak 
+                    // "value_type" türüne sahip olduğundan dolayı
+                    // "c" değişkeni "true" değerdedir. 
+                    constexpr auto c = my_custom_constraint<std::vector<int>::iterator>;    
                                                                                             
-                    constexpr auto d = my_custom_constraint<Eray>;  // "Eray" türü "value_type" türünden alt türe sahip değildir. Bu yüzden 
-                                                                    // "d" değişkeni "false" değerdedir. 
+                    // "Eray" türü "value_type" türünden alt türe sahip değildir. Bu yüzden 
+                    // "d" değişkeni "false" değerdedir. 
+                    constexpr auto d = my_custom_constraint<Eray>;  
                                                                     
-                    constexpr auto e = my_custom_constraint<Neco>;  // "Neco" türü "value_type" türünden alt türe sahiptir. Dolayısıyla 
-                                                                    // "e" değişkeni "true" değerdedir. 
+                    constexpr auto e = my_custom_constraint<Neco>;  
+                    // "Neco" türü "value_type" türünden alt türe sahiptir. Dolayısıyla 
+                    // "e" değişkeni "true" değerdedir. 
                     
                 } 
 
@@ -1294,23 +1346,25 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                         std::cout << Nec<G> << '\n'; // true
                     }
 
-            >>>> "{}" ile birlikte "->" operatörünün kullanılması. Bu kullanım ile amaç "{}" içerisindeki ifadeden elde edilmesi gereken 
-            türün ne olması gerektiği belirlenmektedir. Fakat türü doğrudan yazamıyoruz. Buradaki türü bir "concept" olarak 
-            belirmemiz gerekmektedir. Dolayısıyla "std::same_as" konseptini kullanmalıyız. Buradaki çalışma mekanizması da aşağıdaki gibidir:
+            >>>> "{}" ile birlikte "->" operatörünün kullanılması. Bu kullanım ile amaç "{}" içerisindeki ifadeden elde
+            edilmesi gereken türün ne olması gerektiği belirlenmektedir. Fakat türü doğrudan yazamıyoruz. Buradaki türü bir
+            "concept" olarak belirmemiz gerekmektedir. Dolayısıyla "std::same_as" konseptini kullanmalıyız. Buradaki çalışma
+            mekanizması da aşağıdaki gibidir:
 
                 //...
                 {x.foo()} -> std::same_as<int>;
                 //...
 
-            Normal şartlarda "std::same_as" konsepti iki parametrelidir. Buradaki parametrelerden birisi "decltype(x.foo())" ile otomatik 
-            olarak elde edilirken, ikinci parametre ise bizim belirttiğimiz "int" türüdür. Benzer şekilde "{}" içerisindeki ifadenin türünün 
-            tam sayı olmasını istiyorsak; 
+            Normal şartlarda "std::same_as" konsepti iki parametrelidir. Buradaki parametrelerden birisi "decltype(x.foo())"
+            ile otomatik olarak elde edilirken, ikinci parametre ise bizim belirttiğimiz "int" türüdür. Benzer şekilde "{}"
+            içerisindeki ifadenin türünün tam sayı olmasını istiyorsak; 
 
                 //...
                 {x.foo()} -> std::integral;
                 //...
             
-            Buradaki "std::integral" in tek parametresi ise "decltype(x.foo())" ile elde edilmiş olduğundan, nihai hedefe ulaşmış oluyoruz. 
+            Buradaki "std::integral" in tek parametresi ise "decltype(x.foo())" ile elde edilmiş olduğundan, nihai hedefe
+            ulaşmış oluyoruz. 
                 * Örnek 1,
                     #include <concepts>
                     #include <iostream>
@@ -1512,8 +1566,9 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
 
             template<typename T>
             concept hashable = requires {
-                // typename std::hash<T>;   // "typename std::hash<T>" ifadesi "std::hash<T>" türü oluşturulabilir mi demektir. 
-                                            // "std::hash" in herhangi bir türden açılımı oluşturulabilir. 
+                // typename std::hash<T>;
+                // "typename std::hash<T>" ifadesi "std::hash<T>" türü oluşturulabilir mi demektir. 
+                // "std::hash" in herhangi bir türden açılımı oluşturulabilir. 
                 
                 std::hash<T>{}; // "std::hash" in "T" açılımı türünden bir nesneyi oluşturabiliriz, demektir. 
             }; 
@@ -1564,8 +1619,13 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
 
             template<typename T>
             concept HasFoo = requires (T x) {
-                { x.foo() } noexcept -> std::convertible_to<bool>; // "x.foo()" ile elde ettiğimiz tür, bool" türüne dönüştürülebilir olmalıdır.  
-                { x.bar() } noexcept -> std::same_as<bool>; // "x.bar()" ile elde ettiğimiz tür ise "bool" türü olmalıdır. 
+
+                // "x.foo()" ile elde ettiğimiz tür, bool" türüne dönüştürülebilir olmalıdır.  
+                { x.foo() } noexcept -> std::convertible_to<bool>;
+                
+                // "x.bar()" ile elde ettiğimiz tür ise "bool" türü olmalıdır. 
+                { x.bar() } noexcept -> std::same_as<bool>;
+            
             };
 
             struct Nec{
@@ -1591,8 +1651,12 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
             // LEVEL - I
                 template<typename T>
                 concept HasTheFunctions = requires (T x) {
-                    { x.foo() } noexcept -> std::convertible_to<bool>; // "x.foo()" ile elde ettiğimiz tür, bool" türüne dönüştürülebilir olmalıdır.  
-                    { x.bar() } noexcept -> std::same_as<bool>; // "x.bar()" ile elde ettiğimiz tür ise "bool" türü olmalıdır. 
+                    
+                    // "x.foo()" ile elde ettiğimiz tür, bool" türüne dönüştürülebilir olmalıdır.  
+                    { x.foo() } noexcept -> std::convertible_to<bool>;
+                    
+                    // "x.bar()" ile elde ettiğimiz tür ise "bool" türü olmalıdır. 
+                    { x.bar() } noexcept -> std::same_as<bool>; 
                 };
 
                 template<typename T>
@@ -1678,7 +1742,8 @@ Pekiyi bizler nasıl "constraint" ederiz? Burada üç farklı araç karşımıza
                 w.foo();
             };
 
-            void foo(Necible<int, double> auto) {} // Buradaki fonksiyon parametresi olarak diğeri derleyici tarafından yazıldığı için yazılmamıştır. 
+            // Buradaki fonksiyon parametresi olarak diğeri derleyici tarafından yazıldığı için yazılmamıştır. 
+            void foo(Necible<int, double> auto) {}
 
             int main()
             {
@@ -2275,8 +2340,8 @@ Standart konseptleri inceleyelim:
         }
 
 > Hatırlatıcı Notlar:
-    >> "std::declval" : Derleme zamanında çağrılan bir fonksiyondur. Geri dönüş değeri, o türe ilişkin bir referanstır. "R-Value"
-    veya "L-Value" referans olması fark etmemektedir. 
+    >> "std::declval" : Derleme zamanında çağrılan bir fonksiyondur. Geri dönüş değeri, o türe ilişkin bir referanstır.
+    "R-Value" veya "L-Value" referans olması fark etmemektedir. 
         * Örnek 1,
             class Necati{
                 public:
@@ -2305,8 +2370,11 @@ Standart konseptleri inceleyelim:
             #include <string>
 
             // WAY - I
-            void aggregateAndDisplay_v1(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
-            {
+            void aggregateAndDisplay_v1(
+                std::map<int, 
+                std::string> const& source, 
+                std::map<int, std::string> const& destination
+            ) {
                 auto aggregatedMap = destination;
                 for(auto const& sourceEntry: source){
                     auto destinationPosition = aggregatedMap.find(sourceEntry.first);
@@ -2322,8 +2390,11 @@ Standart konseptleri inceleyelim:
             }
 
             // WAY - II 
-            void aggregateAndDisplay_v2(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
-            {
+            void aggregateAndDisplay_v2(
+                std::map<int, 
+                std::string> const& source, 
+                std::map<int, std::string> const& destination
+            ) {
                 const auto aggregatedMap = [&]() {
                     auto aggregatedMap = destination;
                     for(auto const& sourceEntry: source){
@@ -2343,19 +2414,24 @@ Standart konseptleri inceleyelim:
             }
 
             // WAY - III 
-            void aggregateAndDisplay_v3(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
-            {
-                const auto aggregatedMap = [](std::map<int, std::string> const& destination, std::map<int, std::string> const& source) {
-                    auto aggregatedMap = destination;
-                    for(auto const& sourceEntry: source){
-                        auto destinationPosition = aggregatedMap.find(sourceEntry.first);
-                        if(destinationPosition == aggregatedMap.end())
-                            aggregatedMap.insert(std::make_pair(sourceEntry.first, sourceEntry.second));
-                        else
-                            aggregatedMap[sourceEntry.first] = sourceEntry.second + " or " + destinationPosition->second;
-                    }
+            void aggregateAndDisplay_v3(
+                std::map<int, std::string> const& source, 
+                std::map<int, std::string> const& destination
+            ){
+                const auto aggregatedMap = [](
+                        std::map<int, std::string> const& destination, 
+                        std::map<int, std::string> const& source
+                    ) {
+                        auto aggregatedMap = destination;
+                        for(auto const& sourceEntry: source){
+                            auto destinationPosition = aggregatedMap.find(sourceEntry.first);
+                            if(destinationPosition == aggregatedMap.end())
+                                aggregatedMap.insert(std::make_pair(sourceEntry.first, sourceEntry.second));
+                            else
+                                aggregatedMap[sourceEntry.first] = sourceEntry.second + " or " + destinationPosition->second;
+                        }
                     
-                    return aggregatedMap;
+                        return aggregatedMap;
                 }(source, destination);
                 
                 for(auto const& entry: aggregatedMap){
@@ -2365,8 +2441,10 @@ Standart konseptleri inceleyelim:
 
             // WAY - IV
             namespace{
-                auto aggregateAndDisplay(std::map<int, std::string> const& destination, std::map<int, std::string> const& source)
-                {
+                auto aggregateAndDisplay(
+                    std::map<int, std::string> const& destination, 
+                    std::map<int, std::string> const& source
+                ){
                     auto aggregatedMap = destination;
                     for(auto const& sourceEntry: source){
                         auto destinationPosition = aggregatedMap.find(sourceEntry.first);
@@ -2380,7 +2458,9 @@ Standart konseptleri inceleyelim:
                 }
             };
 
-            void aggregateAndDisplay_v4(std::map<int, std::string> const& source, std::map<int, std::string> const& destination)
+            void aggregateAndDisplay_v4(
+                std::map<int, std::string> const& source, 
+                std::map<int, std::string> const& destination)
             {
                 auto aggregatedMap = aggregateAndDisplay(destination, source);
                 for(auto const& entry: aggregatedMap){

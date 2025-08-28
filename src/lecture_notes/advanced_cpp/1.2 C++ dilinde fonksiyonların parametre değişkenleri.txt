@@ -1,10 +1,10 @@
 > Fonksiyonların parametre değişkenleri nasıl olmalıdır? Aşağıdaki örneği inceleyelim:
-    * Örnek 1, Normal şartlarda kopyalamadan kaçınmak adına fonksiyonumuzun parametresini "const-reference" biçiminde belirtirdik. 
-    Şimdi de argüman olarak aldığı yazıyı ters çeviren bir yazı yazmak isteyelim. Dolayısıyla fonksiyonumuzun parametresini de 
-    "const-reference" olarak belirtelim. Parametresi bu şekil olduğu için bizler argüman olarak aldığımız yazıyı fonksiyonun 
-    içerisinde tekrardan başka bir yere kopyalamalıyız. Fakat bu örnek nezdinde ilgili fonksiyonumuzun parametresini direkt 
-    sınıf türünden yaparsak, fonksiyon gövdesinde tekrardan kopyalamaya gerek kalmayacaktır. Eğer fonksiyona da "PR-Value" argüman 
-    da geçersek, "Mandotary Copy Ellision" gerçekleşecektir. 
+    * Örnek 1, Normal şartlarda kopyalamadan kaçınmak adına fonksiyonumuzun parametresini "const-reference" biçiminde
+    belirtirdik. Şimdi de argüman olarak aldığı yazıyı ters çeviren bir yazı yazmak isteyelim. Dolayısıyla fonksiyonumuzun
+    parametresini de "const-reference" olarak belirtelim. Parametresi bu şekil olduğu için bizler argüman olarak aldığımız
+    yazıyı fonksiyonun içerisinde tekrardan başka bir yere kopyalamalıyız. Fakat bu örnek nezdinde ilgili fonksiyonumuzun
+    parametresini direkt sınıf türünden yaparsak, fonksiyon gövdesinde tekrardan kopyalamaya gerek kalmayacaktır. Eğer
+    fonksiyona da "PR-Value" argüman da geçersek, "Mandotary Copy Ellision" gerçekleşecektir. 
         #include <string>
         #include <algorithm>
         #include <iostream>
@@ -13,9 +13,21 @@
         public:
             Myclass(const std::string& name) : m_name{name} { std::cout << "Default Ctor.\n"; }
             Myclass(const Myclass& other) : m_name{other.m_name} { std::cout << "Copy Ctor.\n"; }
-            Myclass& operator=(const Myclass& other) { m_name = other.m_name; std::cout << "Copy Assignment.\n"; return *this;}
+
+            Myclass& operator=(const Myclass& other) { 
+                m_name = other.m_name; 
+                std::cout << "Copy Assignment.\n";
+                return *this;
+            }
+            
             Myclass(Myclass&& other) : m_name{std::move(other.m_name)} { std::cout << "Move Ctor.\n"; }
-            Myclass& operator=(Myclass&& other) { m_name = std::move(other.m_name); std::cout << "Move Assignment.\n"; return *this;}
+
+            Myclass& operator=(Myclass&& other) {
+                m_name = std::move(other.m_name);
+                std::cout << "Move Assignment.\n";
+                return *this;
+            }
+            
             ~Myclass()noexcept { std::cout << "Dtor\n"; }
             void show_name()const { std::cout << "Name : " << m_name << "\n"; }
         private:

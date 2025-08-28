@@ -1,7 +1,7 @@
-> "coroutines" : "coroutins" dediğimiz şeyler aslında birer fonksiyonlardır. Fakat öyle fonksiyonlardır ki belirli bir noktada çalışmasını
-istediğimiz zaman durdurabilir, yine istediğimiz zaman devam ettirebiliriz. Tabii durdurulma esnasında programın akışı, çağıran
-fonksiyona geri dönmektedir. Durdurma-tekrar çalıştırma mekanizması defalarca tekrar edebilir. C++20 ile dile eklenen bir araçtır.
-Karşımıza üç adet anahtar sözcük çıkmaktadır:
+> "coroutines" : "coroutins" dediğimiz şeyler aslında birer fonksiyonlardır. Fakat öyle fonksiyonlardır ki belirli bir
+noktada çalışmasını istediğimiz zaman durdurabilir, yine istediğimiz zaman devam ettirebiliriz. Tabii durdurulma esnasında
+programın akışı, çağıran fonksiyona geri dönmektedir. Durdurma-tekrar çalıştırma mekanizması defalarca tekrar edebilir.
+C++20 ile dile eklenen bir araçtır. Karşımıza üç adet anahtar sözcük çıkmaktadır:
 
     "co_await", "co_yield", "co_return"
 
@@ -37,42 +37,53 @@ Karşımıza üç adet anahtar sözcük çıkmaktadır:
         da mevcuttur. Örneğin, "std::suspend_never" ve "std::suspend_always" isimli sınıflar, birer "awaitable" türündendir.
             
         >>> Derleyici bu operatörü gördüğünde "awaiter" türünden bir nesne elde etmek isteyecektir. Bunun için,
-            >>>> İlk olarak derleyici "promise_type" sınıfının "await_transform" isimli bir üye fonksiyona sahip olup olmadığını sınar. Eğer böyle bir
-            fonksiyona sahipse, direkt o fonksiyona çağrı yapar ve elde ettiği geri dönüş değerini de iş bu "co_await" operatörüne operand olarak geçer.
-            Fonksiyona da argüman olarak, bizim "co_await" için kullandığımız ifadeyi geçer. Eğer böyle bir fonksiyon mevcut değilse, "co_await" operatörünün
-            operand olarak kullandığımız ifade dikkate alınacaktır. Yani fonksiyon varsa bizim "co_await" için kullandığımız operandı "await_transform"
-            fonksiyonuna gönderiyor ve elde ettiği değeri ise "co_await" için kullanıyor. Aksi halde bizim "co_await" için kullandığımızı kullanıyor. Böylelikle
-            bir "awaitable" türünden bir nesne elde etmiş olacağız. Şimdi bu nesneden hareketle "awaiter" türünden bir başka nesne elde etmek isteyelim.
+            >>>> İlk olarak derleyici "promise_type" sınıfının "await_transform" isimli bir üye fonksiyona sahip olup
+            olmadığını sınar. Eğer böyle bir fonksiyona sahipse, direkt o fonksiyona çağrı yapar ve elde ettiği geri dönüş
+            değerini de iş bu "co_await" operatörüne operand olarak geçer. Fonksiyona da argüman olarak, bizim "co_await"
+            için kullandığımız ifadeyi geçer. Eğer böyle bir fonksiyon mevcut değilse, "co_await" operatörünün operand olarak
+            kullandığımız ifade dikkate alınacaktır. Yani fonksiyon varsa bizim "co_await" için kullandığımız operandı
+            "await_transform" fonksiyonuna gönderiyor ve elde ettiği değeri ise "co_await" için kullanıyor. Aksi halde bizim
+            "co_await" için kullandığımızı kullanıyor. Böylelikle bir "awaitable" türünden bir nesne elde etmiş olacağız.
+            Şimdi bu nesneden hareketle "awaiter" türünden bir başka nesne elde etmek isteyelim.
                 
-            >>>> İşte gerek "await_transform" çağrısı ile bir "awaiter" elde edilmesi gerek bizim direkt olarak bir "awaitable" türünden ifade kullandıktan 
-            sonra derleyici, bir "awaiter" türünden nesne elde edebilmek adına,
+            >>>> İşte gerek "await_transform" çağrısı ile bir "awaiter" elde edilmesi gerek bizim direkt olarak bir
+            "awaitable" türünden ifade kullandıktan sonra derleyici, bir "awaiter" türünden nesne elde edebilmek adına,
                 
-                -> İlgili "awaitable" türünün "operator co_await" isimli fonksiyonuna sahip olup olmadığını bakar. Eğer o sınıfta bu isimde bir üye fonksiyon varsa,
-                ona çağrı yapılacak.
+                -> İlgili "awaitable" türünün "operator co_await" isimli fonksiyonuna sahip olup olmadığını bakar. Eğer o
+                sınıfta bu isimde bir üye fonksiyon varsa, ona çağrı yapılacak.
                 
-                -> Eğer öyle bir üye fonksiyon yoksa, aynı isimde global isimde bir fonksiyon olup olmadığına bakacak. Eğer varsa, ona çağrı yapacak.
+                -> Eğer öyle bir üye fonksiyon yoksa, aynı isimde global isimde bir fonksiyon olup olmadığına bakacak. Eğer
+                varsa, ona çağrı yapacak.
                 
-            Bu fonksiyonların çağrılması sonucunda "awaiter" türünden bir nesne elde edilmeye çalışılır. Eğer o isimde bir fonksiyon hiç yoksa ilgili "awaitable" türünden
-            nesne zaten "awaiter" türündendir denilir. Dolayısıyla şu tespit doğrudur:
+            Bu fonksiyonların çağrılması sonucunda "awaiter" türünden bir nesne elde edilmeye çalışılır. Eğer o isimde bir
+            fonksiyon hiç yoksa ilgili "awaitable" türünden nesne zaten "awaiter" türündendir denilir. Dolayısıyla şu tespit
+            doğrudur:
 
                 Her "awaiter" aslında bir "awaitable" dır. FAKAT HER "awaitable" IN BİR "await" OLMASI GEREKMİYOR.
                 
-            Dolayısıyla yukarıdaki "std::suspend_never" ve "std::suspend_always" isimli sınıflar aslında birer "awaiter" sınıflardır.  
-                >>>>> "awaiter" : Niyahet böyle bir sınıf türü elde ettik. Pekiyi bu nasıl bir sınıf olmalıdır? İşte bu sınıf "await_ready", "await_suspend" ve
-                "await_resume" isimli fonksiyonlara sahip olması ve çağrılabilir olması GEREKMEKTEDİR. Bu fonksiyonlardan,
-                    >>>>>> "await_ready" : "bool" türünden değer döndürür. Ekseriyetle "false" değerini döndürdüğünü görürüz. "false" olması halinde "suspend" 
-                    teklifi kabul edilecektir. Yani "suspend" edilebilmesi için bu fonksiyonun "false" değer döndürmesi gerekmektedir.
+            Dolayısıyla yukarıdaki "std::suspend_never" ve "std::suspend_always" isimli sınıflar aslında birer "awaiter"
+            sınıflardır.  
+                >>>>> "awaiter" : Niyahet böyle bir sınıf türü elde ettik. Pekiyi bu nasıl bir sınıf olmalıdır? İşte bu sınıf
+                    "await_ready", 
+                    "await_suspend",
+                    "await_resume"
+                isimli fonksiyonlara sahip olması ve çağrılabilir olması GEREKMEKTEDİR. Bu fonksiyonlardan,
+                    >>>>>> "await_ready" : "bool" türünden değer döndürür. Ekseriyetle "false" değerini döndürdüğünü görürüz.
+                    "false" olması halinde "suspend" teklifi kabul edilecektir. Yani "suspend" edilebilmesi için bu
+                    fonksiyonun "false" değer döndürmesi gerekmektedir.
                     
                         "IT IS NOT READY YET, SO SUSPEND IT".
                         
-                    Eğer "true" döndürürse, "suspend" edilme maaliyetinden kaçınılacağı için, "suspend" edilemeyecektir. Bir diğer deyişle "suspend" HİÇ VUKU BULMAYACAKTIR.
-                    YANİ "std::suspend_never" sınıfının "await_ready" fonksiyonu "true" değer döndürmektedir. Bu fonksiyon durdurulmadan HEMEN ÖNCE ÇAĞRILMAKTADIR. 
+                    Eğer "true" döndürürse, "suspend" edilme maaliyetinden kaçınılacağı için, "suspend" edilemeyecektir.
+                    Bir diğer deyişle "suspend" HİÇ VUKU BULMAYACAKTIR. YANİ "std::suspend_never" sınıfının "await_ready"
+                    fonksiyonu "true" değer döndürmektedir. Bu fonksiyon durdurulmadan HEMEN ÖNCE ÇAĞRILMAKTADIR. 
 
-                    >>>>>> "await_suspend" : Bu fonksiyonun parametresi "std::coroutine_handle" türündendir. Bu fonksiyon derleyici tarafından "suspend" vuku bulması halinde
-                    çağrılır. 
-                        >>>>>>> "coroutine_handle" : Aslında bu kavram, aşağıda kabaca değineceğimiz, "Return Object" nesnesini tutan kavramdır. Bünyesinde 
-                        ilgili "coroutine" nin devam ettirilmesini, akıbetinin sorgulanması vb. işleri yapmamızı sağlayan fonksiyonları barındırır. Standart bir kavramdır. Bu
-                        sınıf bünyesinde bir takım fonksiyonlar barındırır. En önemlileri ise
+                    >>>>>> "await_suspend" : Bu fonksiyonun parametresi "std::coroutine_handle" türündendir. Bu fonksiyon
+                    derleyici tarafından "suspend" vuku bulması halinde çağrılır. 
+                        >>>>>>> "coroutine_handle" : Aslında bu kavram, aşağıda kabaca değineceğimiz, "Return Object"
+                        nesnesini tutan kavramdır. Bünyesinde ilgili "coroutine" nin devam ettirilmesini, akıbetinin
+                        sorgulanması vb. işleri yapmamızı sağlayan fonksiyonları barındırır. Standart bir kavramdır. Bu sınıf
+                        bünyesinde bir takım fonksiyonlar barındırır. En önemlileri ise
 
                             "resume", "done" ve "destroy"
 
@@ -88,11 +99,12 @@ Karşımıza üç adet anahtar sözcük çıkmaktadır:
 
                         -> "void" olması halinde "suspend" vuku bulacak ve programın akışı çağıran koda dönecektir. 
 
-                        -> "bool" olması halinde "suspend" işlemi bir şarta bağlanır. "true" değer dönerse "suspend" gerçekleşecek, "false" dönerse gerçekleşmeyecektir. Bir diğer
-                        deyişle "bool" olması halinde "await_ready" fonksiyonundaki işleyişin tam tersi bir mekanizma işletilecektir. 
+                        -> "bool" olması halinde "suspend" işlemi bir şarta bağlanır. "true" değer dönerse "suspend"
+                        gerçekleşecek, "false" dönerse gerçekleşmeyecektir. Bir diğer deyişle "bool" olması halinde
+                        "await_ready" fonksiyonundaki işleyişin tam tersi bir mekanizma işletilecektir. 
 
-                    >>>>>> "await_resume" : Bu fonksiyon ise "std::suspend_never" vuku bulması halinde çağrılır. Programın akışı "suspend" edildiği noktadan tekrar 
-                    başlamasından hemen evvel çağrılır. 
+                    >>>>>> "await_resume" : Bu fonksiyon ise "std::suspend_never" vuku bulması halinde çağrılır. Programın
+                    akışı "suspend" edildiği noktadan tekrar başlamasından hemen evvel çağrılır. 
 
             C++20 standardı ile elimizde iki adet standart bir "awaiter" sınıfı vardır. Bunlar "std::suspend_never" ve
             "std::suspend_always" isimli sınıflardır. Bu sınıflardan "std::suspend_never" kullanılması durumunda "suspend"
@@ -122,33 +134,37 @@ Karşımıza üç adet anahtar sözcük çıkmaktadır:
         için "coroutine" çağıran koda bir değer döndürmüş olur. 
 
 Bu tip fonksiyonların diğer özellikleri ise şunlardır:
-    >> "coroutines" tip fonksiyonların geri dönüş değeri kavramı da pekala vardır fakat esasında "coroutines" tip fonksiyonların bize 
-    sunduğu "interface" kavramıdır. İşte böylesi fonksiyonların, kendisine sunduğu "interface" yi kullanabilmek için, fonksiyonun geri 
-    döndürdüğü "Return Object" i kullanmamız gerekmektedir. İş bu "Return Object" hem "coroutines" tip fonksiyon ile haberleşmemizi 
-    hem de onun döndürdüğü değerin ne olduğunu anlamamıza olanak sağlamaktadır. 
-        >>> İş bu geri dönüş değeri olan sınıf(lar)ın tanımları henüz standart kütüphaneye ekli olmadığı için (C++20 itibariyle), bu 
-        sınıfları ya bizler yazmalı ya da üçüncü parti kütüphanelerden faydalanmalıyız. 
+    >> "coroutines" tip fonksiyonların geri dönüş değeri kavramı da pekala vardır fakat esasında "coroutines" tip
+    fonksiyonların bize sunduğu "interface" kavramıdır. İşte böylesi fonksiyonların, kendisine sunduğu "interface" yi
+    kullanabilmek için, fonksiyonun geri döndürdüğü "Return Object" i kullanmamız gerekmektedir. İş bu "Return Object" hem
+    "coroutines" tip fonksiyon ile haberleşmemizi hem de onun döndürdüğü değerin ne olduğunu anlamamıza olanak sağlamaktadır. 
+        >>> İş bu geri dönüş değeri olan sınıf(lar)ın tanımları henüz standart kütüphaneye ekli olmadığı için
+        (C++20 itibariyle), bu sınıfları ya bizler yazmalı ya da üçüncü parti kütüphanelerden faydalanmalıyız. 
 
-    >> "coroutines" tip fonksiyonlar, içsel mekanizmaları için pekala bellek yönetimi kullanmaktadırlar. Çünkü kaldıkları yerden devam 
-    edebilmeleri için "Resume Point" dediğimiz verinin saklanması gerekmektedir. Buna ilave olarak "coroutines" tip fonksiyonlarda 
-    kullanılan yerel değişkenlerin, iş bu fonksiyonların parametre değişkenlerinin vb. değerlerin de pekala saklanmış olması gerekmektedir. 
-    İşte bu mekanizmaya ise "Coroutine State" veya "Coroutine Frame" denmektedir. Genel olarak burada kullanılan mekanizma için Dinamik Bellek
-    Yöntemleri kullanılır fakat özel durumlarda derleyiciler optimizasyon yaparlar ve Dinamik Bellek Yöntemlerinin maliyetini elimine ederler. 
+    >> "coroutines" tip fonksiyonlar, içsel mekanizmaları için pekala bellek yönetimi kullanmaktadırlar. Çünkü kaldıkları
+    yerden devam edebilmeleri için "Resume Point" dediğimiz verinin saklanması gerekmektedir. Buna ilave olarak "coroutines"
+    tip fonksiyonlarda kullanılan yerel değişkenlerin, iş bu fonksiyonların parametre değişkenlerinin vb. değerlerin de
+    pekala saklanmış olması gerekmektedir. İşte bu mekanizmaya ise "Coroutine State" veya "Coroutine Frame" denmektedir.
+    Genel olarak burada kullanılan mekanizma için Dinamik Bellek Yöntemleri kullanılır fakat özel durumlarda derleyiciler
+    optimizasyon yaparlar ve Dinamik Bellek Yöntemlerinin maliyetini elimine ederler. 
 
-    >> "coroutines" tip fonksiyonlar aslında birer "opaque" biçimindedir. Yani arka planda işlenen şeyler, kendisini çağırandan direkt
-    gizlenmiştir. Sadece bir takım "Coroutine Handle" araçları kullanarak dış dünyaya açılmaktadır. 
+    >> "coroutines" tip fonksiyonlar aslında birer "opaque" biçimindedir. Yani arka planda işlenen şeyler, kendisini
+    çağırandan direkt gizlenmiştir. Sadece bir takım "Coroutine Handle" araçları kullanarak dış dünyaya açılmaktadır. 
 
-    >> Aynı "coroutine" fonksiyonu farklı "thread" ler ile kullanabiliriz. Yani bir "thread" ile durdurulan, başka bir "thread" ile tekrar 
-    çalışmaya devam ettirilebilir. 
+    >> Aynı "coroutine" fonksiyonu farklı "thread" ler ile kullanabiliriz. Yani bir "thread" ile durdurulan, başka bir
+    "thread" ile tekrar çalışmaya devam ettirilebilir. 
 
     >> "coroutine" başlık dosyasının eklenmesi gerekmektedir.
 
     >> Derleyicinin bir fonksiyonu "coroutine" olarak ele alması için,
-        >>> Fonksiyonun tanımında yukarıdaki üç anahtar sözcükten("co_await", "co_yield" yada "co_return") birisinin olması gerekmektedir.
+        >>> Fonksiyonun tanımında yukarıdaki üç anahtar sözcükten("co_await", "co_yield" yada "co_return") birisinin olması
+        gerekmektedir.
         
-        >>> Geri dönüş değerinin bir sınıf türünden olması gerekmektedir. Öyle bir sınıf ki bu sınıf aşağıdaki şartları da sağlamalıdır: 
-            >>>> "promise_type" türünden bir "nested_type" ı bünyesinde barındırması gerekmektedir. Bu türü sınıfımız içerisinde tanımlamak 
-            zorunda değiliz. Sadece bildirimini sınıf içerisinde bulundurup, tanımını başka yerde de yapabiliriz. 
+        >>> Geri dönüş değerinin bir sınıf türünden olması gerekmektedir. Öyle bir sınıf ki bu sınıf aşağıdaki şartları da
+        sağlamalıdır: 
+            >>>> "promise_type" türünden bir "nested_type" ı bünyesinde barındırması gerekmektedir. Bu türü sınıfımız
+            içerisinde tanımlamak zorunda değiliz. Sadece bildirimini sınıf içerisinde bulundurup, tanımını başka yerde de
+            yapabiliriz. 
                 * Örnek 1,
                     //...
                     #include <iostream>
@@ -174,12 +190,13 @@ Bu tip fonksiyonların diğer özellikleri ise şunlardır:
                 "initial_suspend", "get_return_object", "final_suspend", "return_void"/"return_value", "unhandled_exception"
             
             isimli fonksiyonlarına sahip olması gerekmektedir. Bu fonksiyonlardan,
-                >>>>> "initial_suspend" : "coroutine" çalışmaya başlar başlamaz "suspend" edilsin mi edilmesin mi diye belirlemede bulunmak için 
-                kullanılır. Eğer "suspend" edilsin şeklinde bir belirleme yapılırsa, "coroutine" çağrılır fakat "suspend" edilir ve programın 
-                akışı geri döner. Ta ki "resume" edilene kadar. Aksi halde, yani "suspend" edilmesin şeklinde bir belirleme yapılırsa, programın
-                akışı yukarıdaki üç anahtar sözcükten birine gelene kadar akar. O noktada "suspend" edilir. Bu fonksiyonun geri dönüş değerinin
-                türü ise "awaiter" türündendir. Dolayısıyla geri dönüş değeri ya "std::suspend_always" ya da "std::suspend_never" türünden birisi
-                olur. 
+                >>>>> "initial_suspend" : "coroutine" çalışmaya başlar başlamaz "suspend" edilsin mi edilmesin mi diye
+                belirlemede bulunmak için kullanılır. Eğer "suspend" edilsin şeklinde bir belirleme yapılırsa, "coroutine"
+                çağrılır fakat "suspend" edilir ve programın akışı geri döner. Ta ki "resume" edilene kadar. Aksi halde,
+                yani "suspend" edilmesin şeklinde bir belirleme yapılırsa, programın akışı yukarıdaki üç anahtar sözcükten
+                birine gelene kadar akar. O noktada "suspend" edilir. Bu fonksiyonun geri dönüş değerinin türü ise "awaiter"
+                türündendir. Dolayısıyla geri dönüş değeri ya "std::suspend_always" ya da "std::suspend_never" türünden
+                birisi olur. 
                     * Örnek 1, Fonksiyonun tipik kullanımı:
                         //...
                         #include <iostream>
@@ -191,8 +208,9 @@ Bu tip fonksiyonların diğer özellikleri ise şunlardır:
 
                             struct promise_type {
                                 auto initial_suspend() {
-                                    return std::suspend_never{};    // Buradaki "suspend_never" in türü "awaiter" biçiminde olup, bu geri dönüş değeri ise 
-                                                                    // "co_await" operatörüne operand olacaktır. 
+                                    return std::suspend_never{};    
+                                    // Buradaki "suspend_never" in türü "awaiter" biçiminde olup, bu geri dönüş değeri ise 
+                                    // "co_await" operatörüne operand olacaktır. 
                                 }
                             };
 
@@ -225,12 +243,12 @@ Bu tip fonksiyonların diğer özellikleri ise şunlardır:
                             co_return;
                         }
 
-                İleride detaylarına gireceğimiz üzere; bu fonksiyonun geri dönüş değerinin türü için "awaiter" türü demiştik. İşte bu tür ise aslında 
-                "co_await" operatörüne operand olmaktadır.  
+                İleride detaylarına gireceğimiz üzere; bu fonksiyonun geri dönüş değerinin türü için "awaiter" türü demiştik.
+                İşte bu tür ise aslında "co_await" operatörüne operand olmaktadır.  
 
-                >>>>> "get_return_object" : Bu fonksiyon işte "coroutine" ile onu çağıran kod arasında bir "interface" olarak kullanılmak
-                gereken "Return Object" isimli nesneyi döndürmektedir. Dolayısıyla bu fonksiyonun geri dönüş değerinin türü, "coroutine"
-                fonksiyonunun geri dönüş değeri olan sınıf türünden olmalıdır. 
+                >>>>> "get_return_object" : Bu fonksiyon işte "coroutine" ile onu çağıran kod arasında bir "interface" olarak
+                kullanılmak gereken "Return Object" isimli nesneyi döndürmektedir. Dolayısıyla bu fonksiyonun geri dönüş
+                değerinin türü, "coroutine" fonksiyonunun geri dönüş değeri olan sınıf türünden olmalıdır. 
                     * Örnek 1, Fonksiyonun tipik kullanımı:
                         //...
                         #include <iostream>
@@ -290,9 +308,10 @@ Bu tip fonksiyonların diğer özellikleri ise şunlardır:
                             co_return;
                         }
 
-                >>>>> "return_void" / "return_value" : Bu fonksiyonlardan yalnızca bir tanesini tanımlayabiliriz. Programın akışı "co_return" çağrısına
-                geldiğinde yalın bir şekilde dönüş yapmak istiyorsak, "co_return" operatörünün bir operandı yoksa, "return_void" fonksiyonunu 
-                tanımlamalıyız. Eğer "co_return" operatörüne bir operand vermişsek, "return_value" fonksiyonunu tanımlamalıyız. 
+                >>>>> "return_void" / "return_value" : Bu fonksiyonlardan yalnızca bir tanesini tanımlayabiliriz. Programın
+                akışı "co_return" çağrısına geldiğinde yalın bir şekilde dönüş yapmak istiyorsak, "co_return" operatörünün
+                bir operandı yoksa, "return_void" fonksiyonunu tanımlamalıyız. Eğer "co_return" operatörüne bir operand
+                vermişsek, "return_value" fonksiyonunu tanımlamalıyız. 
                     * Örnek 1,
                         //...
                         #include <iostream>
@@ -326,8 +345,9 @@ Bu tip fonksiyonların diğer özellikleri ise şunlardır:
                             co_return;
                         }
 
-    >> "unhandled_exception" : Aslında bizim "coroutine" fonksiyonumuz derleyici tarafından "try-catch" bloğu içine alınır. İşte "catch-all"
-    fonksiyonunda da bu fonksiyon çağrılır. İşte "Exception" mekanizmasının işletilebilmesi için bu fonksiyon da gereklidir. 
+    >> "unhandled_exception" : Aslında bizim "coroutine" fonksiyonumuz derleyici tarafından "try-catch" bloğu içine alınır.
+    İşte "catch-all" fonksiyonunda da bu fonksiyon çağrılır. İşte "Exception" mekanizmasının işletilebilmesi için bu
+    fonksiyon da gereklidir. 
         * Örnek 1,
             //...
             #include <iostream>
@@ -370,7 +390,8 @@ Bu tip fonksiyonların diğer özellikleri ise şunlardır:
         >>> C dilindeki "variadic" fonksiyonlar,
         >>> Sınıfların "ctor" ve "dtor" fonksiyonları,
         >>> "constexpr" ve C++20 ile dile eklenen "consteval" anahtar sözcüğü ile nitelenen fonksiyonlar,
-        >>> Geri dönüş değeri türü için çıkarım mekanizması kullanılamayacağından, o fonksiyonların geri dönüş değeri türü "auto" olamaz. 
+        >>> Geri dönüş değeri türü için çıkarım mekanizması kullanılamayacağından, o fonksiyonların geri dönüş değeri türü
+        "auto" olamaz. 
         >>> Bünyelerinde "regular return statemen" bulunduramazlar.         
     
 Şimdi de bütün bunları kullanarak ilk "coroutine" örneğimizi yapalım:   

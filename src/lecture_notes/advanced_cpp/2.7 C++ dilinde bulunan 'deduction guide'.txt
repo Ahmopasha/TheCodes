@@ -260,8 +260,13 @@
 
         int main()
         {
-            Sum s{ 1u, 2.0, 3, 4.0f };  // "common type" of the arguments of "1u, 2.0, 3, 4.0f" is "double". So, "s" is of type "Sum<double>"
-            Sum str{ std::string{"abcd"}, "ef" }; // "common type" of the arguments of "std::string{"abcd"}, "ef"" is "std::string". So, "s" is of type "Sum<std::string>"
+            // "common type" of the arguments of "1u, 2.0, 3, 4.0f" is "double". So, "s" is of type "Sum<double>"
+            Sum s{ 1u, 2.0, 3, 4.0f }; 
+            
+            // "common type" of the arguments of "std::string{"abcd"}, "ef"" is "std::string".
+            // So, "s" is of type "Sum<std::string>"
+            Sum str{ std::string{"abcd"}, "ef" };
+            
             std::cout << s.value << " / " << str.value << '\n'; // 10 / abcdef
             return 0;
         }
@@ -356,7 +361,9 @@
             
             // 2
             template<typename U>
-            Nec(U) { std::cout << "Nec(U)\n"; std::cout << typeid(*this).name() << '\n'; std::cout << typeid(U).name() << '\n'; }    
+            Nec(U) { 
+                std::cout << "Nec(U)\n"; std::cout << typeid(*this).name() << '\n'; std::cout << typeid(U).name() << '\n';
+            }    
         };
 
         // Deduction Guide

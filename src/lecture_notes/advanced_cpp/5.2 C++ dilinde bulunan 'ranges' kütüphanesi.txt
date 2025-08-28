@@ -1,16 +1,18 @@
-> "ranges" kütüphanes: Eski STL kütüphanesinin 2.0 versiyonudur diyebiliriz. Tavsiye edilen, aksi yönde karar almamızı gerektiren bir senaryo 
-olmadığı müddetçe bu 2.0 versiyonunu kullanmamızdır. Çünkü yenisini kullanmak;
+> "ranges" kütüphanes: Eski STL kütüphanesinin 2.0 versiyonudur diyebiliriz. Tavsiye edilen, aksi yönde karar almamızı
+gerektiren bir senaryo olmadığı müddetçe bu 2.0 versiyonunu kullanmamızdır. Çünkü yenisini kullanmak;
     
     -> Daha pratik. 
     -> Daha güvenli.
     -> Daha verimli. 
     -> İlave avantajlar kazandırıyor. 
 
-Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane ile "ranges" kütüphanesinin farkları ise şu şekildedir:
+Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane ile "ranges" kütüphanesinin farkları ise şu
+şekildedir:
 
     -> "ranges" ile gelen algoritmalar, "constraint" edilmişlerdir. 
-    -> "ranges" ile gelen algoritmalar ile "STL" içerisindeki algoritmaların parametrik yapılarında da farklılık bulunmaktadır. Yani "STL" 
-    içerisindeki algoritmalar takribi şu şekildedir:
+
+    -> "ranges" ile gelen algoritmalar ile "STL" içerisindeki algoritmaların parametrik yapılarında da farklılık
+    bulunmaktadır. Yani "STL" içerisindeki algoritmalar takribi şu şekildedir:
 
         template<typename Iter>
         void algo(Iter begin, Iter end); 
@@ -20,15 +22,17 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
         template<typename Iter, typename Sentinel>
         void algo(Iter begin, Sentinel end);
 
-    Buradan da görüleceği üzere "ranges" algoritma fonksiyonlarına geçilen argümanlar farklı türden olabilirler. Anektod: "ranges" içerisindeki 
-    algoritma fonksiyonlarına geçilen iş bu argümanlar aynı türden ise, "common-range" ismi ile nitelenirler. 
+    Buradan da görüleceği üzere "ranges" algoritma fonksiyonlarına geçilen argümanlar farklı türden olabilirler.
+    Anektod: "ranges" içerisindeki algoritma fonksiyonlarına geçilen iş bu argümanlar aynı türden ise, "common-range" ismi
+    ile nitelenirler. 
 
-    -> Diğer yandan "ranges" ve STL kütüphanelerindeki benzer isimdeki algoritma fonksiyonlarının büyük çoğunluğunun geri dönüş değerleri
-    farklılık göstermektedir. Artık "ranges" kütüphanesindeki versiyonlar, daha fazla bilgi içermesi hasebiyle, başka türden değerler
-    döndürmektedir.
+    -> Diğer yandan "ranges" ve STL kütüphanelerindeki benzer isimdeki algoritma fonksiyonlarının büyük çoğunluğunun geri
+    dönüş değerleri farklılık göstermektedir. Artık "ranges" kütüphanesindeki versiyonlar, daha fazla bilgi içermesi
+    hasebiyle, başka türden değerler döndürmektedir.
 
-    -> Öte yandan "ranges" ile gelen algoritmalar "projection" denilen önemli bir niteliğe de sahiptirler.Pekiyi nedir bu "projection" mevzusu? 
-    Konuyu incelemek adına "find" fonksiyonunun STL içerisindeki versiyonunu inceleyelim. Anımsanacağı üzere aşağıdaki gibi implemente edilmektedir:
+    -> Öte yandan "ranges" ile gelen algoritmalar "projection" denilen önemli bir niteliğe de sahiptirler.Pekiyi nedir bu
+    "projection" mevzusu? Konuyu incelemek adına "find" fonksiyonunun STL içerisindeki versiyonunu inceleyelim. Anımsanacağı
+    üzere aşağıdaki gibi implemente edilmektedir:
 
         template<typename InIter, typename T>
         InIter Find(InIter beg, InIter end, const T& value)
@@ -42,8 +46,8 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
             return end; 
         } 
 
-    Fakat şimdide ilgili fonksiyonun "Projection" isminde bir şablon parametresine ve ilgili fonksiyonun da bu türden bir parametreye sahip olduğunu,
-    yani aşağıdaki gibi implemente edildiğini, varsayalım:
+    Fakat şimdide ilgili fonksiyonun "Projection" isminde bir şablon parametresine ve ilgili fonksiyonun da bu türden bir
+    parametreye sahip olduğunu, yani aşağıdaki gibi implemente edildiğini, varsayalım:
 
         template<typename InIter, typename T, typename Projection>
         InIter Find(InIter beg, InIter end, const T& value, Projection pr)
@@ -57,8 +61,9 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
             return end; 
         }
 
-    Artık "*beg" değeri yerine, "pr(*beg)" çağrısı ile elde edilen değer kullanılacaktır. Fakat bu şekilde bırakılırsa, "pr" nin bir 
-    "data member pointer" olması durumunda sorun çıkacaktır. İşte bu sorunu gidermek adına "std::invoke" çağrısını kullanabiliriz. Şöyleki:
+    Artık "*beg" değeri yerine, "pr(*beg)" çağrısı ile elde edilen değer kullanılacaktır. Fakat bu şekilde bırakılırsa,
+    "pr" nin bir "data member pointer" olması durumunda sorun çıkacaktır. İşte bu sorunu gidermek adına "std::invoke"
+    çağrısını kullanabiliriz. Şöyleki:
 
         template<typename InIter, typename T, typename Projection>
         InIter Find(InIter beg, InIter end, const T& value, Projection pr)
@@ -72,17 +77,18 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
             return end; 
         }
 
-    Artık "Find" fonksiyonunun üçüncü parametresine hem bir "callable" hem de "data member pointer" geçebiliriz. Şimdi karşımıza şöyle bir 
-    sorun çıkmıştır: artık "Find" fonksiyonu için üçüncü bir argüman GEÇMEK ZORUNDAYIZ. İşte bu problemi de giderebilmek adına o parametre için 
-    varsayılan argüman belirtmeliyiz. Bunun için "std::identity" türünü kullanabiliriz. Bu tür takribi olarak aşağıdaki biçimde implemente 
-    edilmiştir:
+    Artık "Find" fonksiyonunun üçüncü parametresine hem bir "callable" hem de "data member pointer" geçebiliriz. Şimdi
+    karşımıza şöyle bir sorun çıkmıştır: artık "Find" fonksiyonu için üçüncü bir argüman GEÇMEK ZORUNDAYIZ. İşte bu problemi
+    de giderebilmek adına o parametre için varsayılan argüman belirtmeliyiz. Bunun için "std::identity" türünü
+    kullanabiliriz. Bu tür takribi olarak aşağıdaki biçimde implemente edilmiştir:
 
         struct Identity {
             template<typename T>
             T operator()(T x) const { return x; }
         };
 
-    Görüleceği üzere argüman olarak aldığı ifadeyi geri döndürmektedir. İşte bu türü de "Find" fonksiyonumuzda aşağıdaki gibi kullanabiliriz:
+    Görüleceği üzere argüman olarak aldığı ifadeyi geri döndürmektedir. İşte bu türü de "Find" fonksiyonumuzda aşağıdaki
+    gibi kullanabiliriz:
 
         struct Identity {
             template<typename T>
@@ -222,9 +228,15 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
         void algo(std::ranges::range auto) { std::cout << "range\n"; } 
         void algo(std::ranges::input_range auto) { std::cout << "input_range\n"; } // Subsumes above range concept. 
         void algo(std::ranges::forward_range auto) { std::cout << "forward_range\n"; } // Subsumes above range concept. 
-        void algo(std::ranges::bidirectional_range auto) { std::cout << "bidirectional_range\n"; } // Subsumes above range concept. 
-        void algo(std::ranges::random_access_range auto) { std::cout << "random_access_range\n"; } // Subsumes above range concept. 
-        void algo(std::ranges::contiguous_range auto) { std::cout << "contiguous_range\n"; } // Subsumes above range concept. 
+
+        // Subsumes above range concept. 
+        void algo(std::ranges::bidirectional_range auto) { std::cout << "bidirectional_range\n"; }
+        
+        // Subsumes above range concept. 
+        void algo(std::ranges::random_access_range auto) { std::cout << "random_access_range\n"; }
+        
+        // Subsumes above range concept. 
+        void algo(std::ranges::contiguous_range auto) { std::cout << "contiguous_range\n"; }
     
         int main()
         {
@@ -242,10 +254,11 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
         #include <vector>
 
         void algo(std::ranges::range auto) { std::cout << "range\n"; } 
-        void algo(std::ranges::sized_range auto) { std::cout << "sized_range\n"; }  // Derleme zamanında çağrılabilir ".size()" fonksiyonu
-                                                                                    // bulunması gerekmektedir. "std::forward_list" bu şartı
-                                                                                    // sağlamamaktadır. Ek olarak sadece ve sadece "range"
-                                                                                    // isimli konsepti "subsume" ETMEKTEDİR. 
+        void algo(std::ranges::sized_range auto) { std::cout << "sized_range\n"; }  
+        // Derleme zamanında çağrılabilir ".size()" fonksiyonu
+        // bulunması gerekmektedir. "std::forward_list" bu şartı
+        // sağlamamaktadır. Ek olarak sadece ve sadece "range"
+        // isimli konsepti "subsume" ETMEKTEDİR. 
 
         int main()
         {
@@ -287,7 +300,8 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
             std::ranges::sort(ivec); 
             MyUtility::Utility::print(ivec);
 
-            // "std::ranges::sort" w/ a custom argument instead of "std::less", but a default argument for the Projection param:
+            // "std::ranges::sort" w/ a custom argument instead of "std::less",
+            // but a default argument for the Projection param:
             std::ranges::sort(ivec, [](int a, int b) { return a > b; });
             MyUtility::Utility::print(ivec);
 
@@ -295,7 +309,8 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
             std::ranges::sort(ivec, {}, [](int a) { return std::abs(a); });
             MyUtility::Utility::print(ivec);
 
-            // "std::ranges::sort" w/ a custom argument instead of "std::less", but a default argument for the Projection param:
+            // "std::ranges::sort" w/ a custom argument instead of "std::less", 
+            // but a default argument for the Projection param:
             std::ranges::sort(ivec, [](int a, int b) { return std::abs(a) < std::abs(b); });
             MyUtility::Utility::print(ivec);
         }
@@ -398,7 +413,10 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
             */
             
             std::vector<std::string> svec; 
-            MyUtility::Utility::rfill(svec, 20, [] { return MyUtility::Utility::rname() + ' ' + MyUtility::Utility::rfname(); });
+            MyUtility::Utility::rfill(
+                svec, 20, 
+                [] { return MyUtility::Utility::rname() + ' ' + MyUtility::Utility::rfname(); }
+            );
             std::ranges::copy(svec, std::ostream_iterator<std::string>{std::cout, "\n"});
 
             // Artık iteratör konumundaki nesne değil, o nesnenin uzunluğunu "15" ile karşılaştıracak.
@@ -410,8 +428,13 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
 
     * Örnek 8, Aşağıdaki örnekte ise "ranges" parametreli "overload" çağrıldığında, "iterator" parametreli fonksiyona 
     çağrı yapmaktadır. Böylelikle "ranges" parametreleri bir nevi "iterator" parametresi olarak kullanmış olduk.
-        template<std::input_iterator Iter, std::sentinel_for<Iter> SenType, typename Init = std::iter_value_t<Iter>, typename Op = std::plus<>, typename Proj = std::identity>
-        Init Accumulate(Iter beg, SenType end, Init init = Init{}, Op op = {}, Proj proj = {})
+        template<
+            std::input_iterator Iter,
+            std::sentinel_for<Iter> SenType,
+            typename Init = std::iter_value_t<Iter>,
+            typename Op = std::plus<>,
+            typename Proj = std::identity
+        > Init Accumulate(Iter beg, SenType end, Init init = Init{}, Op op = {}, Proj proj = {})
         {
             while(beg != end){
                 init = std::invoke(op, std::move(init), std::invoke(proj, *beg));
@@ -421,8 +444,12 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
             return init; 
         }
 
-        template<std::ranges::input_rage R, class Init = std::ranges::range_value_t<R>, typename Op = std::plus<>, typename Proj = std::identity>
-        Init Accumulate(R&& r, Init init = Init{}, Op op = {}, Proj proj = {})
+        template<
+            std::ranges::input_rage R, 
+            class Init = std::ranges::range_value_t<R>,
+            typename Op = std::plus<>, 
+            typename Proj = std::identity
+        > Init Accumulate(R&& r, Init init = Init{}, Op op = {}, Proj proj = {})
         {
             return Accumulate(std::ranges::begin(r), std::ranges::end(r), std::move(init), std::move(op), std::move(proj));
         }
@@ -433,11 +460,10 @@ Fakat yenisini kullanabilmek için de öğrenmemiz gerekmektedir. Bu kütüphane
         }
 
 Şu da unutulmamalıdır ki; "range" LER BİR TÜR BELİRTMEZLER, BİR "concept" TİRLER. Yani "range concept" ini "satisfy" eden
-varlıklara "range" denmektedir.
-Anımsanacağı üzere, yukarıdaki örnekte kullandığımız ve "ranges" isim alanı içerisinde bulunan "sort" 
-gibi işlevler aslında bir fonksiyon değildir. Fakat eski STL fonksiyonları birer şablonlardı. Artık yeni STL'dekiler bir sınıf
-türünden nesnelerdir. "sort()" ifadesiyle de bizler, o sınıfın ".operator()()" fonksiyonuna çağrı yapmaktayız. Yani aslında ".operator()()"
-fonksiyonları şablon halindedir. Pekiyi arkadaki esas sınıf nedir? 
+varlıklara "range" denmektedir. Anımsanacağı üzere, yukarıdaki örnekte kullandığımız ve "ranges" isim alanı içerisinde
+bulunan "sort" gibi işlevler aslında bir fonksiyon değildir. Fakat eski STL fonksiyonları birer şablonlardı. Artık yeni
+STL'dekiler bir sınıf türünden nesnelerdir. "sort()" ifadesiyle de bizler, o sınıfın ".operator()()" fonksiyonuna çağrı
+yapmaktayız. Yani aslında ".operator()()" fonksiyonları şablon halindedir. Pekiyi arkadaki esas sınıf nedir? 
     * Örnek 1,
         #include <iostream>
         #include <algorithm>
@@ -452,8 +478,12 @@ fonksiyonları şablon halindedir. Pekiyi arkadaki esas sınıf nedir?
     * Örnek 2, Possible Implementation taken by "https://en.cppreference.com/w/cpp/algorithm/ranges/sort".
         struct sort_fn
         {
-            template< std::random_access_iterator I, std::sentinel_for<I> S, class Comp = ranges::less, class Proj = std::identity >
-            requires std::sortable< I, Comp, Proj >
+            template< 
+                std::random_access_iterator I, 
+                std::sentinel_for<I> S, 
+                class Comp = ranges::less, 
+                class Proj = std::identity
+            > requires std::sortable< I, Comp, Proj >
             constexpr I operator()(I first, S last, Comp comp = {}, Proj proj = {}) const
             {
                 if (first == last)
@@ -476,25 +506,25 @@ fonksiyonları şablon halindedir. Pekiyi arkadaki esas sınıf nedir?
         
         inline constexpr sort_fn sort {};
 
-Pekiyi neden böyle bir şey yapılmış? Anımsanacağı üzere "ADL" mekanizmasının devreye girmesi için çağrılan şeyin doğrudan fonksiyon 
-olması gerekmektedir. Bir "function object" vasıtasıyla yapılan fonksiyon çağrılarında "ADL" devreye GİRMEYECEKTİR. Böylelikle isim 
-arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim yeni algoritmalarımız doğrudan fonksiyon DEĞİLLERDİR.
-Şimdi de "view" kavramı üzerinde duralım.
-    >> "view" kavramı: "ranges" kütüphanesinin asıl önemli avantajlarından birisi, fonksiyonel programlama paradigmasına uyum göstermesini
-    sağlayan, bünyesinde barındırdığı "view" kavramıdır. "view" da bir "range" olarak geçmektedir fakat hafif siklet bir "range". "range"
-    yerine "view" oluşturduğumuzda;
+Pekiyi neden böyle bir şey yapılmış? Anımsanacağı üzere "ADL" mekanizmasının devreye girmesi için çağrılan şeyin doğrudan
+fonksiyon olması gerekmektedir. Bir "function object" vasıtasıyla yapılan fonksiyon çağrılarında "ADL" devreye GİRMEYECEKTİR.
+Böylelikle isim arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim yeni algoritmalarımız doğrudan
+fonksiyon DEĞİLLERDİR. Şimdi de "view" kavramı üzerinde duralım.
+    >> "view" kavramı: "ranges" kütüphanesinin asıl önemli avantajlarından birisi, fonksiyonel programlama paradigmasına
+    uyum göstermesini sağlayan, bünyesinde barındırdığı "view" kavramıdır. "view" da bir "range" olarak geçmektedir fakat
+    hafif siklet bir "range". "range" yerine "view" oluşturduğumuzda;
 
         -> Sabit zamanda, "in constant time", kopyalanma ya da taşınma garantisi elde ediyoruz. 
-        -> "view" konseptini ve başka diğer konseptini karşılayan varlıklar, özel bazı işlemlerde kullanılabiliyorlar. Örneğin, "range-based 
-        for-loop" da kullanılabiliyorlar. 
+        -> "view" konseptini ve başka diğer konseptini karşılayan varlıklar, özel bazı işlemlerde kullanılabiliyorlar.
+        Örneğin, "range-based for-loop" da kullanılabiliyorlar. 
 
-    Böylece bir "range" den hareketle bir "view" oluşturabiliyor, bu "view" ları fonksiyonlara argüman olarak geçebiliyor, bu "view" ları 
-    "range" ler ile ya da başka "view" lar ile birlikte bir "Composition" ilişkisi içerisinde kullanabiliyorum. Yine arka planda 
-    "view" lar da birer "function object" tir ve "Range Adaptors" dediğimiz varlıklar, bize, fonksiyon çağrı operatörleri ile "view" 
-    konseptini destekleyen öğeler döndürüyorlar. Yani bir "view" oluşturmanın yolu ya doğrudan o "view" türünden bir nesne oluşturmak 
-    ya da "function object" kullanarak fonksiyon çağrı operatörü ile ilgili "view" ı elde etmektir. Bu "view" kavramı içerisindeki 
-    varlıklar, "std::ranges" içerisindeki "view" isim alanı içerisindedir. Bir "range" in "view" niteliğinde olması için, "ranges::view" 
-    konseptini desteklemesi gerekmektedir. 
+    Böylece bir "range" den hareketle bir "view" oluşturabiliyor, bu "view" ları fonksiyonlara argüman olarak geçebiliyor,
+    bu "view" ları "range" ler ile ya da başka "view" lar ile birlikte bir "Composition" ilişkisi içerisinde kullanabiliyorum.
+    Yine arka planda "view" lar da birer "function object" tir ve "Range Adaptors" dediğimiz varlıklar, bize, fonksiyon çağrı
+    operatörleri ile "view" konseptini destekleyen öğeler döndürüyorlar. Yani bir "view" oluşturmanın yolu ya doğrudan o
+    "view" türünden bir nesne oluşturmak ya da "function object" kullanarak fonksiyon çağrı operatörü ile ilgili "view" ı
+    elde etmektir. Bu "view" kavramı içerisindeki varlıklar, "std::ranges" içerisindeki "view" isim alanı içerisindedir.
+    Bir "range" in "view" niteliğinde olması için, "ranges::view" konseptini desteklemesi gerekmektedir. 
         * Örnek 1,
             #include <ranges>
             #include <iostream>
@@ -652,7 +682,11 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
                 MyUtility::Utility::print(ivec);
                 
                 // Yukarıdaki "ivec" dizisinin ilk 10 öğesinden ikiye tam bölünenleri aldık: 
-                for(auto i : ivec | std::views::take(10) | std::views::filter( [](int x){ return x%2==0; } )) // Pipe-line mechanism.
+                for(
+                    auto i : ivec | 
+                    std::views::take(10) | 
+                    std::views::filter( [](int x){ return x%2==0; } )
+                ) // Pipe-line mechanism.
                     std::cout << i << ' ';
 
                 puts("\n");
@@ -662,11 +696,11 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
     sahibiz. Bunlardan ilki doğrudan o "view" türünden bir nesne oluşturmak ki bu durumda şablon argümanlarını bizim yazmamız
     gerekmektedir. Bu da hem okuma hem de yazma zahmeti doğurmaktadır. Diğer yöntemler ise "Range Adaptors" ve
     "Range Factories" nesnelerini kullanmaktır.
-        >>> "Range Adaptors" ve "Range Factories": Öyle fonksiyon nesneleridir ki argüman olarak bir ya da birden fazla "range" alıp,
-        belirli niteliğe sahip bir "range" döndürürler. Bu niteliklerden en önemlisi, geri döndürdükleri "range" in "view" konseptini
-        desteklemesidir. Bir diğer deyişle; bunlar öyle adaptörlerdir ki argüman olarak "range" alır. Geri dönüş değeri olarak da
-        "view" kavramına adapte edilmiş bir "range" döndürürler. Yani "view" niteliğinde bir "range" döndürürler. Pekiyi bu nesneleri
-        kullanmanın avantajları nelerdir? Şöyleki;
+        >>> "Range Adaptors" ve "Range Factories": Öyle fonksiyon nesneleridir ki argüman olarak bir ya da birden fazla
+        "range" alıp, belirli niteliğe sahip bir "range" döndürürler. Bu niteliklerden en önemlisi, geri döndürdükleri
+        "range" in "view" konseptini desteklemesidir. Bir diğer deyişle; bunlar öyle adaptörlerdir ki argüman olarak "range"
+        alır. Geri dönüş değeri olarak da "view" kavramına adapte edilmiş bir "range" döndürürler. Yani "view" niteliğinde
+        bir "range" döndürürler. Pekiyi bu nesneleri kullanmanın avantajları nelerdir? Şöyleki;
             >>> Aşağıdaki örnekte de görüldüğü üzere "take" ile elde ettiğimiz nesne de bir "range" fakat "view" için 
             adapte edilmiş, yani "view" özelliği olan, bir "range". 
                 * Örnek 1,
@@ -845,9 +879,9 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
                         return 0;
                     }
 
-        Pekiyi "Range Adaptors" ile "Range Factories" arasındaki temel fark nedir? "Range Adaptors" nesneleri bir "range" i alıp 
-        bir "range" döndürmektedir. Fakat "Range Factories", bizden bir "range" almadan bir "range" döndürmektedir. Yani o "range" 
-        i kendisi oluşturmaktadır. 
+        Pekiyi "Range Adaptors" ile "Range Factories" arasındaki temel fark nedir? "Range Adaptors" nesneleri bir "range" i
+        alıp bir "range" döndürmektedir. Fakat "Range Factories", bizden bir "range" almadan bir "range" döndürmektedir.
+        Yani o "range" i kendisi oluşturmaktadır. 
             * Örnek 1,
                 #include <iostream>
                 #include <ranges>
@@ -895,16 +929,19 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
 
         Buradaki en önemli "Range Adaptors" / "Range Factories" nesneleri olarak "common" ve "subrange" nesnelerini örnek 
         gösterebiliriz. Bu adaptörler ise şu işlevleri yerine getirmektedir: 
-            >>> "std::ranges::views::common" : Bir adet "range" i argüman olarak göndeririz. İş bu argümanın niteliğine göre bize 
-            üç farklı "range" geri döndürmektedir. Şöyleki;
+            >>> "std::ranges::views::common" : Bir adet "range" i argüman olarak göndeririz. İş bu argümanın niteliğine
+            göre bize üç farklı "range" geri döndürmektedir. Şöyleki;
                 
                 -> Eğer gönderdiğimiz "range", bir "Common Range" niteliğindeyse, aynısını geri döndürmektedir. 
+
                 -> Eğer "view" olmayan bir "range" ise ama "begin" ve "end" in geri dönüş değerleri aynıysa, "ref_view" geri
                 döndürmektedir. "ref_view" konusu ileride ele alınacaktır. 
+                
                 -> Yukarıdaki ikisi haricinde bir "range" ise, yani "begin" ve "end" in geri dönüş değerleri farklıysa,
                 "common_view" geri döndürmektedir. 
             
-            Buradan hareketle geri dönüş değeri ya gönderdiğimiz "view" in kendisi, ya "common_view" ya da "ref_view" olmaktadır. 
+            Buradan hareketle geri dönüş değeri ya gönderdiğimiz "view" in kendisi, ya "common_view" ya da "ref_view"
+            olmaktadır. 
                 * Örnek 1,
                     #include <ranges>
                     #include <iostream>
@@ -912,18 +949,25 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
 
                     int main()
                     {
-                        std::list<int> myList(10);                  // "list" türünde bir nesne oluşturulmuş.   
-                        auto my_take = std::views::take(myList, 4); // "take" isimli adaptör kullanılarak bir nesne oluşturulmuş.
-                        auto my_iota = std::views::iota(35, 45);    // "iota" isimli bir "factory" kullanılarak bir nesne oluşturulmuş.
+                        std::list<int> myList(10); // "list" türünde bir nesne oluşturulmuş.   
                         
-                        auto x = std::views::common(myList);    // "x" is a "std::ranges::ref_view". Çünkü "begin" ve "end" ile elde edilenler 
-                                                                // aynı tür fakat oluşturulan "range" bir "view" DEĞİL.   
+                        // "take" isimli adaptör kullanılarak bir nesne oluşturulmuş.
+                        auto my_take = std::views::take(myList, 4);
+                        
+                        // "iota" isimli bir "factory" kullanılarak bir nesne oluşturulmuş.
+                        auto my_iota = std::views::iota(35, 45);    
+                        
+                        auto x = std::views::common(myList);    
+                        // "x" is a "std::ranges::ref_view". Çünkü "begin" ve "end" ile elde edilenler 
+                        // aynı tür fakat oluşturulan "range" bir "view" DEĞİL.   
 
-                        auto y = std::views::common(my_take);   // "y" is a "std::ranges::common_view". Çünkü "begin" ve "end" ile elde edilenler 
-                                                                // aynı tür DEĞİL. 
+                        auto y = std::views::common(my_take);   
+                        // "y" is a "std::ranges::common_view". Çünkü "begin" ve "end" ile elde edilenler 
+                        // aynı tür DEĞİL. 
 
-                        auto z = std::views::common(my_iota);   // "z" is a "std::ranges::iota_view". Çünkü argümanımız hem "view" hem de 
-                                                                // "begin" ve "end" ile elde edilenler aynı tür. 
+                        auto z = std::views::common(my_iota);   
+                        // "z" is a "std::ranges::iota_view". Çünkü argümanımız hem "view" hem de 
+                        // "begin" ve "end" ile elde edilenler aynı tür. 
                     }
 
                 * Örnek 2,
@@ -949,16 +993,22 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
                         std::vector<int> ivec(20); // 20 elemanlı bir dizimiz var ve her birinin değeri "0". 
                         ivec[5] = -1; // 5 indisli öğenin değerini "-1" yaptık. 
                         
-                        std::ranges::subrange sr(ivec.begin(), Sentinel<-1>()); // "range" nin "begin" ile "end" türleri farklı türlerdir. 
-                                                                                // Yani "Common Range" niteliğinde DEĞİL.
+                        // "range" nin "begin" ile "end" türleri farklı türlerdir. 
+                        // Yani "Common Range" niteliğinde DEĞİL.
+                        std::ranges::subrange sr(ivec.begin(), Sentinel<-1>()); 
                         
-                        // auto e = std::count(sr.begin(), sr.end(), 0);        // "Common Range" OLMADIĞI İÇİN SENTAKS HATASI. 
+                        // "Common Range" OLMADIĞI İÇİN SENTAKS HATASI. 
+                        // auto e = std::count(sr.begin(), sr.end(), 0);        
                         
-                        auto cv = std::views::common(sr);                       // Artık "Common Range" niteliğinde. 
-                        auto n = std::count(cv.begin(), cv.end(), 0);           // Dolayısıyla "STL 1.0" içerisinde bulunan "count" fonksiyonuna 
-                                                                                // argüman olarak geçebiliriz. Yani sıfırıncı indisli öğe ile 
-                                                                                // beş indisli öğe arasındaki öğelerden değeri "0" olanları 
-                                                                                // sayacağız. 
+                        // Artık "Common Range" niteliğinde. 
+                        auto cv = std::views::common(sr);               
+
+                        // Dolayısıyla "STL 1.0" içerisinde bulunan "count" fonksiyonuna 
+                        // argüman olarak geçebiliriz. Yani sıfırıncı indisli öğe ile 
+                        // beş indisli öğe arasındaki öğelerden değeri "0" olanları 
+                        // sayacağız. 
+                        auto n = std::count(cv.begin(), cv.end(), 0);   
+                        
                         std::cout << n << '\n';
                     }
 
@@ -976,8 +1026,11 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
                         */
                         
                         std::vector ivec{ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37 };
-                        auto rng = ivec | std::views::filter([](int x){ return x%10==7; }); // "ivec" içerisindeki baştan itibaren ilk 
-                                                                                            // basamağı "7" olanlardan bir "range" oluşturacaktır. 
+                        
+                        // "ivec" içerisindeki baştan itibaren ilk 
+                        // basamağı "7" olanlardan bir "range" oluşturacaktır. 
+                        auto rng = ivec | std::views::filter([](int x){ return x%10==7; });
+                        
                         auto sum = std::accumulate(rng.begin(), rng.end(), 0);
                         std::cout << sum << '\n';
                     }
@@ -994,10 +1047,12 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
                     int main()
                     {
                         std::vector ivec{ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37 };
-                        auto rng = ivec | std::views::take_while([](int x){ return x<20; });    // "ivec" içerisindeki baştan itibaren değeri
-                                                                                                // 20'den küçük olanlar ile bir "range" oluşturacaktır.
-                                                                                                // Fakat "take_while" ile oluşturulan "range", bir
-                                                                                                // "common_range" DEĞİL. 
+                        
+                        auto rng = ivec | std::views::take_while([](int x){ return x<20; });    
+                        // "ivec" içerisindeki baştan itibaren değeri
+                        // 20'den küçük olanlar ile bir "range" oluşturacaktır.
+                        // Fakat "take_while" ile oluşturulan "range", bir
+                        // "common_range" DEĞİL. 
                                                                                                 
                         // Bir "range" nin "common_range" olup olmadığını aşağıdaki şekilde sınayabiliriz. 
                         static_assert(std::ranges::common_range<decltype(rng)>); // error: static assertion failed
@@ -1032,9 +1087,9 @@ arama ile ilgili bazı problemler de ortadan kaldırılmış olur. Özetle bizim
                     }
 
             >>> "std::ranges::subrange" : Bir "range" içerisindeki başka bir "range" demektir. Argüman olarak bir "range" 
-            gönderebildiğimiz gibi iki adet iteratör de gönderebiliriz. Dolayısıyla geri dönüş değerinin ne olduğu da gönderdiğimiz 
-            argümanlara göre değişkenlik gösterecektir. Üçüncü parametresine geçeceğimiz argümana göre, elde edilecek "range" nin 
-            "sized_range" olup olmadığını da belirleyebiliriz. 
+            gönderebildiğimiz gibi iki adet iteratör de gönderebiliriz. Dolayısıyla geri dönüş değerinin ne olduğu da
+            gönderdiğimiz argümanlara göre değişkenlik gösterecektir. Üçüncü parametresine geçeceğimiz argümana göre, elde
+            edilecek "range" nin "sized_range" olup olmadığını da belirleyebiliriz. 
                 * Örnek 1,
                     #include <ranges>
                     #include <iostream>
@@ -1276,7 +1331,11 @@ yolu vardır:
             int start_point, end_point; 
             std::cout << "iki sayi girin: "; std::cin >> start_point >> end_point;
             
-            auto theFilteredContainer = vw::iota(start_point, end_point) | vw::reverse | vw::filter(Utility::isprime) | rng::to<std::vector>();
+            auto theFilteredContainer = vw::iota(
+                start_point, 
+                end_point
+            ) | vw::reverse | vw::filter(Utility::isprime) | rng::to<std::vector>();
+
             std::cout << "Size: " << theFilteredContainer.size() << "=> ";
             for (auto i : theFilteredContainer) std::cout << i << ' '; std::cout << '\n';
         }
@@ -1298,8 +1357,8 @@ aslında boş bir "struct" şeklindedir. İş bu tür belirlemesi pekala derleme
             // std::ranges::dangling iter = std::ranges::find(get_vec(), 5);
         }
 
-Fakat "std::ranges::dangling" türünden iteratörümüzü "dereference" ettiğimiz noktada sentaks hatası oluşacaktır çünkü bu türün 
-"dereference" operatörü "overload" EDİLMEMİŞTİR.
+Fakat "std::ranges::dangling" türünden iteratörümüzü "dereference" ettiğimiz noktada sentaks hatası oluşacaktır çünkü bu
+türün "dereference" operatörü "overload" EDİLMEMİŞTİR.
     * Örnek 1,
         #include <vector>
         #include <algorithm>
@@ -1315,8 +1374,8 @@ Fakat "std::ranges::dangling" türünden iteratörümüzü "dereference" ettiği
             std::cout << *iter << '\n'; // error: no match for ‘operator*’ (operand type is ‘std::ranges::dangling’)
         }
 
-Özetle bu tip algoritmalara gönderilen ifadelerin değer kategorisine göre geri dönüş değerinin türü, derleme aşamasında, belirlenmektedir. 
-Şimdide aşağıdaki örneği inceleyelim:
+Özetle bu tip algoritmalara gönderilen ifadelerin değer kategorisine göre geri dönüş değerinin türü, derleme aşamasında,
+belirlenmektedir. Şimdide aşağıdaki örneği inceleyelim:
     * Örnek 1,
         #include <vector>
         #include <algorithm>
@@ -1338,15 +1397,19 @@ Fakat "std::ranges::dangling" türünden iteratörümüzü "dereference" ettiği
     danger of dangling". Yani öyle "range" ler ki fonksiyonlara argüman olarak geçilir ve fonksiyonlardan geri dönüş değeri
     olarak da iş bu "range" in  iteratörü geri döndürüldüğünde "dangling iterator" oluşmaz. "std::ranges::borrowed_range" 
     ismindeki "concept" ile bir "range" in "borrowed_range" olup olmadığını sınayabiliriz. Bir "range" in "borrowed_range" 
-    olması için ya "L-Value" bir "range" olması ya da "std::ranges::enable_borrowed_range" in ilgili sınıf türünden "specialization"
-    ının "true" değerine çekilmiş olması gerekmektedir. 
+    olması için ya "L-Value" bir "range" olması ya da "std::ranges::enable_borrowed_range" in ilgili sınıf türünden
+    "specialization" ının "true" değerine çekilmiş olması gerekmektedir. 
 
 Buraya kadarkileri özetlersek; iteratör döndüren fonksiyonların geri dönüş değeri, 
 
     -> "R-Value" olan ve "borrowed_range" olmayan "range" ler söz konusu olduğunda "std::ranges::dangling" türü olacak. 
-    -> "R-Value" ve "borrowed_range" olan bir "range" gönderirsek, geri dönüş değeri "std::ranges::dangling" olmayacak. Yani doğrudan
-    iteratör türü olacak. Ancak geri dönüş değerinin doğru olması için de ilgili "range" in hayatta olması gerekmektedir.
+    
+    -> "R-Value" ve "borrowed_range" olan bir "range" gönderirsek, geri dönüş değeri "std::ranges::dangling" olmayacak. Yani
+    doğrudan iteratör türü olacak. Ancak geri dönüş değerinin doğru olması için de ilgili "range" in hayatta olması
+    gerekmektedir.
+    
     -> "L-Value" olması durumunda, doğrudan iteratör türü olmaktadır. 
+    
     -> "std::ranges::enable_borrowed_range" in ilgili sınıf türünden "specialization" ının "true" olması halinde,
     doğrudan iteratör türü olmaktadır.  
 
@@ -1361,13 +1424,15 @@ Aşağıda bu hususa ilişkin bir örnek de verilmiştir:
         int main()
         {
             auto iter3 = std::ranges::find(std::string_view{ foo() }, 'U');
-            std::cout << *iter3 << '\n';    // Burada bir sentaks hatasının olmaması, "Run Time" hatasının olmayacağı ANLAMINA GELMESİN.
-                                            // "borrowed_range" olduğu için geri dönüş değerinin türü "std::ranges::dangling" DEĞİLDİR. 
-                                            // Fakat bu "range" in hayatta olup olmadığına ilişkin sorumluluk da bize aittir. 
+            
+            std::cout << *iter3 << '\n';    
+            // Burada bir sentaks hatasının olmaması, "Run Time" hatasının olmayacağı ANLAMINA GELMESİN.
+            // "borrowed_range" olduğu için geri dönüş değerinin türü "std::ranges::dangling" DEĞİLDİR. 
+            // Fakat bu "range" in hayatta olup olmadığına ilişkin sorumluluk da bize aittir. 
         }
 
-Pekiyi bizler hangi yol ve yöntemler ile bir "range" nesnesinden bir "view" nesnesi elde edebiliriz? Bu yöntemlerden ilki, dün de gördüğümüz
-"subrange" algoritmasını kullanmaktır. Diğer yöntemler ise şunlardır;
+Pekiyi bizler hangi yol ve yöntemler ile bir "range" nesnesinden bir "view" nesnesi elde edebiliriz? Bu yöntemlerden ilki,
+dün de gördüğümüz "subrange" algoritmasını kullanmaktır. Diğer yöntemler ise şunlardır;
     "std::ranges::views::all" ve "std::ranges::counted" isimli algoritmaları 
 kullanmaktır. 
     >> "std::ranges::views::all": 
@@ -1381,7 +1446,10 @@ kullanmaktır.
                 std::vector<int> ivec{ 1, 4, 6, 7, 9, 12 };
                 
                 auto v1 = std::views::all(ivec); // "v1" is of type "std::ranges::ref_view"
-                auto v2 = std::views::all(std::vector<int>{ 1, 4, 6, 7, 9, 12 }); // "v2" is of type "std::ranges::owning_view"
+
+                // "v2" is of type "std::ranges::owning_view"
+                auto v2 = std::views::all(std::vector<int>{ 1, 4, 6, 7, 9, 12 });
+                
                 auto v3 = std::views::all(v1); // "v3" is of type "std::ranges::ref_view"
             }
 
@@ -1401,11 +1469,11 @@ kullanmaktır.
                 auto v2 = std::ranges::views::counted(ilist.begin(), 3); // "v2" is of type "std::ranges::subrange"
             }
 
-Şimdi de evvelki derste değindiğimiz "Range Adaptors" / "Range Factories" lerin detaylarına değinelim; Bu algoritmaların iki kullanım
-yöntemi vardır; "Pipe Linening" sentaks kuralını işleyeceksek "|" atomunun sol tarafına kullanılacak "range", sağ tarafına ise ilgili
-algoritmayı geçiyoruz. Tabii eğer ilgili algoritmamız bir "predicate" vb. argümanlar alıyorsa, "()" içerisinde onları da belirtmemiz
-gerekmektedir. Eğer "Pipe Linening" sentaksını kullanmayacaksak, ilgili algoritmanın birinci argümanı kullanılacak "range", diğer
-argümanları ise varsa "predicate" vb. argümanlardır. 
+Şimdi de evvelki derste değindiğimiz "Range Adaptors" / "Range Factories" lerin detaylarına değinelim; Bu algoritmaların
+iki kullanım yöntemi vardır; "Pipe Linening" sentaks kuralını işleyeceksek "|" atomunun sol tarafına kullanılacak "range",
+sağ tarafına ise ilgili algoritmayı geçiyoruz. Tabii eğer ilgili algoritmamız bir "predicate" vb. argümanlar alıyorsa, "()"
+içerisinde onları da belirtmemiz gerekmektedir. Eğer "Pipe Linening" sentaksını kullanmayacaksak, ilgili algoritmanın birinci
+argümanı kullanılacak "range", diğer argümanları ise varsa "predicate" vb. argümanlardır. 
     >> "std::ranges::views::reverse" : İlgili "range" içerisindeki öğeleri ters-düz eder. 
         * Örnek 1,
             #include <ranges>
@@ -1485,7 +1553,11 @@ argümanları ise varsa "predicate" vb. argümanlardır.
                     std::cout << s << ' '; // ali can necati
 
                 c = 'e';
-                for (const auto& s : svec | std::ranges::views::reverse | std::ranges::views::filter([c](const auto& s){ return s.contains(c); }))
+                for (
+                    const auto& s : svec | 
+                    std::ranges::views::reverse | 
+                    std::ranges::views::filter([c](const auto& s){ return s.contains(c); })
+                )
                     std::cout << s << ' '; // necati melike zeynep mert 
             } 
 
@@ -1554,8 +1626,8 @@ argümanları ise varsa "predicate" vb. argümanlardır.
                 
             } 
 
-    >> "std::ranges::views::stride" : Argüman olarak "atlama kademesi" alır. Böylelikle üzerinde çalıştığı "range" deki öğelerden,
-    atlama kademesi kadar atlayarak, yeni bir "range" oluşturur. C++23 ile dile eklenmiştir. 
+    >> "std::ranges::views::stride" : Argüman olarak "atlama kademesi" alır. Böylelikle üzerinde çalıştığı "range" deki
+    öğelerden, atlama kademesi kadar atlayarak, yeni bir "range" oluşturur. C++23 ile dile eklenmiştir. 
         * Örnek 1,
             #include <ranges>
             #include <vector>
@@ -1578,9 +1650,10 @@ argümanları ise varsa "predicate" vb. argümanlardır.
                 for (auto i : v3) std::cout << i << ' '; std::cout << '\n';
             }
 
-    >> "std::ranges::views::counted" : Bizden bir adet iteratör ve "how_many" argümanı alıyor. İteratörden başlayarak, "how_many" adedince 
-    ilerliyor. Bu iki nokta arasındaki öğelerden bir "range" oluşturur. Yalnız bunu "Pipeline" mekanizması ile kullanamayız. Ayrıca 
-    "std::ranges::counted_view" gibi bir şey de MEVCUT DEĞİLDİR. Dolayısıyla sadece ilgili adaptörü kullanabiliriz. 
+    >> "std::ranges::views::counted" : Bizden bir adet iteratör ve "how_many" argümanı alıyor. İteratörden başlayarak,
+    "how_many" adedince ilerliyor. Bu iki nokta arasındaki öğelerden bir "range" oluşturur. Yalnız bunu "Pipeline"
+    mekanizması ile kullanamayız. Ayrıca "std::ranges::counted_view" gibi bir şey de MEVCUT DEĞİLDİR. Dolayısıyla sadece
+    ilgili adaptörü kullanabiliriz. 
         * Örnek 1,
             #include <ranges>
             #include <vector>
@@ -2012,8 +2085,8 @@ argümanları ise varsa "predicate" vb. argümanlardır.
                 for (auto i : v2) std::cout << i << ' '; std::cout << '\n'; // U s k u d a r I s t a n b u l Y u r u k U l y a
             } 
 
-    >> "std::ranges::views::join_with" : Yine "std::ranges::views::join" gibi birleştirme işlemi yapar. Ek olarak araya istediğimiz 
-    "delimeter" karakterini de ekler. C++23 ile dile eklenmiştir. 
+    >> "std::ranges::views::join_with" : Yine "std::ranges::views::join" gibi birleştirme işlemi yapar. Ek olarak araya
+    istediğimiz "delimeter" karakterini de ekler. C++23 ile dile eklenmiştir. 
         * Örnek 1,
             #include <ranges>
             #include <vector>
@@ -2098,8 +2171,8 @@ argümanları ise varsa "predicate" vb. argümanlardır.
                 std::cout << '\n';
             } 
 
-    >> "std::ranges::views::iota" : Argüman olarak aldığı rakamdan başlamak suretiyle, bir artarak, "infinite range" oluşturmak için 
-    kullanılır. 
+    >> "std::ranges::views::iota" : Argüman olarak aldığı rakamdan başlamak suretiyle, bir artarak, "infinite range"
+    oluşturmak için kullanılır. 
         * Örnek 1,
             #include <ranges>
             #include <iostream>
@@ -2520,9 +2593,10 @@ argümanları ise varsa "predicate" vb. argümanlardır.
 Buradaki örnekleri özetlersek; "Care must be taken when modifying ranges used by views". 
 
 > Hatırlatıcı Notlar:
-    >> C++ dilinde "void" geri dönüş değerine sahip fonksiyonların kodlarında yalın "return;" ifadesini kullanarak da programın 
-    akışınının o fonksiyondan çıkmasını sağlatabiliriz. Benzer şekilde geri dönüş değeri yine "void" olan başka bir fonksiyonu da 
-    "return" deyimi içerisinde çağırarak da yine o fonksiyondan çıkabiliriz. Fakat bu durum C dilinde geçerli değildir. 
+    >> C++ dilinde "void" geri dönüş değerine sahip fonksiyonların kodlarında yalın "return;" ifadesini kullanarak da
+    programın akışınının o fonksiyondan çıkmasını sağlatabiliriz. Benzer şekilde geri dönüş değeri yine "void" olan başka
+    bir fonksiyonu da "return" deyimi içerisinde çağırarak da yine o fonksiyondan çıkabiliriz. Fakat bu durum C dilinde
+    geçerli değildir. 
         * Örnek 1,
             #include <stdexcept>
             #include <iostream>
@@ -2544,9 +2618,9 @@ Buradaki örnekleri özetlersek; "Care must be taken when modifying ranges used 
                 foo();
             }
 
-    >> Şablon parametresi "T" için tür çıkarım mekanizması ile "auto" tür çıkarım mekanizması arasında neredeyse bir fark yoktur. Tek 
-    istisnası "std::initializer_list" için geçerlidir. "T" için tür çıkarımı yapılması SENTAKS HATASI olurken, "auto" için yapılan 
-    tür çıkarımı "std::initializer_list" yönüne olacaktır. 
+    >> Şablon parametresi "T" için tür çıkarım mekanizması ile "auto" tür çıkarım mekanizması arasında neredeyse bir fark
+    yoktur. Tek istisnası "std::initializer_list" için geçerlidir. "T" için tür çıkarımı yapılması SENTAKS HATASI olurken,
+    "auto" için yapılan tür çıkarımı "std::initializer_list" yönüne olacaktır. 
         * Örnek 1,
             #include <initializer_list>
 
@@ -2673,8 +2747,8 @@ Buradaki örnekleri özetlersek; "Care must be taken when modifying ranges used 
                 namespace rng_v = std::ranges::views; 
             }
 
-    >> "Sentinel" kavramı için ön bilgilendirme: Aslında buradaki amaç o dizinin nerede bittiğinin belirtilmesidir. Dizinin boyutunun
-    bir döngü ile öğrenilmesi yükümlülüğünü kaldırmaktadır. 
+    >> "Sentinel" kavramı için ön bilgilendirme: Aslında buradaki amaç o dizinin nerede bittiğinin belirtilmesidir. Dizinin
+    boyutunun bir döngü ile öğrenilmesi yükümlülüğünü kaldırmaktadır. 
         * Örnek 1,
             #include <iostream>
 
@@ -2730,15 +2804,17 @@ Buradaki örnekleri özetlersek; "Care must be taken when modifying ranges used 
                 */
 
                 std::vector ivec{ 1, 5, 7, 9, 2, 3, 6, 79, 90 };
-                auto iter = std::ranges::find(ivec.begin(), EnderSentinel<3>{}, 5);	// "ivec" dizisi içerisinde "5" karakteri aranacak.
-                                                                                    // Fakat dizinin bittiği konum "3" değerinin bulunduğu 
-                                                                                    // konum olacak. 
+                auto iter = std::ranges::find(ivec.begin(), EnderSentinel<3>{}, 5);	
+                // "ivec" dizisi içerisinde "5" karakteri aranacak.
+                // Fakat dizinin bittiği konum "3" değerinin bulunduğu 
+                // konum olacak. 
                 std::cout << *iter << '\n';
 
-                iter = std::ranges::find(ivec.begin(), EnderSentinel<3>{}, 90);	// Şimdi de dizi içerisinde "90" karakteri aranacak fakat 
-                                                                                // dizinin bittiği konum "3" değerinin bulunduğu konum olacak.
-                                                                                // "3" değerinin bulunduğu konum daha önce geleceğinden, "90" 
-                                                                                // karakterini bulamamış olacaktır. 
+                iter = std::ranges::find(ivec.begin(), EnderSentinel<3>{}, 90);
+                // Şimdi de dizi içerisinde "90" karakteri aranacak fakat 
+                // dizinin bittiği konum "3" değerinin bulunduğu konum olacak.
+                // "3" değerinin bulunduğu konum daha önce geleceğinden, "90" 
+                // karakterini bulamamış olacaktır. 
                 std::cout << *iter << '\n';
             }
 
@@ -2763,15 +2839,19 @@ Buradaki örnekleri özetlersek; "Care must be taken when modifying ranges used 
 
                 std::vector ivec{ 1, 5, 7, 9, 2, 3, 6, 79, 90 };
                 for (auto i : ivec) std::cout << i << ' '; std::cout << '\n';
-                std::ranges::sort(ivec.begin(), EnderSentinel<3>{});	// "3" karakterinin bulunduğu konuma olanları sıralayacaktır. 
+                
+                // "3" karakterinin bulunduğu konuma olanları sıralayacaktır. 
+                std::ranges::sort(ivec.begin(), EnderSentinel<3>{}); 
+                
                 for (auto i : ivec) std::cout << i << ' '; std::cout << '\n';
             }
 
         >>> "Unreachable Sentinel" kavramı hakkında ön bilgilendirme: 
-            * Örnek 1, Eskiden karşılaştırma yapılırken hem aranan değer ilgili dizinin öğeleri ile tek tek karşılaştırılıyor hem de 
-            ilgili dizinin o anki indeks değeri ile dizinin boyutu karşılaştırılıyordu. "std::unreachable_sentinel" kullanılması ile 
-            sadece aranan değer ile dizideki öğeler birbiri ile karşılaştırılmaktadır. FAKAT BU YÖNTEMİ SAĞLIKLI KULLANABİLMEK İÇİN 
-            ARANAN DEĞERİN İLGİLİ DİZİ İÇERİSİNDE BULUNDUĞUNU BİLİYOR OLMALIYIZ. AKSİ HALDE ÇALIŞMA ZAMANI HATASI ALIRIZ. 
+            * Örnek 1, Eskiden karşılaştırma yapılırken hem aranan değer ilgili dizinin öğeleri ile tek tek karşılaştırılıyor
+            hem de ilgili dizinin o anki indeks değeri ile dizinin boyutu karşılaştırılıyordu. "std::unreachable_sentinel"
+            kullanılması ile sadece aranan değer ile dizideki öğeler birbiri ile karşılaştırılmaktadır. FAKAT BU YÖNTEMİ
+            SAĞLIKLI KULLANABİLMEK İÇİN ARANAN DEĞERİN İLGİLİ DİZİ İÇERİSİNDE BULUNDUĞUNU BİLİYOR OLMALIYIZ. AKSİ HALDE
+            ÇALIŞMA ZAMANI HATASI ALIRIZ. 
                 #include <ranges>
                 #include <algorithm>
                 #include <vector>
@@ -2796,8 +2876,12 @@ Buradaki örnekleri özetlersek; "Care must be taken when modifying ranges used 
 
                     int searched_value;
                     std::cout << "Value to search: "; std::cin >> searched_value;
-                    auto iter{ std::ranges::find(ivec.begin(), std::unreachable_sentinel, searched_value) };	// Şimdi sadece "*iter" öğesinin "searched_value" değerine eşitliği sınanmaktadır.
-                                                                                                                // Eğer "ivec.end()" kullanılsaydı, döngünün her turunda ayrıca "ivec.end()" karşılaştırması da yapılacaktı. 
+                    
+                    auto iter{ std::ranges::find(ivec.begin(), std::unreachable_sentinel, searched_value) };
+                    // Şimdi sadece "*iter" öğesinin "searched_value" değerine eşitliği sınanmaktadır.
+                    // Eğer "ivec.end()" kullanılsaydı, döngünün her turunda ayrıca "ivec.end()" karşılaştırması da
+                    // yapılacaktı. 
+                    
                     std::cout << "Found at " << iter - ivec.begin() << '\n';
                 }
 
@@ -3175,11 +3259,12 @@ Buradaki örnekleri özetlersek; "Care must be taken when modifying ranges used 
                 std::cout << get_min(ivec);
             }
 
-    >> "range" LER BİR TÜR BELİRTMEZLER, BİR "concept" TİRLER. Yani "range concept" ini "satisfy" eden varlıklara "range" denmektedir.  
+    >> "range" LER BİR TÜR BELİRTMEZLER, BİR "concept" TİRLER. Yani "range concept" ini "satisfy" eden varlıklara "range"
+    denmektedir.  
 
-    >> Bir "view" oluşturabilmek için ilgili sınıfın "Default Ctor.", "Destructor", "Move Ctor." ve varsa "Copy Ctor." fonksiyonlarının 
-    "Constant Time" karmaşıklığında olması gerekmektedir. Fakat bu karmaşıklık garantisini derleyicinin koda bakarak anlaması mümkün 
-    olmadığından, sınıfı yazanın deklare etmesi gerekmektedir. 
+    >> Bir "view" oluşturabilmek için ilgili sınıfın "Default Ctor.", "Destructor", "Move Ctor." ve varsa "Copy Ctor."
+    fonksiyonlarının "Constant Time" karmaşıklığında olması gerekmektedir. Fakat bu karmaşıklık garantisini derleyicinin
+    koda bakarak anlaması mümkün olmadığından, sınıfı yazanın deklare etmesi gerekmektedir. 
 
         template<class T>
         concept view = ranges::range<T> && std::movable<T> && ranges::enable_view<T>;

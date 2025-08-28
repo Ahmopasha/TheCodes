@@ -1,5 +1,6 @@
-> "std::string_view" sınıfı : Bu sınıf türünden nesneler, bir yazının gözlemcisi olarak kullanılmaktadır. Anımsanacağımız üzere 
-"yazı" ile kastedilen bellekte ardışık bir şekilde tutulan bayt kümesidir. Örneğin, aşağıdaki tanımlar birer yazıyı belirtmektedir:
+> "std::string_view" sınıfı : Bu sınıf türünden nesneler, bir yazının gözlemcisi olarak kullanılmaktadır. Anımsanacağımız
+üzere "yazı" ile kastedilen bellekte ardışık bir şekilde tutulan bayt kümesidir. Örneğin, aşağıdaki tanımlar birer yazıyı
+belirtmektedir:
     
     -> "Ahmet" biçimindeki bir "string-literal".
     -> "char name[150]" biçimindeki bir "C-Style Array".
@@ -7,12 +8,12 @@
     -> "std::vector<char>" türünden nesneler bir yazıyı temsil etmektedir.
     -> "std::array<char, 150>" türünden nesneler yine bir yazıyı temsil etmektedir. 
 
-İşte bütün bu yazılara gözlemci olarak yaklaşabileceğimiz sınıf ise "std::string_view" sınıfıdır. Tıpkı bir pencereden kapının 
-önündeki arabayı izlemek gibidir. Gözlemlediğimiz şeyin sahibinin kim olduğu bizim için önemli değildir. Yani salt okuma amaçlı 
-kullanılan fakat bunun için kopyalama yapmayan sınıf da diyebiliriz. Çünkü bu sınıf öyle bir sınıftır ki veri elemanı olarak ya 
-iki adet göstericiye ya da bir adet gösterici ve uzunluk bilgisi için değişkene sahiptir. Böylelikle arka planda "pointer-arithmetic"
-işlemleri ile argüman olarak aldığı yazı üzerinde gezinmektedir. "std::string_view" sınıfı, "std::string" sınıfının "get" amaçlı 
-arayüzünü kullanmaktadır. 
+İşte bütün bu yazılara gözlemci olarak yaklaşabileceğimiz sınıf ise "std::string_view" sınıfıdır. Tıpkı bir pencereden
+kapının önündeki arabayı izlemek gibidir. Gözlemlediğimiz şeyin sahibinin kim olduğu bizim için önemli değildir. Yani salt
+okuma amaçlı kullanılan fakat bunun için kopyalama yapmayan sınıf da diyebiliriz. Çünkü bu sınıf öyle bir sınıftır ki veri
+elemanı olarak ya iki adet göstericiye ya da bir adet gösterici ve uzunluk bilgisi için değişkene sahiptir. Böylelikle arka
+planda "pointer-arithmetic" işlemleri ile argüman olarak aldığı yazı üzerinde gezinmektedir. "std::string_view" sınıfı,
+"std::string" sınıfının "get" amaçlı arayüzünü kullanmaktadır. 
     * Örnek 1,
         #include <iostream>
         #include <string>
@@ -94,8 +95,8 @@ Fakat bu sınıf türünü kullanırken "dangling-pointer" senaryolarına ÇOK D
 arka plandaki göstericiler "dangling-pointer" olabilirler. İşte kopyalama maliyetinden kazandığımız maliyet, bu noktada 
 kaybedebiliriz. Diğer yandan dikkat etmemiz gereken nokta ise bu sınıf türünden nesneler "null-terminated" OLMAYAN YAZILAR 
 üzerinde de işlem yapabilmektedir. Böyle yazılar üzerinde işlem yaparken çağıracağımız "get" fonksiyonları, "null-terminated"
-yazı isteyen fonksiyonlara argüman olarak geçmemiz yine bir felakete yol açacaktır. Diğer yandan "remove" eki içeren üye fonksiyonlar 
-ise yine yazının kendisini değil, "range" olan aralığı değiştirmektedir. 
+yazı isteyen fonksiyonlara argüman olarak geçmemiz yine bir felakete yol açacaktır. Diğer yandan "remove" eki içeren üye
+fonksiyonlar ise yine yazının kendisini değil, "range" olan aralığı değiştirmektedir. 
     * Örnek 1, İçi boş bir nesne. 
         #include <iostream>
         #include <string_view>
@@ -223,7 +224,10 @@ ise yine yazının kendisini değil, "range" olan aralığı değiştirmektedir.
                 std::array<char, 10> ar{ 'U', 'l','y','a',' ','Y','u','r','u','k' };
                 std::string_view sv(ar.data(), ar.size());
                 std::cout << sv << "\n";
-                std::cout << sv.data() << "\n"; // Bu fonksiyon "null-terminated" yazı istediği için Tanımsız Davranış oluşacaktır. 
+
+                // Bu fonksiyon "null-terminated" yazı istediği için Tanımsız Davranış oluşacaktır. 
+                std::cout << sv.data() << "\n";
+                
                 puts(sv.data());
                 printf("%s\n", sv.data());
             }
@@ -241,9 +245,9 @@ ise yine yazının kendisini değil, "range" olan aralığı değiştirmektedir.
             }
         }
 
-    * Örnek 4, "std::string" parametreli "Ctor." fonksiyonu yoktur. Fakat bünyesindeki "std::string_view" e dönüştürmek operatör 
-    fonksiyonu "explicit" olmadığı için "std::string" türden nesneleri argüman olarak alabilmektedir. Yine aynı şekilde atama için 
-    de geçerlidir. 
+    * Örnek 4, "std::string" parametreli "Ctor." fonksiyonu yoktur. Fakat bünyesindeki "std::string_view" e dönüştürmek
+    operatör fonksiyonu "explicit" olmadığı için "std::string" türden nesneleri argüman olarak alabilmektedir. Yine aynı
+    şekilde atama için de geçerlidir. 
         #include <iostream>
         #include <string>
         #include <string_view>
@@ -358,8 +362,8 @@ ise yine yazının kendisini değil, "range" olan aralığı değiştirmektedir.
             std::string_view sv = nullptr;
         }
 
-    * Örnek 9, "std::string" sınıfının "std::string_view" parametreli "Ctor." fonksiyonu mevcuttur. Fakat bu fonksiyon "explicit"
-    olarak nitelenmiştir. Dolayısıyla "std::string_view" türüne ÖRTÜLÜ DÖNÜŞÜM SENTAKS HATASIDIR. 
+    * Örnek 9, "std::string" sınıfının "std::string_view" parametreli "Ctor." fonksiyonu mevcuttur. Fakat bu fonksiyon
+    "explicit" olarak nitelenmiştir. Dolayısıyla "std::string_view" türüne ÖRTÜLÜ DÖNÜŞÜM SENTAKS HATASIDIR. 
         #include <iostream>
         #include <string>
         #include <string_view>
@@ -429,7 +433,8 @@ ise yine yazının kendisini değil, "range" olan aralığı değiştirmektedir.
             std::cout << sv << "\n"; 
         }
 
-    * Örnek 11, Aşağıdaki örnekte fonksiyonun geri döndürdüğü nesnenin ömrü bittiği için "Dangling Pointer" meydana gelmiştir. 
+    * Örnek 11, Aşağıdaki örnekte fonksiyonun geri döndürdüğü nesnenin ömrü bittiği için "Dangling Pointer" meydana
+    gelmiştir. 
         #include <iostream>
         #include <string>
         #include <string_view>
