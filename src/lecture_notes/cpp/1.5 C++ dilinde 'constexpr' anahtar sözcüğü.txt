@@ -65,7 +65,24 @@
 				// Bir 'constant expression' değil. Dolayısıyla bu çağrı bir sentaks hatasıdır. Çünkü derleme zamanında
 				// değeri hesaplanamıyor.
 			}
-			
+
+		* Örnek 3,
+			// Some code here...
+
+			int g = 10; 
+
+			int main() {
+				// Buradaki 'const' anahtar sözcüğü aslında fazlalık. Çünkü ilgili 'constexpr' ifadesi 'p1' değişkenini 
+				// örtülü olarak 'const' yapmaktadır. Yani 'p1' artık başka bir nesneyi GÖSTEREMEZ.
+				// int* const p1 = &g;
+				constexpr int* const p1 = &g;
+
+				// Buradaki 'const' anahtar sözcüğü ise 'p2' tarafından gösterilen o nesnenin 'const' olduğunu belirtir.
+				// 'constexpr' de yine 'p2'nin 'const' olduğunu belirtmektedir. 
+				// const int* const p2 = &g;
+				constexpr const int* p2 = &g;
+			}
+
 	>> 'constexpr functions' : Fonksiyonların imzalarını yazarken, geri dönüş değerinin türünü yazmadan evvel, 'constexpr'
 	anahtar sözcüğünü kullanmamız bu fonksiyonu 'constexpr function' yapar. Eğer bu tip fonksiyonlara da argüman olarak
 	'constant expression' değişkenler geçilirse, bu fonksiyonun geri dönüş değeri DERLEME ZAMANINDA hesaplanır.
@@ -203,4 +220,5 @@
 		eşlemek için ilgili fonksiyonun gövdesine bakması gerekmektedir. Aksi durumda kodumuz derlenir fakat çalıştırılamaz.
 		Fakat 'constexpr' fonksiyonlar içim durum tam tersidir. Derleyicilerin, 'constexpr' fonksiyonların gövdelerine
 		bakmaları gerekmektedir ki DERLEME ZAMANINDA ilgili fonksiyon bir çıktı üretsin. Bundan sebeptir ki
+
 		'constexpre functions' ların tanımlamarı 'header files' içerisinde olmalı. Bu da implementasyonu ifşa etmektedir.
