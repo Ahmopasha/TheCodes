@@ -602,7 +602,8 @@
             }
 
     >> "using enum" bildirimi de C++20 ile gelmiştir. 
-        * Örnek 1
+        * Örnek 1, Aşağıdaki örnekteki "using" bildirimi ile "Color" isimalanı, ilgili enümatörlerin hepsini 
+        etkileyecektir ve onları görünür kılacaktır. 
             #include <iostream>
 
             enum class Color{
@@ -621,6 +622,7 @@
             {
                 switch(c) {
                     using enum Color; // Since C++20: usage of "using declaration"
+
                     case white: white(); break;
                     case yellow: yellow(); break;
                     case blue: blue(); break;
@@ -630,7 +632,41 @@
 
             int main()
             {
+                //...
+            }
 
+        * Örnek 2, Aşağıdaki örnekteki "using" bildirimi ile "Color" isimalanı, sadece o enümatörü etkileyecektir ve
+        sadece onu görünür kılacaktır. 
+            #include <iostream>
+
+            enum class Color{
+                white,
+                yellow,
+                blue,
+                black
+            };
+
+            void white(){}
+            void yellow(){}
+            void blue(){}
+            void black(){}
+
+            void func(Color c)
+            {
+                switch(c) {
+                    using enum Color::black; // Since C++20: usage of "using declaration"
+                    using enum Color::white; // Since C++20: usage of "using declaration"
+
+                    case white: white(); break;
+                    case Color::yellow: yellow(); break;
+                    case Color::blue: blue(); break;
+                    case black: black(); break;
+                }
+            }
+
+            int main()
+            {
+                //...
             }
 
     >> C++23 ile dile eklenen, "auto" anahtar sözcüğünün yeni bir "overload" edilmiş halini inceleyelim; Anımsanacağı üzere 

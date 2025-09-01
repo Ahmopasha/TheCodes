@@ -324,3 +324,6 @@
 							pvc((x,y));
 							pvc(*ptr);
 						}
+
+		Son olarak 'decltype' operatörüne operand olan ifadeler 'unevaluated context' bağlamında ele alınır, yani 
+		işlem KODU ÜRETİLMEZ. Tıpkı 'sizeof' operatöründe olduğu gibi. 

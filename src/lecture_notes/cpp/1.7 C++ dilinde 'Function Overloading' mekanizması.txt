@@ -118,6 +118,17 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 					// Eğer 'int32_t' tür eş ismine karşılık gelen tür 'int' ise yukarıdaki senaryo 'function redeclaretion',
 					// başka bir türe karşılık ise, örneğin 'long', 'function overloading' vardır. Bu durumda, yukarıdaki
 					// kullanım DERLEYİCİYE BAĞLIDIR.
+
+					void theFuncSix(int (*p)[10]);
+					void theFuncSix(int (*p)[11]);
+					void theFuncSix(int (*p)[12]);
+					// Burada üç farklı 'overload' vardır çünkü her bir fonksiyonun parametresi, o elemanlı bir diziyi
+					// gösteren gösterici türündendir. Burada diziyi gösteren gösterici mevzu bahistir. 
+
+					void theFuncSeven(int(int));
+					void theFuncSeven(int (*)(int));
+					// Nasılki "int*" ve "int []" tip parametreler 'function redeclaretion' olarak geçiyorsa, bu da aynı 
+					// şekilde 'function redeclaretion' olarak geçiyor. 
 		
 		>>> " Hangi 'function overload' çağrıldı?" sorusuna, ki aynı zamanda bu soru 'function overload resolution' ile
 		ilgilidir, cevap veren kural setleri: 
@@ -127,28 +138,43 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 			'no-match' tipi, diğerine 'ambiguity' denir.
 				>>>>> 'no-match' şeklindeki sentaks hatalarında, fonksiyon çağrısında kullanılan parametreler ile fonksiyon
 				bildirimlerindeki parametrelerin eşleşmemesi durumudur. 
+					* Örnek 1,
+						void foo(int);
+						void foo(double);
+						void foo(long);
+
+						int main(){
+							int x = 5;
+							foo(&x);
+							// Artık burada 'no-match' oluşacaktır çünkü 'int*' türünden yukarıdaki 'foo' fonksiyonlarının
+							// parametrelerine dönüşüm mevcut DEĞİL. FAKAT AYNI ZAMANDA ÜÇ ADET DE 'function overload'
+							// SÖZ KONUSUDUR.
+						}
+				
 				>>>>> 'ambiguity' şeklindeki sentaks hatalarında ise derleyici 'function overload resolution' işlemi
-				sonucunda iki farklı fonksiyon yüklemesi bulur. Hangisini seçeceğini bilemez.
-				
-			* Örnek 1,
-				// Some codes here...
-				
-				void func(long double);
-				void func(char);
-				
-				int main()
-				{
-					float f = 12.4f;
-					
-					func(f);
-					// Bu fonksiyon çağrısı 'ambiguity' tip sentaks hatasına neden olur. AÇIKLAMASI DERS SONUNDA.
-				}
+				sonucunda iki farklı fonksiyon yüklemesi bulur. Hangisini seçeceğini bilemez. Aşağıda bu konuya bir ilişkin
+				bir örnek verilmiştir:				
+					* Örnek 1,
+						// Some codes here...
+						
+						void func(long double);
+						void func(char);
+						
+						int main()
+						{
+							float f = 12.4f;
+							
+							func(f);
+							// Bu fonksiyon çağrısı 'ambiguity' tip sentaks hatasına neden olur.
+							// Çünkü 'float' türünden 'long double' için ve 'char' türlerine dönüşüm
+							// 'normal conversion'. DETAYLAR KONUNUN DEVAMINDA.
+						}
 				
 			>>>> 'function overload resolution' üç aşamalı bir süreçtir.
 				>>>>> İlk aşamada derleyici 'candidate functions' ların ismini listeliyor. Bu listelemeyi yaparken de
 				fonksiyonların parametrelerine ve fonksiyon çağrısında kullanılan parametrelere bakmıyor. Sadece yükleme
-				yapılan fonksiyonların isimlerini listeliyor. (NOT: İlgili işbu fonksiyonların isimleri ve bulundukları isim
-				alanları da aynıdır. Aksi halde 'function overloading' söz konusu olmayacaktır.)
+				yapılan fonksiyonların isimlerini listeliyor. (NOT: İlgili işbu fonksiyonların isimleri ve bulundukları
+				isim alanları da aynıdır. Aksi halde 'function overloading' söz konusu olmayacaktır.)
 					* Örnek 1,
 						// Some codes here...
 						
@@ -228,7 +254,9 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 				ve türleri arasında da uyumlu bir dönüşüm söz konusu. Artık derleyici dilin kurallarına dayanarak, parametre
 				türlerini arasındaki dönüşümü öncelik sırasına göre gruplayacak. Bu dönüşümler ise önem sırasına göre şu
 				şekildedir:
+
 					"variadic conversion < user-defined conversion < standart conversion".
+				
 				Hadi bu grupları da açıklayalım:
 					>>>>>> 'variadic conversion' : Bildirimi yapılan fonksiyonlar 'variadic' parametreye sahip ise, ve daha
 					uygun fonksyion yok ise, fonksiyon çağrısı ile o 'variadic' fonksiyon birbirine bağlanır.
@@ -305,12 +333,21 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 					// BÖYLE BİR DÖNÜŞÜM TÜRÜNÜN ÖNCELİĞİ EN YÜKSEKTİR.
 					
 					EĞER BİRDEN FAZLA 'standart conversion' VARSA, BU DURUMDA DERLEYİCİ BU 'standart conversion' LARI DA
-					KENDİ İÇİNDE GRUPLARA AYIRIR. ÖNEM SIRASINA GÖRE BU TÜRLER; "exact-match > promotion > normal-conversion"
+					KENDİ İÇİNDE GRUPLARA AYIRIR. ÖNEM SIRASINA GÖRE BU TÜRLER;
+						
+						"exact-match > promotion > normal-conversion"
+					
 					şeklindedir. HADİ BU SEFER DE BUNLARI AÇIKLAYALIM:
-						>>>>>>> 'exact-match' : Fonksiyon çağrısındaki parametrenin türü ile seçilen 'viable function' un
-						türü birbirinin aynısı olma durumu; 'array-decay' mekanizması; 'const conversion' mekanizması;
-						'function-to-pointer' mekanizması; son olarak 'L-Value to R-Value conversion' mekanizması
-						'exact-match' olarak sayılır...
+						>>>>>>> 'exact-match' : Aşağıdaki hususlar bu kategoriden sayılır:
+							
+							-> Fonksiyon çağrısındaki argümanın türü ile seçilen 'viable function' un parametre türü
+							birbirinin aynısı olma durumu.
+							-> 'array-decay' mekanizması.
+							-> 'const conversion' mekanizması.
+							-> 'function-to-pointer' mekanizması.
+							-> Son olarak 'L-Value to R-Value conversion' mekanizması.
+						
+						Aşağıda bu hususa ilişkin bir örnek verilmiştir:
 							* Örnek 1,
 								// Some code here...
 								
@@ -374,8 +411,15 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 						>>>>>>> 'promotion' : İki ayrı kategoride ele alınır. Bir tanesi C dilinden gelen
 						'integral promotion' ve 'float-to-double promotion'. 
 							>>>>>>>> 'integral promotion' : Derecesi(rank) 'int' türünden de aşağıda olan türlerin, işleme
-							sokulmadan evvel 'int' türüne dönüştürülmesi olayıdır. Bu alt türler 'bool',
-							'signed/unsigned short', 'char', 'signed char' ve 'unsigned char' türleridir.
+							sokulmadan evvel 'int' türüne dönüştürülmesi olayıdır. Bu alt türler
+							
+								'bool',
+								'signed/unsigned short',
+								'char',
+								'signed char',
+								'unsigned char'
+							
+							türleridir.
 							
 							>>>>>>>> 'float-to-double promotion' : 'float' türünün işleme sokulmadan evvel 'double' türüne
 							dönüştürülmesi işlemidir.
@@ -383,6 +427,7 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 						>>>>>>> 'normal-conversion' : 'exact-match' ve 'promotion' olmayan bütün dönüşümler
 						'normal-conversion' şeklindedir. 
 						
+					Aşağıda bu konuya ilişkin örnekler verilmiştir:
 						* Örnek 1,
 							// some codes here...
 							
@@ -478,20 +523,23 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 						"exact-match > promotion > normal-conversion".
 					Şimdi bunları açıklayalım. 
 						>>>>>>> 'exact-match' : Aşağıdaki şartlar bu dönüşümü ifade eder:
-							Argüman ifadenin türü ile parametrenin türünün birebir aynı olması,
-							'array-decay' dönüşümü,
-							'const-conversion' dönüşümü,
-							'function-to-pointer' dönüşümü,
-							'L-Value to R-Value' dönüşümü.
+
+							-> Argüman ifadenin türü ile parametrenin türünün birebir aynı olması,
+							-> 'array-decay' dönüşümü,
+							-> 'const-conversion' dönüşümü,
+							-> 'function-to-pointer' dönüşümü,
+							-> 'L-Value to R-Value' dönüşümü.
 						
 						>>>>>>> 'promotion' : Kendi içinde iki farklı 'promotion' barındırır:
 							>>>>>>>> 'integral promotion' : Derecesi(rank) 'int' türünden de aşağıda olan türlerin, işleme
 							sokulmadan evvel 'int' türüne dönüştürülmesi olayıdır. Bu alt türler
+
 								'bool',
 								'signed/unsigned short',
 								'char',
 								'signed char',
 								'unsigned char',
+
 							türleridir.
 							
 							>>>>>>>> 'float-to-double promotion' : 'float' türünün işleme sokulmadan evvel 'double' türüne
@@ -528,7 +576,8 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 				int a = 10;
 				
 				func(a); // 'ambiguity' tip sentaks hatası.
-				func(25); // II numaralı fonksiyon çağrılır.
+
+				func(25); // II numaralı fonksiyon çağrılır. Çünkü I numaralı fonksiyon 'viable' DEĞİL. 
 				
 				foo(50); // 'ambiguity' tip sentaks hatası.
 			}		
@@ -545,6 +594,7 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 				int a = 10;
 				
 				func(a); // I numaralı çağrılacak. (Copy-Semantics)
+
 				func(50); // II numaralı çağrılacak. (Move-Semantics) C++ 11 ile dile geldi.
 			}
 
@@ -560,12 +610,15 @@ gövdelerindeki kodlamalarda farklılıklar olabilir.
 				int x = 10;
 				const int y = 20;
 				
-				func(x); // I
+				func(x); // I 
 				
-				func(y); // II
+				func(y); // II numaralı çağrılacaktır. I numaralı fonksiyon 'viable' DEĞİL.
 				
 				func(50); // III
 			}	
+
+	Buradan hareketle diyebiliriz ki 'const' nesneler için 'const-overload' versiyonlar çağrılırken, 'non-const' olanlar
+	için de uygun olanlar. 
 			
 	>> Parametrelerin 'void*' ve 'bool' olma durumu:
 		* Örnek 1,
